@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
     "target": "es5",
-    "outDir": "dist",
-    "rootDir": ".",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "moduleResolution": "node"
+    "removeComments": false,
+    "noImplicitAny": false
   },
   "exclude": [
     "typings/index.d.ts",

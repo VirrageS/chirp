@@ -6,7 +6,8 @@ import '../../public/css/styles.css';
   selector: 'app',
   template: `
     <div>
-      <main-container></main-container>
+      <navigation-bar></navigation-bar>
+      <router-outlet></router-outlet>
     </div>
   `
 })

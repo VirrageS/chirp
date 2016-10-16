@@ -1,19 +1,29 @@
-import { NgModule } from '@angular/core';
-import { BrowserModule  } from '@angular/platform-browser';
-import { AppComponent } from './app.component';
-import { HttpModule } from '@angular/http';
+import { NgModule }       from '@angular/core';
+import { BrowserModule }  from '@angular/platform-browser';
+import { FormsModule }    from '@angular/forms';
+import { HttpModule }     from '@angular/http';
+import { RouterModule }   from '@angular/router';
+
+import { AppComponent }   from './app.component';
 
 import { ApiService } from './shared';
-import { MainComponent } from './containers';
+import { NavigationBarComponent } from './navigation';
 
 @NgModule({
   imports: [
     HttpModule,
-    BrowserModule
+    BrowserModule,
+    FormsModule,
+    RouterModule.forRoot([
+      // { path: 'me', component: MeComponent },
+      // { path: 'search', component: SearchComponent },
+      // { path: 'login', component: LoginComponent },
+      // { path: 'logout', component: LogoutComponent }
+    ])
   ],
   declarations: [
     AppComponent,
-    MainComponent
+    NavigationBarComponent
   ],
   providers: [
     ApiService
