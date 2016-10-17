@@ -9,10 +9,12 @@ import { Component } from '@angular/core';
       justify-content: space-between;
       align-items: center;
 
-      height: 50px;
+      height: 60px;
+      margin-bottom: 30px;
       border-bottom: 1px;
 
-      padding: 0px 40px;
+      padding: 0px 5vw;
+      border-bottom: 1px solid #c9c9c9;
     }
 
     .menu {
@@ -21,6 +23,7 @@ import { Component } from '@angular/core';
       justify-content: space-between;
       align-items: center;
 
+      font-weight: 500;
       color: #000000;
       width: 300px;
     }
@@ -29,13 +32,17 @@ import { Component } from '@angular/core';
       color: inherit;
       text-decoration: none;
     }
+
+    .menu__link:hover, .menu__link--active {
+      color: rgb(251, 104, 78);
+    }
   `],
   template: `
     <div class="navigation-bar">
       <div class="menu">
-        <a routerLink="/" routerLinkActive="active" class="menu__link">Home</a>
-        <a routerLink="/me" routerLinkActive="active" class="menu__link">Me</a>
-        <a routerLink="/search" routerLinkActive="active" class="menu__link">Find / Search</a>
+        <a routerLink="/home" routerLinkActive="menu__link--active" class="menu__link">Home</a>
+        <a routerLink="/me" routerLinkActive="menu__link--active" class="menu__link">Me</a>
+        <a routerLink="/search" routerLinkActive="menu__link--active" class="menu__link">Find / Search</a>
       </div>
 
       <div class="">

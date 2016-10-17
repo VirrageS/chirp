@@ -4,10 +4,18 @@ import '../../public/css/styles.css';
 
 @Component({
   selector: 'app',
+  styles: [`
+    .wrapper {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+  `],
   template: `
     <div>
       <navigation-bar></navigation-bar>
-      <router-outlet></router-outlet>
+      <div class="wrapper">
+        <router-outlet></router-outlet>
+      </div>
     </div>
   `
 })

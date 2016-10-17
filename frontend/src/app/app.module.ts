@@ -7,7 +7,10 @@ import { RouterModule }   from '@angular/router';
 import { AppComponent }   from './app.component';
 
 import { ApiService } from './shared';
-import { NavigationBarComponent } from './navigation';
+import { NavigationBarComponent } from './layout';
+import {
+  MeComponent, HomeComponent, SearchComponent,
+  LoginComponent, LogoutComponent} from './components';
 
 @NgModule({
   imports: [
@@ -15,15 +18,23 @@ import { NavigationBarComponent } from './navigation';
     BrowserModule,
     FormsModule,
     RouterModule.forRoot([
-      // { path: 'me', component: MeComponent },
-      // { path: 'search', component: SearchComponent },
-      // { path: 'login', component: LoginComponent },
-      // { path: 'logout', component: LogoutComponent }
+      { path: '', redirectTo: '/home', pathMatch: 'full' },
+      { path: 'home', component: HomeComponent },
+      { path: 'me', component: MeComponent },
+      { path: 'search', component: SearchComponent },
+
+      { path: 'login', component: LoginComponent },
+      { path: 'logout', component: LogoutComponent },
     ])
   ],
   declarations: [
     AppComponent,
-    NavigationBarComponent
+    NavigationBarComponent,
+    HomeComponent,
+    MeComponent,
+    SearchComponent,
+    LoginComponent,
+    LogoutComponent,
   ],
   providers: [
     ApiService
