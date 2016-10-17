@@ -6,7 +6,7 @@
   "scripts": {
     "start": "webpack-dev-server --inline --progress --display-error-details --display-cached --port 3000",
     "test": "karma start",
-    "build": "rimraf dist && webpack --config config/webpack.prod.js --progress --profile --bail",
+    "build": "rimraf dist && node --max-old-space-size=512 ./node_modules/webpack/bin/webpack.js --config config/webpack.prod.js --progress --profile --bail",
     "postinstall": "typings install"
   },
   "author": "Janusz Marcinkiewicz",
