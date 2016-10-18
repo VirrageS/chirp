@@ -1,5 +1,6 @@
-# kolejnyjebanyprojektnastudia
-kolejnyjebanyprojektnastudia
+# Chirp
+
+Chirp is simplified Twitter written in Angular 2 and ...
 
 
 ## Getting started (BACKEND)
