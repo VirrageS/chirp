@@ -1,5 +1,5 @@
 @import url(https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,600,700,900);
-@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,100,300,500,600,700);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,200,100,300,500,600,700);
 
 * {
   box-sizing: border-box;
@@ -12,7 +12,7 @@ body, html {
 }
 
 html, body {
-  font-family: 'Roboto', 'Open Sans', sans-serif;
+  font-family: 'Open Sans', 'Roboto', sans-serif;
 }
 
 main {
