@@ -2,42 +2,9 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'navigation-bar',
-  styles: [`
-    .navigation-bar {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-      height: 60px;
-      margin-bottom: 30px;
-      padding: 0px 5vw;
-
-      border-bottom: 1px solid #c9c9c9;
-    }
-
-    .menu {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-      width: 300px;
-
-      font-weight: 600;
-
-      color: #000000;
-    }
-
-    .menu__link {
-      text-decoration: none;
-      color: inherit;
-    }
-
-    .menu__link:hover, .menu__link--active {
-      color: rgb(251, 104, 78);
-    }
-  `],
+  styles: [require('./navigation-bar.component.scss')],
   template: `
-    <div class="navigation-bar">
+    <div class="navigation-bar shadow-1">
       <div class="menu">
         <a routerLink="/home" routerLinkActive="menu__link--active" class="menu__link">Home</a>
         <a routerLink="/me" routerLinkActive="menu__link--active" class="menu__link">Me</a>
@@ -58,6 +25,6 @@ import { Component } from '@angular/core';
 })
 export class NavigationBarComponent {
   user = {
-    name: 'Twutter'
+    name: 'Chirp'
   }
 }

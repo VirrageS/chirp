@@ -8,9 +8,13 @@ import { AppComponent }   from './app.component';
 
 import { ApiService } from './shared';
 import { NavigationBarComponent } from './layout';
+
 import {
-  MeComponent, HomeComponent, SearchComponent,
-  LoginComponent, LogoutComponent} from './components';
+  HomeComponent, SearchComponent,
+  LoginComponent, LogoutComponent
+} from './components';
+
+import { MeComponent } from './me';
 
 @NgModule({
   imports: [
