@@ -14,7 +14,7 @@ import {
   LoginComponent, LogoutComponent
 } from './components';
 
-import { MeComponent } from './me';
+import { MeComponent, TweetsComponent, FollowingComponent, FollowersComponent } from './me';
 
 @NgModule({
   imports: [
@@ -24,7 +24,14 @@ import { MeComponent } from './me';
     RouterModule.forRoot([
       { path: '', redirectTo: '/home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
-      { path: 'me', component: MeComponent },
+      { path: 'me', component: MeComponent,
+        children: [
+          { path: '', redirectTo: 'tweets' },
+          { path: 'tweets', component: TweetsComponent },
+          { path: 'following', component: FollowingComponent },
+          { path: 'followers', component: FollowersComponent },
+        ]
+      },
       { path: 'search', component: SearchComponent },
 
       { path: 'login', component: LoginComponent },
@@ -35,10 +42,14 @@ import { MeComponent } from './me';
     AppComponent,
     NavigationBarComponent,
     HomeComponent,
-    MeComponent,
     SearchComponent,
     LoginComponent,
     LogoutComponent,
+
+    MeComponent,
+    TweetsComponent,
+    FollowingComponent,
+    FollowersComponent,
   ],
   providers: [
     ApiService

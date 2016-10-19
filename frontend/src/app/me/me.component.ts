@@ -1,8 +1,11 @@
 import { Component } from '@angular/core';
 
 @Component({
-  template: `
-    <h2>MeComponent</h2>
-    <p>Get your heroes here</p>`
+  styles: [require('./me.component.scss')],
+  templateUrl: './me.component.html'
 })
-export class MeComponent { }
+export class MeComponent {
+  followers: number = 2934890;
+  following: number = 384;
+  tweets: number = 809;
+}

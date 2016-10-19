@@ -30,7 +30,7 @@ CREATE INDEX followers_second_user_idx ON followers (second_user);
 CREATE INDEX followers_idx ON followers (first_user, second_user);
 
 
-CREATE TABLE posts (
+CREATE TABLE posts ( -- should be named (tweets) or (chirps)?
   id       SERIAL PRIMARY KEY,
   user_id  INTEGER REFERENCES users (id) NOT NULL ON DELETE CASCADE,
   post     VARCHAR(150) NOT NULL -- should be named (content) ?
