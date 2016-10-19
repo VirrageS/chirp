@@ -14,24 +14,18 @@ import {
   LoginComponent, LogoutComponent
 } from './components';
 
-import { MeComponent, TweetsComponent, FollowingComponent, FollowersComponent } from './me';
+import { MeModule } from './me'
+
 
 @NgModule({
   imports: [
     HttpModule,
     BrowserModule,
     FormsModule,
+    MeModule,
     RouterModule.forRoot([
       { path: '', redirectTo: '/home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
-      { path: 'me', component: MeComponent,
-        children: [
-          { path: '', redirectTo: 'tweets' },
-          { path: 'tweets', component: TweetsComponent },
-          { path: 'following', component: FollowingComponent },
-          { path: 'followers', component: FollowersComponent },
-        ]
-      },
       { path: 'search', component: SearchComponent },
 
       { path: 'login', component: LoginComponent },
@@ -45,11 +39,6 @@ import { MeComponent, TweetsComponent, FollowingComponent, FollowersComponent } 
     SearchComponent,
     LoginComponent,
     LogoutComponent,
-
-    MeComponent,
-    TweetsComponent,
-    FollowingComponent,
-    FollowersComponent,
   ],
   providers: [
     ApiService
