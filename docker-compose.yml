@@ -1,0 +1,53 @@
+version: '2'
+services:
+  frontend:
+    restart: always
+    build: ./frontend
+    volumes:
+      - .:/frontend
+
+  backend:
+    restart: always
+    build: ./backend
+    ports:
+      - "8000:8000"
+    links:
+      - postgres:postgres
+      - redis:redis
+    volumes:
+      - .:/backend
+
+  nginx:
+    restart: always
+    build: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - /www/static
+    volumes_from:
+      - backend
+      - frontend
+    links:
+      - frontend:frontend
+      - backend:backend
+
+  postgres:
+    restart: always
+    image: postgres:latest
+    volumes_from:
+      - data
+    ports:
+      - "5432:5432"
+
+  redis:
+    restart: always
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  data:
+    restart: always
+    image: postgres:latest
+    volumes:
+      - /var/lib/postgresql
+    command: "true"
