@@ -16,6 +16,7 @@ services:
       - redis:redis
     volumes:
       - .:/backend
+    command: ./start-backend.sh
 
   nginx:
     restart: always
@@ -25,7 +26,6 @@ services:
     volumes:
       - /www/static
     volumes_from:
-      - backend
       - frontend
     links:
       - frontend:frontend
