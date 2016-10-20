@@ -27,5 +27,6 @@ _testmain.go
 
 
 # Frontend
+*.lock
 dist/
 node_modules/
