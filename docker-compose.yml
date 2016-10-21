@@ -34,10 +34,10 @@ services:
   postgres:
     restart: always
     image: postgres:latest
-    volumes_from:
-      - data
     ports:
       - "5432:5432"
+    volumes:
+      - /var/lib/postgresql
 
   redis:
     restart: always
@@ -45,9 +45,10 @@ services:
     ports:
       - "6379:6379"
 
-  data:
+  mongodb:
     restart: always
-    image: postgres:latest
+    image: mongo:latest
+    ports:
+      - "27017:27017"
     volumes:
-      - /var/lib/postgresql
-    command: "true"
+      - /var/lib/mongodb
