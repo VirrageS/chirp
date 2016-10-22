@@ -27,67 +27,31 @@ paths:
       parameters:
         - name: author_id
           in: query
-          description: id of the author
+          description: ID of the tweet author.
           required: false
           type: integer
           format: int64
         - name: author_username
           in: query
           type: string
-          description: username of the author
+          description: ID username of the tweet author.
           required: false
         - name: liked_by
           in: query
-          description: id of liker
+          description: ID of liker.
           required: false
           type: integer
           format: int64
         - name: retweeted_by
           in: query
-          description: id of retweeter
+          description: ID of retweeter.
           required: false
           type: integer
           format: int64
-        - name: likes_from
-          in: query
-          type: integer
-          format: int64
-          description: minimum number of likes
-          required: false
-        - name: likes_to
-          in: query
-          type: integer
-          format: int64
-          description: maximum number of likes
-          required: false
-        - name: retweets_from
-          in: query
-          type: integer
-          format: int64
-          description: minimum number of retweets
-          required: false
-        - name: retweets_to
-          in: query
-          type: integer
-          format: int64
-          description: maximum number of retweets
-          required: false
-        - name: created_at_from
+        - name: content
           in: query
           type: string
-          format: date-time
-          description: lower bound for creation time
-          required: false
-        - name: created_at_to
-          in: query
-          type: string
-          format: date-time
-          description: upper bound for creation time
-          required: false
-        - name: content_contains
-          in: query
-          type: string
-          description: part of the text of a tweet
+          description: Part of the text of a tweet.
           required: false
       tags:
         - Tweets
@@ -123,7 +87,7 @@ paths:
             $ref: '#/definitions/NewTweet'
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -164,7 +128,7 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
@@ -194,13 +158,13 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -240,19 +204,19 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
         - name: content
           in: body
-          description: content of the tweet
+          description: Content of the tweet.
           required: true
           schema:
             $ref: '#/definitions/NewTweet'
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -303,13 +267,13 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -346,13 +310,13 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -389,13 +353,13 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -432,13 +396,13 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Tweets
@@ -475,7 +439,7 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
@@ -495,7 +459,7 @@ paths:
       parameters:
         - name: tweet_id
           in: path
-          description: tweet id
+          description: ID of the tweet.
           required: true
           type: integer
           format: int64
@@ -515,7 +479,7 @@ paths:
       parameters:
         - name: user_data
           in: body
-          description: new user data
+          description: New user data.
           required: true
           schema:
             $ref: '#/definitions/AuthUser'
@@ -551,7 +515,7 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: user id
+          description: ID of the user.
           required: true
           type: integer
           format: int64
@@ -600,7 +564,7 @@ paths:
         - name: username
           in: query
           type: string
-          description: Username of user
+          description: Username of the user.
           required: false
       tags:
         - Users
@@ -632,7 +596,7 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: id of the user to follow
+          description: ID of the user to follow.
           required: true
           type: integer
           format: int64
@@ -664,7 +628,7 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: id of the user to follow
+          description: ID of the user to follow.
           required: true
           type: integer
           format: int64
@@ -714,13 +678,13 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: id of the user to unfollow
+          description: ID of the user to unfollow.
           required: true
           type: integer
           format: int64
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Users
@@ -764,7 +728,7 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: user id
+          description: ID of the user.
           required: true
           type: integer
           format: int64
@@ -798,7 +762,7 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: user id
+          description: ID of the user.
           required: true
           type: integer
           format: int64
@@ -832,7 +796,7 @@ paths:
       parameters:
         - name: user_id
           in: path
-          description: user id
+          description: ID of the user.
           required: true
           type: integer
           format: int64
@@ -866,7 +830,7 @@ paths:
       parameters:
         - name: Authorization
           in: header
-          description: authorization token, should be sent in Authorization header
+          description: Authorization token, should be sent in Authorization header.
           type: string
       tags:
         - Home Timeline
@@ -899,13 +863,20 @@ definitions:
       id:
         type: integer
         format: int64
+        description: ID of the user.
       username:
         type: string
+        description: Username of the user.
+      email:
+        type: string
+        description: Email of the user.
       name:
         type: string
-      joined_at:
+        description: First name of the user.
+      created_at:
         type: string
         format: date-time
+        description: Creation time of the user.
 
   AuthUser:
     type: object
@@ -928,7 +899,7 @@ definitions:
       id:
         type: integer
         format: int64
-        description: Id of the tweet.
+        description: ID of the tweet.
       author:
         $ref: '#/definitions/User'
       like_count:
