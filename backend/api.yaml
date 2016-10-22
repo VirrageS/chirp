@@ -3,7 +3,7 @@ info:
   title: Chirp API
   description: Chirp API
   version: "1.0.0"
-  
+
 # the domain of the service
 host: TODO
 
@@ -16,7 +16,7 @@ schemes:
 # basePath: /v1
 produces:
   - application/json
-  
+
 paths:
   /tweets:
     get:
@@ -71,7 +71,7 @@ paths:
           type: integer
           format: int64
           description: maximum number of retweets
-          required: false  
+          required: false
         - name: created_at_from
           in: query
           type: string
@@ -132,7 +132,7 @@ paths:
           description: New tweet.
           headers:
             Location:
-              description: Path to the newly created tweet. 
+              description: Path to the newly created tweet.
               type: string
           schema:
             $ref: '#/definitions/Tweet'
@@ -157,7 +157,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-            
+
   /tweets/{tweet_id}:
     get:
       summary: Get a tweet with a given ID.
@@ -296,7 +296,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-    
+
   /tweets/{tweet_id}/like:
     post:
       summary: Authenticating user likes a tweet with given ID.
@@ -339,7 +339,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-  
+
   /tweets/{tweet_id}/unlike:
     post:
       summary: Authenticating user unlikes a tweet with given ID.
@@ -353,7 +353,7 @@ paths:
         - name: Authorization
           in: header
           description: authorization token, should be sent in Authorization header
-          type: string          
+          type: string
       tags:
         - Tweets
       responses:
@@ -374,7 +374,7 @@ paths:
             properties:
               error:
                 type: string
-                description: Error message.                
+                description: Error message.
         500:
           description: Unexpected error happened.
           schema:
@@ -382,7 +382,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-                
+
   /tweets/{tweet_id}/retweet:
     post:
       summary: Authenticating user retweets a tweet with given ID.
@@ -396,7 +396,7 @@ paths:
         - name: Authorization
           in: header
           description: authorization token, should be sent in Authorization header
-          type: string          
+          type: string
       tags:
         - Tweets
       responses:
@@ -425,7 +425,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-     
+
   /tweets/{tweet_id}/unretweet:
     post:
       summary: Authenticating user unretweets a tweet with given ID.
@@ -468,7 +468,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-                
+
   /tweets/{tweet_id}/likers:
     get:
       summary: Returns likers of a given tweet.
@@ -488,7 +488,7 @@ paths:
             type: array
             items:
               $ref: '#/definitions/User'
-                
+
   /tweets/{tweet_id}/retweeters:
     get:
       summary: Returns retweeters of a given tweet.
@@ -508,7 +508,7 @@ paths:
             type: array
             items:
               $ref: '#/definitions/User'
-              
+
   /auth_users:
     post:
       summary: Creates a new user.
@@ -526,7 +526,7 @@ paths:
           description: New user.
           headers:
             Location:
-              description: Path to the newly created user. 
+              description: Path to the newly created user.
               type: string
           schema:
             $ref: '#/definitions/User'
@@ -544,7 +544,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-  
+
   /auth_user/{user_id}:
     patch:
       summary: Updates authentication and account data of a user with given ID.
@@ -589,7 +589,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-    
+
   /users:
     get:
       summary: Get list of users.
@@ -597,17 +597,10 @@ paths:
         The users endpoint returns list of users that fulfill given
         search criteria.
       parameters:
-        - name: joined_at_from
+        - name: username
           in: query
           type: string
-          format: date-time
-          description: lower bound for user join time
-          required: false
-        - name: created_at_to
-          in: query
-          type: string
-          format: date-time
-          description: upper bound for user join time
+          description: Username of user
           required: false
       tags:
         - Users
@@ -714,7 +707,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-  
+
   /user/{user_id}/unfollow:
     post:
       summary: Authenticated user unfollows user with a given ID.
@@ -764,7 +757,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-  
+
   /user/{user_id}/followers:
     get:
       summary: Get list of followers of user with a given ID.
@@ -798,7 +791,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-                
+
   /user/{user_id}/following:
     get:
       summary: Get list of users followed by a user with a given ID.
@@ -832,7 +825,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-  
+
   /user_timeline/{user_id}:
     get:
       summary: Get user timeline.
@@ -866,7 +859,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-                
+
   /home_timeline:
     get:
       summary: Get authenticating users home timeline which is a combination of authenticating user's tweets and tweets of people he/she follows.
@@ -898,7 +891,7 @@ paths:
               error:
                 type: string
                 description: Error message.
-            
+
 definitions:
   User:
     type: object
@@ -913,7 +906,7 @@ definitions:
       joined_at:
         type: string
         format: date-time
-  
+
   AuthUser:
     type: object
     properties:
@@ -928,7 +921,7 @@ definitions:
         type: string
       email:
         type: string
-      
+
   Tweet:
     type: object
     properties:
@@ -951,11 +944,11 @@ definitions:
         format: date-time
         description: Creation time of the tweet.
       content:
-          type: string
-          description: Content of the tweet.
-  
+        type: string
+        description: Content of the tweet.
+
   NewTweet:
     type: object
     properties:
-      content: 
+      content:
         type: string
