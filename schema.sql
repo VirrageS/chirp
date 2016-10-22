@@ -6,7 +6,7 @@ CREATE TABLE users (
 
   name             VARCHAR(255) DEFAULT '',
   username         VARCHAR(255) UNIQUE,
-  email            VARCHAR(255) UNIQUE DEFAULT '', -- should be not null? (we get email from twitter?)
+  email            VARCHAR(255) UNIQUE DEFAULT '',
   password         VARCHAR(512), -- <algorithm>$<iterations>$<salt>$<hash>
   created_at       TIMESTAMP NOT NULL DEFAULT now(),
   last_login       TIMESTAMP,
