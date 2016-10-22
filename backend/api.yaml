@@ -121,6 +121,10 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/NewTweet'
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Tweets
       responses:
@@ -134,6 +138,13 @@ paths:
             $ref: '#/definitions/Tweet'
         400:
           description: Invalid content.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
           schema:
             properties:
               error:
@@ -179,7 +190,7 @@ paths:
                 type: string
                 description: Error message.
     delete:
-      summary: Delete a tweet with a given ID.
+      summary: Authentication user deletes a tweet with a given ID.
       parameters:
         - name: tweet_id
           in: path
@@ -187,11 +198,29 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Tweets
       responses:
         204:
           description: The tweet was sucesfully deleted.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        403:
+          description: User is not authorized to delete the tweet.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
         404:
           description: Tweet with given ID does not exist.
           schema:
@@ -221,6 +250,10 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/NewTweet'
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Tweets
       responses:
@@ -230,6 +263,20 @@ paths:
             $ref: '#/definitions/Tweet'
         400:
           description: Invalid request.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        403:
+          description: User is not authorized to edit the tweet.
           schema:
             properties:
               error:
@@ -260,6 +307,10 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Tweets
       responses:
@@ -269,6 +320,13 @@ paths:
             $ref: '#/definitions/Tweet'
         404:
           description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
           schema:
             properties:
               error:
@@ -292,6 +350,10 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string          
       tags:
         - Tweets
       responses:
@@ -306,6 +368,13 @@ paths:
               error:
                 type: string
                 description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.                
         500:
           description: Unexpected error happened.
           schema:
@@ -324,6 +393,10 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string          
       tags:
         - Tweets
       responses:
@@ -331,6 +404,13 @@ paths:
           description: Retweeted tweet with updated state.
           schema:
             $ref: '#/definitions/Tweet'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
         404:
           description: Tweet with given ID does not exist.
           schema:
@@ -356,6 +436,10 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Tweets
       responses:
@@ -363,6 +447,13 @@ paths:
           description: Retweeted tweet with updated state.
           schema:
             $ref: '#/definitions/Tweet'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
         404:
           description: Tweet with given ID does not exist.
           schema:
@@ -584,6 +675,10 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Users
       responses:
@@ -593,6 +688,13 @@ paths:
             $ref: '#/definitions/User'
         400:
           description: User with given ID is already followed by the authenticating user.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
           schema:
             properties:
               error:
@@ -623,6 +725,10 @@ paths:
           required: true
           type: integer
           format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Users
       responses:
@@ -632,6 +738,13 @@ paths:
             $ref: '#/definitions/User'
         400:
           description: User with given ID is not followed by the authenticating user.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
           schema:
             properties:
               error:
@@ -652,7 +765,7 @@ paths:
                 type: string
                 description: Error message.
   
-  /followers/{user_id}:
+  /user/{user_id}/followers:
     get:
       summary: Get list of followers of user with a given ID.
       parameters:
@@ -666,7 +779,41 @@ paths:
         - Users
       responses:
         200:
-          description: An array of users.
+          description: An array of users that follow given user.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+                
+  /user/{user_id}/following:
+    get:
+      summary: Get list of users followed by a user with a given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: user id
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Users
+      responses:
+        200:
+          description: An array of users that given user follows.
           schema:
             type: array
             items:
@@ -723,15 +870,27 @@ paths:
   /home_timeline:
     get:
       summary: Get authenticating users home timeline which is a combination of authenticating user's tweets and tweets of people he/she follows.
+      parameters:
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
       tags:
         - Home Timeline
       responses:
         200:
-          description: An array of tweet that represents users home timeline.
+          description: An array of tweets that represents users home timeline.
           schema:
             type: array
             items:
               $ref: '#/definitions/Tweet'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
         500:
           description: Unexpected error happened.
           schema:
