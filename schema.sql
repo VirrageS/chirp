@@ -4,13 +4,15 @@ CREATE TABLE users (
   facebook_token   VARCHAR(255) UNIQUE,
   google_token     VARCHAR(255) UNIQUE,
 
-  name             VARCHAR(255) DEFAULT '',
   username         VARCHAR(255) UNIQUE,
   email            VARCHAR(255) UNIQUE DEFAULT '',
   password         VARCHAR(512), -- <algorithm>$<iterations>$<salt>$<hash>
   created_at       TIMESTAMP NOT NULL DEFAULT now(),
   last_login       TIMESTAMP,
   active           BOOLEAN NOT NULL DEFAULT TRUE,
+
+  name             VARCHAR(255) DEFAULT '',
+  avatar_url       VARCHAR(1024) DEFAULT '',
 
   CONSTRAINT proper_email CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$')
 );
