@@ -1,0 +1,925 @@
+swagger: '2.0'
+info:
+  title: Chirp API
+  description: Chirp API
+  version: "1.0.0"
+
+# the domain of the service
+host: TODO
+
+# array of all schemes that your API supports
+schemes:
+  - https
+  - http
+
+# will be prefixed to all paths
+# basePath: /v1
+produces:
+  - application/json
+
+paths:
+  /tweets:
+    get:
+      summary: Get list of all tweets.
+      description: |
+        The tweets endpoint returns list of tweets that fulfill given
+        search criteria.
+      parameters:
+        - name: author_id
+          in: query
+          description: ID of the tweet author.
+          required: false
+          type: integer
+          format: int64
+        - name: author_username
+          in: query
+          type: string
+          description: ID username of the tweet author.
+          required: false
+        - name: liked_by
+          in: query
+          description: ID of liker.
+          required: false
+          type: integer
+          format: int64
+        - name: retweeted_by
+          in: query
+          description: ID of retweeter.
+          required: false
+          type: integer
+          format: int64
+        - name: content
+          in: query
+          type: string
+          description: Part of the text of a tweet.
+          required: false
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: An array of tweets that fulfill given cirteria.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Tweet'
+        400:
+          description: One of the query parameters is not supported.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+    post:
+      summary: Authenticating user adds a new tweet.
+      parameters:
+        - name: content
+          in: body
+          description: content of the tweet
+          required: true
+          schema:
+            $ref: '#/definitions/NewTweet'
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        201:
+          description: New tweet.
+          headers:
+            Location:
+              description: Path to the newly created tweet.
+              type: string
+          schema:
+            $ref: '#/definitions/Tweet'
+        400:
+          description: Invalid content.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /tweets/{tweet_id}:
+    get:
+      summary: Get a tweet with a given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: A single tweet.
+          schema:
+            $ref: '#/definitions/Tweet'
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+    delete:
+      summary: Authentication user deletes a tweet with a given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        204:
+          description: The tweet was sucesfully deleted.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        403:
+          description: User is not authorized to delete the tweet.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+    put:
+      summary: Authenticating user updates a tweet with a given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+        - name: content
+          in: body
+          description: Content of the tweet.
+          required: true
+          schema:
+            $ref: '#/definitions/NewTweet'
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: Updated tweet.
+          schema:
+            $ref: '#/definitions/Tweet'
+        400:
+          description: Invalid request.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        403:
+          description: User is not authorized to edit the tweet.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /tweets/{tweet_id}/like:
+    post:
+      summary: Authenticating user likes a tweet with given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: Liked tweet with updated state.
+          schema:
+            $ref: '#/definitions/Tweet'
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /tweets/{tweet_id}/unlike:
+    post:
+      summary: Authenticating user unlikes a tweet with given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: Liked tweet with updated state.
+          schema:
+            $ref: '#/definitions/Tweet'
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /tweets/{tweet_id}/retweet:
+    post:
+      summary: Authenticating user retweets a tweet with given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: Retweeted tweet with updated state.
+          schema:
+            $ref: '#/definitions/Tweet'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /tweets/{tweet_id}/unretweet:
+    post:
+      summary: Authenticating user unretweets a tweet with given ID.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: Retweeted tweet with updated state.
+          schema:
+            $ref: '#/definitions/Tweet'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: Tweet with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /tweets/{tweet_id}/likers:
+    get:
+      summary: Returns likers of a given tweet.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: An array of Users that liked given tweet.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+
+  /tweets/{tweet_id}/retweeters:
+    get:
+      summary: Returns retweeters of a given tweet.
+      parameters:
+        - name: tweet_id
+          in: path
+          description: ID of the tweet.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Tweets
+      responses:
+        200:
+          description: An array of Users that retweeted given tweet.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+
+  /auth_users:
+    post:
+      summary: Creates a new user.
+      parameters:
+        - name: user_data
+          in: body
+          description: New user data.
+          required: true
+          schema:
+            $ref: '#/definitions/AuthUser'
+      tags:
+        - AuthUsers
+      responses:
+        201:
+          description: New user.
+          headers:
+            Location:
+              description: Path to the newly created user.
+              type: string
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Bad request.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /auth_user/{user_id}:
+    patch:
+      summary: Updates authentication and account data of a user with given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user.
+          required: true
+          type: integer
+          format: int64
+        - name: user_data
+          in: body
+          description: New user data.
+          required: true
+          schema:
+            $ref: '#/definitions/AuthUser'
+      tags:
+        - AuthUsers
+      responses:
+        200:
+          description: Updated user.
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Bad request.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /users:
+    get:
+      summary: Get list of users.
+      description: |
+        The users endpoint returns list of users that fulfill given
+        search criteria.
+      parameters:
+        - name: username
+          in: query
+          type: string
+          description: Username of the user.
+          required: false
+      tags:
+        - Users
+      responses:
+        200:
+          description: An array of users.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        400:
+          description: One of the query parameters is not supported.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /users/{user_id}:
+    get:
+      summary: Get data of a user with a given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user to follow.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Users
+      responses:
+        200:
+          description: User with given ID.
+          schema:
+            $ref: '#/definitions/User'
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /users/{user_id}/follow:
+    post:
+      summary: Authenticated user follows user with a given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user to follow.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: authorization token, should be sent in Authorization header
+          type: string
+      tags:
+        - Users
+      responses:
+        200:
+          description: User with given ID with updated follower count.
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: User with given ID is already followed by the authenticating user.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /user/{user_id}/unfollow:
+    post:
+      summary: Authenticated user unfollows user with a given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user to unfollow.
+          required: true
+          type: integer
+          format: int64
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Users
+      responses:
+        200:
+          description: User with given ID with updated follower count.
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: User with given ID is not followed by the authenticating user.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /user/{user_id}/followers:
+    get:
+      summary: Get list of followers of user with a given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Users
+      responses:
+        200:
+          description: An array of users that follow given user.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /user/{user_id}/following:
+    get:
+      summary: Get list of users followed by a user with a given ID.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Users
+      responses:
+        200:
+          description: An array of users that given user follows.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /user_timeline/{user_id}:
+    get:
+      summary: Get user timeline.
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user.
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Timelines
+      responses:
+        200:
+          description: An array of tweet that represents users timeline.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Tweet'
+        404:
+          description: User with given ID does not exist.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /home_timeline:
+    get:
+      summary: Get authenticating users home timeline which is a combination of authenticating user's tweets and tweets of people he/she follows.
+      parameters:
+        - name: Authorization
+          in: header
+          description: Authorization token, should be sent in Authorization header.
+          type: string
+      tags:
+        - Home Timeline
+      responses:
+        200:
+          description: An array of tweets that represents users home timeline.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Tweet'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+definitions:
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        description: ID of the user.
+      username:
+        type: string
+        description: Username of the user.
+      email:
+        type: string
+        description: Email of the user.
+      name:
+        type: string
+        description: First name of the user.
+      created_at:
+        type: string
+        format: date-time
+        description: Creation time of the user.
+
+  AuthUser:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      username:
+        type: string
+      password:
+        type: string
+      name:
+        type: string
+      email:
+        type: string
+
+  Tweet:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        description: ID of the tweet.
+      author:
+        $ref: '#/definitions/User'
+      like_count:
+        type: integer
+        format: int64
+        description: Number of likes of the tweet.
+      retweet_count:
+        type: integer
+        format: int64
+        description: Number of retweets of the tweet.
+      created_at:
+        type: string
+        format: date-time
+        description: Creation time of the tweet.
+      content:
+        type: string
+        description: Content of the tweet.
+
+  NewTweet:
+    type: object
+    properties:
+      content:
+        type: string
