@@ -1,5 +1,9 @@
 package main
 
+/*
+	TODO: 	- fix error handling
+*/
+
 import (
 	"time"
 

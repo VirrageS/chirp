@@ -58,8 +58,9 @@ func PostUser(context *iris.Context) {
 	newUser, err := services.PostUser(requestUser)
 
 	if err != nil {
-		context.JSON(iris.StatusNotFound, iris.Map{
-			"error": err,
+		errorString := fmt.Sprint(err)
+		context.JSON(iris.StatusBadRequest, iris.Map{
+			"error": errorString,
 		})
 		return
 	}
