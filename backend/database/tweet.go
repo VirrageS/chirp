@@ -1,8 +1,8 @@
 package database
 
 import (
-	"time"
 	"errors"
+	"time"
 )
 
 type Tweet struct {
@@ -16,21 +16,21 @@ type Tweet struct {
 
 var tweets = []Tweet{
 	{
-		Id: 1,
-		AuthorId: users[0].Id,
-		LikeCount: 0,
+		Id:           1,
+		AuthorId:     users[0].Id,
+		LikeCount:    0,
 		RetweetCount: 0,
-		CreatedAt: time.Unix(0, 0),
-		Content: "siema siema siema",
+		CreatedAt:    time.Unix(0, 0),
+		Content:      "siema siema siema",
 	},
 }
 
-func GetTweets() []Tweet {
-	return tweets
+func GetTweets() ([]Tweet, error) {
+	return tweets, nil
 }
 
-func GetTweet(tweet_id int64) (Tweet, error) {
-	tweet := getTweetWithId(tweet_id)
+func GetTweet(tweetId int64) (Tweet, error) {
+	tweet := getTweetWithId(tweetId)
 
 	/* Emulate DB query fail? */
 	if (Tweet{}) == tweet {
@@ -41,8 +41,8 @@ func GetTweet(tweet_id int64) (Tweet, error) {
 }
 
 func InsertTweet(tweet Tweet) Tweet {
-	tweet_id := insertTweetToDatabase(tweet)
-	tweet.Id = tweet_id
+	tweetId := insertTweetToDatabase(tweet)
+	tweet.Id = tweetId
 
 	return tweet
 }
@@ -60,8 +60,10 @@ func getTweetWithId(tweet_id int64) Tweet {
 }
 
 func insertTweetToDatabase(tweet Tweet) int64 {
-	tweet_id := len(tweets) + 1
+	tweetId := len(tweets) + 1
+	tweet.Id = int64(tweetId)
+
 	tweets = append(tweets, tweet)
 
-	return int64(tweet_id)
+	return int64(tweetId)
 }

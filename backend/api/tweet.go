@@ -1,11 +1,11 @@
 package api
 
 import (
-	"strconv"
-	"github.com/kataras/iris"
-	"github.com/VirrageS/chirp/backend/services"
-	"github.com/VirrageS/chirp/backend/apimodel"
 	"fmt"
+	"github.com/VirrageS/chirp/backend/apiModel"
+	"github.com/VirrageS/chirp/backend/services"
+	"github.com/kataras/iris"
+	"strconv"
 )
 
 func GetTweets(context *iris.Context) {
@@ -27,9 +27,9 @@ func GetTweets(context *iris.Context) {
 }
 
 func GetTweet(context *iris.Context) {
-	parameter_id := context.Param("id")
+	parameterId := context.Param("id")
 
-	tweet_id, err := strconv.ParseInt(parameter_id, 10, 64)
+	tweetId, err := strconv.ParseInt(parameterId, 10, 64)
 	if err != nil {
 		context.JSON(iris.StatusBadRequest, iris.Map{
 			"error": "Invalid tweet ID.",
@@ -37,7 +37,7 @@ func GetTweet(context *iris.Context) {
 		return
 	}
 
-	response_tweet, error := services.GetTweet(tweet_id)
+	responseTweet, error := services.GetTweet(tweetId)
 
 	if error != nil {
 		context.JSON(iris.StatusNotFound, iris.Map{
@@ -46,14 +46,14 @@ func GetTweet(context *iris.Context) {
 		return
 	}
 
-	context.JSON(iris.StatusOK, response_tweet)
+	context.JSON(iris.StatusOK, responseTweet)
 }
 
 func PostTweet(context *iris.Context) {
-	tweet_author_id_string := context.PostValue("author_id")
+	tweetAuthorIdString := context.PostValue("author_id")
 	content := context.PostValue("content")
 
-	tweet_author_id, error := strconv.ParseInt(tweet_author_id_string, 10, 64)
+	tweetAuthorId, error := strconv.ParseInt(tweetAuthorIdString, 10, 64)
 	if error != nil {
 		context.JSON(iris.StatusBadRequest, iris.Map{
 			"error": "Invalid author ID.",
@@ -61,12 +61,12 @@ func PostTweet(context *iris.Context) {
 		return
 	}
 
-	request_tweet := apimodel.NewTweet{
-		AuthorId: tweet_author_id,
-		Content: content,
+	requestTweet := apiModel.NewTweet{
+		AuthorId: tweetAuthorId,
+		Content:  content,
 	}
 
-	response_tweet, error := services.PostTweet(request_tweet)
+	responseTweet, error := services.PostTweet(requestTweet)
 
 	if error != nil {
 		context.JSON(iris.StatusInternalServerError, iris.Map{
@@ -75,6 +75,6 @@ func PostTweet(context *iris.Context) {
 		return
 	}
 
-	context.SetHeader("Location", fmt.Sprintf("/user/%d", response_tweet.Id))
-	context.JSON(iris.StatusCreated, response_tweet)
+	context.SetHeader("Location", fmt.Sprintf("/user/%d", responseTweet.Id))
+	context.JSON(iris.StatusCreated, responseTweet)
 }

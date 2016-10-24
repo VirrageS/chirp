@@ -1,143 +1,204 @@
 package services
 
 import (
-	"fmt"
 	"errors"
-	"time"
+	"fmt"
+	apiModel "github.com/VirrageS/chirp/backend/apiModel"
 	"github.com/VirrageS/chirp/backend/database"
-	"github.com/VirrageS/chirp/backend/apimodel"
+	"time"
 )
 
-func GetTweets() ([]apimodel.Tweet, error) {
-	database_tweets := database.GetTweets()
-	var api_tweets []apimodel.Tweet
+func GetTweets() ([]apiModel.Tweet, error) {
+	databaseTweets, err := database.GetTweets()
 
-	for _, database_tweet := range database_tweets {
-		api_tweet, error := convertDatabaseTweetToApiTweet(database_tweet)
-
-		if error != nil {
-			return nil, errors.New("Oooops, something went wrong!")
-		}
-
-		api_tweets = append(api_tweets, api_tweet)
+	if err != nil {
+		return nil, errors.New("Oooops, something went wrong!")
 	}
 
-	return api_tweets, nil
+	apiTweets, err := convertArrayOfDatabaseTweetsToArrayOfApiTweets(databaseTweets)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return apiTweets, nil
 }
 
-func GetTweet(tweet_id int64) (apimodel.Tweet, error) {
-	databse_tweet, error := database.GetTweet(tweet_id)
+func GetTweet(tweetId int64) (apiModel.Tweet, error) {
+	databaseTweet, err := database.GetTweet(tweetId)
 
-	if error == nil {
-		return apimodel.Tweet{}, error
+	if err != nil {
+		return apiModel.Tweet{}, err
 	}
 
-	api_tweet, error := convertDatabaseTweetToApiTweet(databse_tweet)
+	apiTweet, err := convertDatabaseTweetToApiTweet(databaseTweet)
 
-	if error != nil {
-		return apimodel.Tweet{}, errors.New("Oooops, something went wrong!")
+	if err != nil {
+		return apiModel.Tweet{}, errors.New("Oooops, something went wrong!")
 	}
 
-	return api_tweet, nil
+	return apiTweet, nil
 }
 
-func PostTweet(new_tweet apimodel.NewTweet) (apimodel.Tweet, error) {
-	database_tweet := convertApiNewTweetToDatabaseTweet(new_tweet)
+func PostTweet(newTweet apiModel.NewTweet) (apiModel.Tweet, error) {
+	databaseTweet := convertApiNewTweetToDatabaseTweet(newTweet)
 
-	added_tweet := database.InsertTweet(database_tweet)
+	addedTweet := database.InsertTweet(databaseTweet)
 
-	api_tweet, error := convertDatabaseTweetToApiTweet(added_tweet)
+	apiTweet, err := convertDatabaseTweetToApiTweet(addedTweet)
 
-	if error != nil {
-		return apimodel.Tweet{}, errors.New("Oooops, something went wrong!")
+	if err != nil {
+		return apiModel.Tweet{}, errors.New("Oooops, something went wrong!")
 	}
 
-	return api_tweet, nil
+	return apiTweet, nil
 }
 
-func convertDatabaseTweetToApiTweet(tweet database.Tweet) (apimodel.Tweet, error) {
+func GetUsers() ([]apiModel.User, error) {
+	databaseUsers, err := database.GetUsers()
+
+	if err != nil {
+		return nil, errors.New("Oooops, something went wrong!")
+	}
+
+	apiUsers := convertArrayOfDatabaseUsersToArrayOfApiUsers(databaseUsers)
+
+	return apiUsers, nil
+}
+
+func GetUser(userId int64) (apiModel.User, error) {
+	databaseUser, err := database.GetUser(userId)
+
+	if err != nil {
+		return apiModel.User{}, err
+	}
+
+	apiUser := convertDatabaseUserToApiUser(databaseUser)
+
+	return apiUser, nil
+}
+
+func PostUser(user apiModel.NewUser) (apiModel.User, error) {
+	if user.Name == "" {
+		return apiModel.User{}, errors.New("No name was provided.")
+	}
+	if user.Username == "" {
+		return apiModel.User{}, errors.New("No username was provided.")
+	}
+	if user.Email == "" {
+		return apiModel.User{}, errors.New("No email was provided.")
+	}
+
+	databaseUser := covertApiNewUserToDatabaseUser(user)
+
+	newUser, err := database.InsertUser(databaseUser)
+
+	if err != nil {
+		return apiModel.User{}, err
+	}
+
+	apiUser := convertDatabaseUserToApiUser(newUser)
+
+	return apiUser, nil
+}
+
+func convertDatabaseTweetToApiTweet(tweet database.Tweet) (apiModel.Tweet, error) {
 	id := tweet.Id
-	user_id := tweet.AuthorId
-	like_count := tweet.LikeCount
-	retweet_count := tweet.RetweetCount
-	created_at := tweet.CreatedAt
+	userId := tweet.AuthorId
+	likeCount := tweet.LikeCount
+	retweetCount := tweet.RetweetCount
+	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
-	author_full_data, error := database.GetUser(user_id)
+	authorFullData, err := database.GetUser(userId)
 
-	if error != nil {
-		error_message := fmt.Sprintf("No integrity in database, " +
+	if err != nil {
+		errorMessage := fmt.Sprintf("No integrity in database, "+
 			"user with id = %d was not found (but should have been found)",
-			user_id)
-		return apimodel.Tweet{}, errors.New(error_message)
+			userId)
+		return apiModel.Tweet{}, errors.New(errorMessage)
 	}
 
-	api_author_full_data := convertDatabaseUserToApiUser(author_full_data)
+	apiAuthorFullData := convertDatabaseUserToApiUser(authorFullData)
 
-	api_tweet := apimodel.Tweet{
-		Id: id,
-		Author: api_author_full_data,
-		LikeCount: like_count,
-		RetweetCount: retweet_count,
-		CreatedAt: created_at,
-		Content: content,
+	apiTweet := apiModel.Tweet{
+		Id:           id,
+		Author:       apiAuthorFullData,
+		LikeCount:    likeCount,
+		RetweetCount: retweetCount,
+		CreatedAt:    createdAt,
+		Content:      content,
 	}
-	return api_tweet, nil
+	return apiTweet, nil
 }
 
-func convertApiNewTweetToDatabaseTweet(tweet apimodel.NewTweet) database.Tweet {
-	author_id := tweet.AuthorId
+func convertApiNewTweetToDatabaseTweet(tweet apiModel.NewTweet) database.Tweet {
+	authorId := tweet.AuthorId
 	content := tweet.Content
 
 	return database.Tweet{
-		Id: 0,
-		AuthorId: author_id,
-		LikeCount: 0,
+		Id:           0,
+		AuthorId:     authorId,
+		LikeCount:    0,
 		RetweetCount: 0,
-		CreatedAt: time.Now(),
-		Content: content,
+		CreatedAt:    time.Now(),
+		Content:      content,
 	}
 }
 
-func convertArrayOfDatabaseUsersToArrayOfApiUsers(database_users []database.User) []apimodel.User {
-	var converted_users []apimodel.User
+func convertArrayOfDatabaseTweetsToArrayOfApiTweets(databaseTweets []database.Tweet) ([]apiModel.Tweet, error) {
+	var apiTweets []apiModel.Tweet
 
-	for _, database_user := range database_users {
-		api_user := convertDatabaseUserToApiUser(database_user)
-		converted_users = append(converted_users, api_user)
+	for _, databaseTweet := range databaseTweets {
+		apiTweet, err := convertDatabaseTweetToApiTweet(databaseTweet)
+
+		if err != nil {
+			return nil, errors.New("Oooops, something went wrong!")
+		}
+
+		apiTweets = append(apiTweets, apiTweet)
 	}
 
-	return converted_users
+	return apiTweets, nil
 }
 
-func convertDatabaseUserToApiUser(user database.User) apimodel.User {
+func convertArrayOfDatabaseUsersToArrayOfApiUsers(databaseUsers []database.User) []apiModel.User {
+	var convertedUsers []apiModel.User
+
+	for _, databaseUser := range databaseUsers {
+		api_user := convertDatabaseUserToApiUser(databaseUser)
+		convertedUsers = append(convertedUsers, api_user)
+	}
+
+	return convertedUsers
+}
+
+func convertDatabaseUserToApiUser(user database.User) apiModel.User {
 	id := user.Id
 	name := user.Name
 	username := user.Username
 	email := user.Email
-	created_at := user.CreatedAt
+	createdAt := user.CreatedAt
 
-	return apimodel.User{
-		Id: id,
-		Name: name,
-		Username: username,
-		Email: email,
-		CreatedAt: created_at,
+	return apiModel.User{
+		Id:        id,
+		Name:      name,
+		Username:  username,
+		Email:     email,
+		CreatedAt: createdAt,
 	}
 }
 
-func covertApiUserToDatabaseUser(user apimodel.User) database.User {
-	id := user.Id
+func covertApiNewUserToDatabaseUser(user apiModel.NewUser) database.User {
 	name := user.Name
 	username := user.Username
 	email := user.Email
-	created_at := user.CreatedAt
 
 	return database.User{
-		Id: id,
-		Name: name,
-		Username: username,
-		Email: email,
-		CreatedAt: created_at,
+		Id:        0,
+		Name:      name,
+		Username:  username,
+		Email:     email,
+		CreatedAt: time.Now(),
 	}
 }

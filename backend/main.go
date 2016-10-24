@@ -7,6 +7,8 @@ import (
 	"github.com/kataras/iris"
 
 	"github.com/VirrageS/cache"
+
+	"github.com/VirrageS/chirp/backend/api"
 )
 
 func main() {
@@ -21,6 +23,20 @@ func main() {
 		c.Set("cache", cache)
 		c.Next()
 	})
+
+	tweets := iris.Party("/tweets")
+	{
+		tweets.Get("/", api.GetTweets)
+		tweets.Post("/", api.PostTweet)
+		tweets.Get("/:id", api.GetTweet)
+	}
+
+	users := iris.Party("/users")
+	{
+		users.Get("/", api.GetUsers)
+		users.Post("/", api.PostUser)
+		users.Get("/:id", api.GetUser)
+	}
 
 	iris.Listen(":8080")
 }

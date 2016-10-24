@@ -6,23 +6,25 @@ import (
 )
 
 type User struct {
-	Id 		int64
-	Name 		string
-	Username 	string
-	Email	 	string
-	CreatedAt 	time.Time
+	Id        int64
+	Name      string
+	Username  string
+	Email     string
+	CreatedAt time.Time
 }
-
-// TODO: replace with real databse queries
 
 var users = []User{
 	{
-		Id: 1,
-		Name: "george",
-		Username: "fisher",
-		Email: "corpsegrinder@cannibalcorpse.com",
+		Id:        1,
+		Name:      "george",
+		Username:  "fisher",
+		Email:     "corpsegrinder@cannibalcorpse.com",
 		CreatedAt: time.Unix(0, 0),
 	},
+}
+
+func GetUsers() ([]User, error) {
+	return users, nil
 }
 
 func GetUser(user_id int64) (User, error) {
@@ -36,42 +38,43 @@ func GetUser(user_id int64) (User, error) {
 	return user, nil
 }
 
-// TODO: rewrite to create new object instead of editing function parameter?
 func InsertUser(user User) (User, error) {
 	if userAlreadyExists(user) {
 		return User{}, errors.New("User with given username already exists.")
 	}
 
-	user_id := insertUserToDatabase(user)
-	user.Id = user_id
+	userId := insertUserToDatabase(user)
+	user.Id = userId
 
 	return user, nil
 }
 
-func getUserWithId(user_id int64) User {
-	var found_user User
+/* Functions that mock database queries */
+
+func getUserWithId(userId int64) User {
+	var foundUser User
 
 	for _, user := range users {
-		if user.Id == user_id {
-			found_user = user
+		if user.Id == userId {
+			foundUser = user
 		}
 	}
 
-	return found_user
+	return foundUser
 }
 
 func insertUserToDatabase(user User) int64 {
-	user_id := len(users)
-	user.Id = int64(user_id)
+	userId := len(users)
+	user.Id = int64(userId)
 
 	users = append(users, user)
 
-	return int64(user_id)
+	return int64(userId)
 }
 
-func userAlreadyExists(user_to_check User) bool {
+func userAlreadyExists(userToCheck User) bool {
 	for _, user := range users {
-		if user.Username == user_to_check.Username {
+		if user.Username == userToCheck.Username {
 			return true
 		}
 	}
