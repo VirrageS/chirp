@@ -2,30 +2,31 @@ package api
 
 import (
 	"fmt"
+	"strconv"
+	"net/http"
 	"github.com/VirrageS/chirp/backend/apiModel"
 	"github.com/VirrageS/chirp/backend/services"
-	"github.com/kataras/iris"
-	"strconv"
+	"gopkg.in/gin-gonic/gin.v1"
 )
 
-func GetUsers(context *iris.Context) {
+func GetUsers(context *gin.Context) {
 	users, err := services.GetUsers()
 
 	if err != nil {
-		context.JSON(iris.StatusInternalServerError, iris.Map{
+		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
 		return
 	}
 
-	context.JSON(iris.StatusOK, users)
+	context.JSON(http.StatusOK, users)
 }
 
-func GetUser(context *iris.Context) {
-	parameterId := context.Param("id")
+func GetUser(context *gin.Context) {
+	parameterId := context.Query("id")
 	userId, err := strconv.ParseInt(parameterId, 10, 64)
 	if err != nil {
-		context.JSON(iris.StatusBadRequest, iris.Map{
+		context.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid user ID.",
 		})
 		return
@@ -34,20 +35,20 @@ func GetUser(context *iris.Context) {
 	responseUser, err := services.GetUser(userId)
 
 	if err != nil {
-		context.JSON(iris.StatusNotFound, iris.Map{
+		context.JSON(http.StatusNotFound, gin.H{
 			"error": "User with given ID not found.",
 		})
 		return
 	}
 
-	context.JSON(iris.StatusOK, responseUser)
+	context.JSON(http.StatusOK, responseUser)
 }
 
 // TODO: now returns 404 if user already exists
-func PostUser(context *iris.Context) {
-	name := context.PostValue("name")
-	username := context.PostValue("username")
-	email := context.PostValue("email")
+func PostUser(context *gin.Context) {
+	name := context.PostForm("name")
+	username := context.PostForm("username")
+	email := context.PostForm("email")
 
 	requestUser := apiModel.NewUser{
 		Name:     name,
@@ -58,13 +59,12 @@ func PostUser(context *iris.Context) {
 	newUser, err := services.PostUser(requestUser)
 
 	if err != nil {
-		errorString := fmt.Sprint(err)
-		context.JSON(iris.StatusBadRequest, iris.Map{
-			"error": errorString,
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}
 
-	context.SetHeader("Location", fmt.Sprintf("/user/%d", newUser.Id))
-	context.JSON(iris.StatusCreated, newUser)
+	context.Header("Location", fmt.Sprintf("/user/%d", newUser.Id))
+	context.JSON(http.StatusCreated, newUser)
 }

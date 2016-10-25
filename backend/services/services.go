@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
-	apiModel "github.com/VirrageS/chirp/backend/apiModel"
+	"github.com/VirrageS/chirp/backend/apiModel"
 	"github.com/VirrageS/chirp/backend/database"
 	"time"
 )

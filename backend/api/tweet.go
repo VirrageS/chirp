@@ -2,36 +2,37 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"github.com/VirrageS/chirp/backend/apiModel"
 	"github.com/VirrageS/chirp/backend/services"
-	"github.com/kataras/iris"
+	"gopkg.in/gin-gonic/gin.v1"
 	"strconv"
 )
 
-func GetTweets(context *iris.Context) {
+func GetTweets(context *gin.Context) {
 	// TODO: support filtering
-	//expected_user_id := context.Param("author")
-	//expected_user_name := context.Param("author")
+	//expected_user_id := context.Query("author")
+	//expected_user_name := context.Query("author")
 	// ...
 
 	tweets, error := services.GetTweets()
 
 	if error != nil {
-		context.JSON(iris.StatusInternalServerError, iris.Map{
+		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": error,
 		})
 		return
 	}
 
-	context.JSON(iris.StatusOK, tweets)
+	context.JSON(http.StatusOK, tweets)
 }
 
-func GetTweet(context *iris.Context) {
-	parameterId := context.Param("id")
+func GetTweet(context *gin.Context) {
+	parameterId := context.Query("id")
 
 	tweetId, err := strconv.ParseInt(parameterId, 10, 64)
 	if err != nil {
-		context.JSON(iris.StatusBadRequest, iris.Map{
+		context.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid tweet ID.",
 		})
 		return
@@ -40,23 +41,23 @@ func GetTweet(context *iris.Context) {
 	responseTweet, error := services.GetTweet(tweetId)
 
 	if error != nil {
-		context.JSON(iris.StatusNotFound, iris.Map{
+		context.JSON(http.StatusNotFound, gin.H{
 			"error": "Tweet with given ID not found.",
 		})
 		return
 	}
 
-	context.JSON(iris.StatusOK, responseTweet)
+	context.JSON(http.StatusOK, responseTweet)
 }
 
-func PostTweet(context *iris.Context) {
-	tweetAuthorIdString := context.PostValue("author_id")
-	content := context.PostValue("content")
+func PostTweet(context *gin.Context) {
+	tweetAuthorIdString := context.PostForm("author_id")
+	content := context.PostForm("content")
 
 	tweetAuthorId, error := strconv.ParseInt(tweetAuthorIdString, 10, 64)
 	if error != nil {
-		context.JSON(iris.StatusBadRequest, iris.Map{
-			"error": "Invalid author ID.",
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": "Author ID was not a number.",
 		})
 		return
 	}
@@ -69,12 +70,12 @@ func PostTweet(context *iris.Context) {
 	responseTweet, error := services.PostTweet(requestTweet)
 
 	if error != nil {
-		context.JSON(iris.StatusInternalServerError, iris.Map{
+		context.JSON(http.StatusInternalServerError, gin.H{
 			"error": error,
 		})
 		return
 	}
 
-	context.SetHeader("Location", fmt.Sprintf("/user/%d", responseTweet.Id))
-	context.JSON(iris.StatusCreated, responseTweet)
+	context.Header("Location", fmt.Sprintf("/user/%d", responseTweet.Id))
+	context.JSON(http.StatusCreated, responseTweet)
 }

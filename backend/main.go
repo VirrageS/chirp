@@ -5,42 +5,34 @@ package main
 */
 
 import (
-	"time"
-
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
-
-	"github.com/VirrageS/cache"
+	//"github.com/itsjamie/gin-cors"
+	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
 )
 
 func main() {
-	crs := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"*"},
-	})
-	iris.Use(crs)
+	router := gin.Default()
 
-	cache := cache.NewCache(time.Minute * 2)
-	iris.UseFunc(func(c *iris.Context) {
-		c.Set("cache", cache)
-		c.Next()
-	})
+	//router.Use(cors.Middleware(cors.Config{
+	//	Origins:        "*",
+	//	Methods:        "GET, PUT, POST, DELETE",
+	//	RequestHeaders: "Origin, Authorization, Content-Type",
+	//}))
 
-	tweets := iris.Party("/tweets")
+	tweets := router.Group("/tweets")
 	{
-		tweets.Get("/", api.GetTweets)
-		tweets.Post("/", api.PostTweet)
-		tweets.Get("/:id", api.GetTweet)
+		tweets.GET("/", api.GetTweets)
+		tweets.POST("/", api.PostTweet)
+		tweets.GET("/:id", api.GetTweet)
 	}
 
-	users := iris.Party("/users")
+	users := router.Group("/users")
 	{
-		users.Get("/", api.GetUsers)
-		users.Post("/", api.PostUser)
-		users.Get("/:id", api.GetUser)
+		users.GET("/", api.GetUsers)
+		users.POST("/", api.PostUser)
+		users.GET("/:id", api.GetUser)
 	}
 
-	iris.Listen(":8080")
+	router.Run(":8080")
 }
