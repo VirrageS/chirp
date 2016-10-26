@@ -2,11 +2,13 @@ package api
 
 import (
 	"fmt"
-	"strconv"
 	"net/http"
-	"github.com/VirrageS/chirp/backend/apiModel"
-	"github.com/VirrageS/chirp/backend/services"
+	"strconv"
+
 	"gopkg.in/gin-gonic/gin.v1"
+
+	"github.com/VirrageS/chirp/backend/api/model"
+	"github.com/VirrageS/chirp/backend/services"
 )
 
 func GetUsers(context *gin.Context) {
@@ -23,8 +25,8 @@ func GetUsers(context *gin.Context) {
 }
 
 func GetUser(context *gin.Context) {
-	parameterId := context.Query("id")
-	userId, err := strconv.ParseInt(parameterId, 10, 64)
+	parameterID := context.Query("id")
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid user ID.",
@@ -32,7 +34,7 @@ func GetUser(context *gin.Context) {
 		return
 	}
 
-	responseUser, err := services.GetUser(userId)
+	responseUser, err := services.GetUser(userID)
 
 	if err != nil {
 		context.JSON(http.StatusNotFound, gin.H{
@@ -44,13 +46,12 @@ func GetUser(context *gin.Context) {
 	context.JSON(http.StatusOK, responseUser)
 }
 
-// TODO: now returns 404 if user already exists
 func PostUser(context *gin.Context) {
 	name := context.PostForm("name")
 	username := context.PostForm("username")
 	email := context.PostForm("email")
 
-	requestUser := apiModel.NewUser{
+	requestUser := model.NewUser{
 		Name:     name,
 		Username: username,
 		Email:    email,
@@ -65,6 +66,6 @@ func PostUser(context *gin.Context) {
 		return
 	}
 
-	context.Header("Location", fmt.Sprintf("/user/%d", newUser.Id))
+	context.Header("Location", fmt.Sprintf("/user/%d", newUser.ID))
 	context.JSON(http.StatusCreated, newUser)
 }

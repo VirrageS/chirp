@@ -3,19 +3,13 @@ package database
 import (
 	"errors"
 	"time"
+
+	"github.com/VirrageS/chirp/backend/database/model"
 )
 
-type User struct {
-	Id        int64
-	Name      string
-	Username  string
-	Email     string
-	CreatedAt time.Time
-}
-
-var users = []User{
+var users = []model.User{
 	{
-		Id:        1,
+		ID:        1,
 		Name:      "george",
 		Username:  "fisher",
 		Email:     "corpsegrinder@cannibalcorpse.com",
@@ -23,56 +17,54 @@ var users = []User{
 	},
 }
 
-func GetUsers() ([]User, error) {
+func GetUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func GetUser(user_id int64) (User, error) {
-	user := getUserWithId(user_id)
+func GetUser(userID int64) (model.User, error) {
+	user, err := getUserWithId(userID)
 
 	/* Emulate DB query fail? */
-	if (User{}) == user {
-		return User{}, errors.New("User with given ID was not found.")
+	if err != nil {
+		return model.User{}, errors.New("User with given ID was not found.")
 	}
 
 	return user, nil
 }
 
-func InsertUser(user User) (User, error) {
+func InsertUser(user model.User) (model.User, error) {
 	if userAlreadyExists(user) {
-		return User{}, errors.New("User with given username already exists.")
+		return model.User{}, errors.New("User with given username already exists.")
 	}
 
-	userId := insertUserToDatabase(user)
-	user.Id = userId
+	userID := insertUserToDatabase(user)
+	user.ID = userID
 
 	return user, nil
 }
 
 /* Functions that mock database queries */
 
-func getUserWithId(userId int64) User {
-	var foundUser User
-
+func getUserWithId(userID int64) (model.User, error) {
 	for _, user := range users {
-		if user.Id == userId {
-			foundUser = user
+		if user.ID == userID {
+			return user, nil
 		}
 	}
 
-	return foundUser
+	return model.User{}, errors.New("User with given ID was not found.")
 }
 
-func insertUserToDatabase(user User) int64 {
-	userId := len(users)
-	user.Id = int64(userId)
+func insertUserToDatabase(user model.User) int64 {
+	userID := len(users)
+	user.ID = int64(userID)
 
 	users = append(users, user)
 
-	return int64(userId)
+	return int64(userID)
 }
 
-func userAlreadyExists(userToCheck User) bool {
+func userAlreadyExists(userToCheck model.User) bool {
 	for _, user := range users {
 		if user.Username == userToCheck.Username {
 			return true

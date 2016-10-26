@@ -3,142 +3,161 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/VirrageS/chirp/backend/apiModel"
+
+	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/database"
+	databaseModel "github.com/VirrageS/chirp/backend/database/model"
+
 	"time"
 )
 
-func GetTweets() ([]apiModel.Tweet, error) {
+func GetTweets() ([]APIModel.Tweet, error) {
 	databaseTweets, err := database.GetTweets()
 
 	if err != nil {
 		return nil, errors.New("Oooops, something went wrong!")
 	}
 
-	apiTweets, err := convertArrayOfDatabaseTweetsToArrayOfApiTweets(databaseTweets)
+	APITweets, err := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return apiTweets, nil
+	return APITweets, nil
 }
 
-func GetTweet(tweetId int64) (apiModel.Tweet, error) {
-	databaseTweet, err := database.GetTweet(tweetId)
+func GetTweet(tweetID int64) (APIModel.Tweet, error) {
+	databaseTweet, err := database.GetTweet(tweetID)
 
 	if err != nil {
-		return apiModel.Tweet{}, err
+		return APIModel.Tweet{}, err
 	}
 
-	apiTweet, err := convertDatabaseTweetToApiTweet(databaseTweet)
+	APITweet, err := convertDatabaseTweetToAPITweet(databaseTweet)
 
 	if err != nil {
-		return apiModel.Tweet{}, errors.New("Oooops, something went wrong!")
+		return APIModel.Tweet{}, errors.New("Oooops, something went wrong!")
 	}
 
-	return apiTweet, nil
+	return APITweet, nil
 }
 
-func PostTweet(newTweet apiModel.NewTweet) (apiModel.Tweet, error) {
-	databaseTweet := convertApiNewTweetToDatabaseTweet(newTweet)
+func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, error) {
+	databaseTweet := convertAPINewTweetToDatabaseTweet(newTweet)
 
 	addedTweet := database.InsertTweet(databaseTweet)
 
-	apiTweet, err := convertDatabaseTweetToApiTweet(addedTweet)
+	APITweet, err := convertDatabaseTweetToAPITweet(addedTweet)
 
 	if err != nil {
-		return apiModel.Tweet{}, errors.New("Oooops, something went wrong!")
+		return APIModel.Tweet{}, errors.New("Oooops, something went wrong!")
 	}
 
-	return apiTweet, nil
+	return APITweet, nil
 }
 
-func GetUsers() ([]apiModel.User, error) {
+func GetUsers() ([]APIModel.User, error) {
 	databaseUsers, err := database.GetUsers()
 
 	if err != nil {
 		return nil, errors.New("Oooops, something went wrong!")
 	}
 
-	apiUsers := convertArrayOfDatabaseUsersToArrayOfApiUsers(databaseUsers)
+	APIUsers := convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers)
 
-	return apiUsers, nil
+	return APIUsers, nil
 }
 
-func GetUser(userId int64) (apiModel.User, error) {
+func GetUser(userId int64) (APIModel.User, error) {
 	databaseUser, err := database.GetUser(userId)
 
 	if err != nil {
-		return apiModel.User{}, err
+		return APIModel.User{}, err
 	}
 
-	apiUser := convertDatabaseUserToApiUser(databaseUser)
+	APIUser := convertDatabaseUserToAPIUser(databaseUser)
 
-	return apiUser, nil
+	return APIUser, nil
 }
 
-func PostUser(user apiModel.NewUser) (apiModel.User, error) {
-	if user.Name == "" {
-		return apiModel.User{}, errors.New("No name was provided.")
-	}
-	if user.Username == "" {
-		return apiModel.User{}, errors.New("No username was provided.")
-	}
-	if user.Email == "" {
-		return apiModel.User{}, errors.New("No email was provided.")
+func PostUser(user APIModel.NewUser) (APIModel.User, error) {
+	ok, errs := validatePostUserParameters(user)
+
+	if !ok {
+		return APIModel.User{}, errs[0] // TODO: replace with custom error type that can hold array of messages
 	}
 
-	databaseUser := covertApiNewUserToDatabaseUser(user)
+	databaseUser := covertAPINewUserToDatabaseUser(user)
 
 	newUser, err := database.InsertUser(databaseUser)
 
 	if err != nil {
-		return apiModel.User{}, err
+		return APIModel.User{}, err
 	}
 
-	apiUser := convertDatabaseUserToApiUser(newUser)
+	APIUser := convertDatabaseUserToAPIUser(newUser)
 
-	return apiUser, nil
+	return APIUser, nil
 }
 
-func convertDatabaseTweetToApiTweet(tweet database.Tweet) (apiModel.Tweet, error) {
-	id := tweet.Id
-	userId := tweet.AuthorId
+func validatePostUserParameters(user APIModel.NewUser) (bool, []error) {
+	var errs []error
+	isOk := true
+
+	if user.Name == "" {
+		isOk = false
+		errs = append(errs, errors.New("user name cannot be empty"))
+	}
+	if user.Username == "" {
+		isOk = false
+		errs = append(errs, errors.New("user username cannot be empty"))
+	}
+	if user.Email == "" {
+		isOk = false
+		errs = append(errs, errors.New("user email cannot be empty"))
+	}
+
+	return isOk, errs
+}
+
+func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, error) {
+	id := tweet.ID
+	userID := tweet.AuthorID
 	likeCount := tweet.LikeCount
 	retweetCount := tweet.RetweetCount
 	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
-	authorFullData, err := database.GetUser(userId)
+	authorFullData, err := database.GetUser(userID)
 
 	if err != nil {
-		errorMessage := fmt.Sprintf("No integrity in database, "+
+		errorMessage := fmt.Sprintf("no integrity in database, "+
 			"user with id = %d was not found (but should have been found)",
-			userId)
-		return apiModel.Tweet{}, errors.New(errorMessage)
+			userID)
+		return APIModel.Tweet{}, errors.New(errorMessage)
 	}
 
-	apiAuthorFullData := convertDatabaseUserToApiUser(authorFullData)
+	APIAuthorFullData := convertDatabaseUserToAPIUser(authorFullData)
 
-	apiTweet := apiModel.Tweet{
-		Id:           id,
-		Author:       apiAuthorFullData,
+	APITweet := APIModel.Tweet{
+		ID:           id,
+		Author:       APIAuthorFullData,
 		LikeCount:    likeCount,
 		RetweetCount: retweetCount,
 		CreatedAt:    createdAt,
 		Content:      content,
 	}
-	return apiTweet, nil
+	return APITweet, nil
 }
 
-func convertApiNewTweetToDatabaseTweet(tweet apiModel.NewTweet) database.Tweet {
-	authorId := tweet.AuthorId
+func convertAPINewTweetToDatabaseTweet(tweet APIModel.NewTweet) databaseModel.Tweet {
+	authorId := tweet.AuthorID
 	content := tweet.Content
 
-	return database.Tweet{
-		Id:           0,
-		AuthorId:     authorId,
+	return databaseModel.Tweet{
+		ID:           0,
+		AuthorID:     authorId,
 		LikeCount:    0,
 		RetweetCount: 0,
 		CreatedAt:    time.Now(),
@@ -146,42 +165,42 @@ func convertApiNewTweetToDatabaseTweet(tweet apiModel.NewTweet) database.Tweet {
 	}
 }
 
-func convertArrayOfDatabaseTweetsToArrayOfApiTweets(databaseTweets []database.Tweet) ([]apiModel.Tweet, error) {
-	var apiTweets []apiModel.Tweet
+func convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]APIModel.Tweet, error) {
+	var APITweets []APIModel.Tweet
 
 	for _, databaseTweet := range databaseTweets {
-		apiTweet, err := convertDatabaseTweetToApiTweet(databaseTweet)
+		APITweet, err := convertDatabaseTweetToAPITweet(databaseTweet)
 
 		if err != nil {
 			return nil, errors.New("Oooops, something went wrong!")
 		}
 
-		apiTweets = append(apiTweets, apiTweet)
+		APITweets = append(APITweets, APITweet)
 	}
 
-	return apiTweets, nil
+	return APITweets, nil
 }
 
-func convertArrayOfDatabaseUsersToArrayOfApiUsers(databaseUsers []database.User) []apiModel.User {
-	var convertedUsers []apiModel.User
+func convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []databaseModel.User) []APIModel.User {
+	var convertedUsers []APIModel.User
 
 	for _, databaseUser := range databaseUsers {
-		api_user := convertDatabaseUserToApiUser(databaseUser)
-		convertedUsers = append(convertedUsers, api_user)
+		APIUser := convertDatabaseUserToAPIUser(databaseUser)
+		convertedUsers = append(convertedUsers, APIUser)
 	}
 
 	return convertedUsers
 }
 
-func convertDatabaseUserToApiUser(user database.User) apiModel.User {
-	id := user.Id
+func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
+	id := user.ID
 	name := user.Name
 	username := user.Username
 	email := user.Email
 	createdAt := user.CreatedAt
 
-	return apiModel.User{
-		Id:        id,
+	return APIModel.User{
+		ID:        id,
 		Name:      name,
 		Username:  username,
 		Email:     email,
@@ -189,13 +208,13 @@ func convertDatabaseUserToApiUser(user database.User) apiModel.User {
 	}
 }
 
-func covertApiNewUserToDatabaseUser(user apiModel.NewUser) database.User {
+func covertAPINewUserToDatabaseUser(user APIModel.NewUser) databaseModel.User {
 	name := user.Name
 	username := user.Username
 	email := user.Email
 
-	return database.User{
-		Id:        0,
+	return databaseModel.User{
+		ID:        0,
 		Name:      name,
 		Username:  username,
 		Email:     email,

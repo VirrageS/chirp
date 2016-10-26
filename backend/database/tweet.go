@@ -3,21 +3,14 @@ package database
 import (
 	"errors"
 	"time"
+
+	"github.com/VirrageS/chirp/backend/database/model"
 )
 
-type Tweet struct {
-	Id           int64
-	AuthorId     int64
-	LikeCount    int64
-	RetweetCount int64
-	CreatedAt    time.Time
-	Content      string
-}
-
-var tweets = []Tweet{
+var tweets = []model.Tweet{
 	{
-		Id:           1,
-		AuthorId:     users[0].Id,
+		ID:           1,
+		AuthorID:     users[0].ID,
 		LikeCount:    0,
 		RetweetCount: 0,
 		CreatedAt:    time.Unix(0, 0),
@@ -25,45 +18,42 @@ var tweets = []Tweet{
 	},
 }
 
-func GetTweets() ([]Tweet, error) {
+func GetTweets() ([]model.Tweet, error) {
 	return tweets, nil
 }
 
-func GetTweet(tweetId int64) (Tweet, error) {
-	tweet := getTweetWithId(tweetId)
+func GetTweet(tweetID int64) (model.Tweet, error) {
+	tweet, err := getTweetWithId(tweetID)
 
-	/* Emulate DB query fail? */
-	if (Tweet{}) == tweet {
-		return Tweet{}, errors.New("Tweet with given ID was not found.")
+	if err != nil {
+		return model.Tweet{}, errors.New("Tweet with given ID was not found.")
 	}
 
 	return tweet, nil
 }
 
-func InsertTweet(tweet Tweet) Tweet {
-	tweetId := insertTweetToDatabase(tweet)
-	tweet.Id = tweetId
+func InsertTweet(tweet model.Tweet) model.Tweet {
+	tweetID := insertTweetToDatabase(tweet)
+	tweet.ID = tweetID
 
 	return tweet
 }
 
-func getTweetWithId(tweet_id int64) Tweet {
-	var found_tweet Tweet
-
+func getTweetWithId(tweetID int64) (model.Tweet, error) {
 	for _, tweet := range tweets {
-		if tweet.Id == tweet_id {
-			found_tweet = tweet
+		if tweet.ID == tweetID {
+			return tweet, nil
 		}
 	}
 
-	return found_tweet
+	return model.Tweet{}, errors.New("Tweet with given ID was not found.")
 }
 
-func insertTweetToDatabase(tweet Tweet) int64 {
-	tweetId := len(tweets) + 1
-	tweet.Id = int64(tweetId)
+func insertTweetToDatabase(tweet model.Tweet) int64 {
+	tweetID := len(tweets) + 1
+	tweet.ID = int64(tweetID)
 
 	tweets = append(tweets, tweet)
 
-	return int64(tweetId)
+	return int64(tweetID)
 }
