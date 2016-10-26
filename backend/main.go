@@ -1,26 +1,41 @@
 package main
 
+/*
+	TODO:
+	  - use c.bind() feature of Gin
+	  - add logging (probably using https://github.com/golang/glog)
+	  - fix error handling (replace with middleware, see: https://github.com/gin-gonic/gin/issues/274
+*/
+
 import (
-	"time"
+	//"github.com/itsjamie/gin-cors"
+	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
-
-	"github.com/VirrageS/cache"
+	"github.com/VirrageS/chirp/backend/api"
 )
 
 func main() {
-	crs := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"*"},
-	})
-	iris.Use(crs)
+	router := gin.Default()
 
-	cache := cache.NewCache(time.Minute * 2)
-	iris.UseFunc(func(c *iris.Context) {
-		c.Set("cache", cache)
-		c.Next()
-	})
+	//router.Use(cors.Middleware(cors.Config{
+	//	Origins:        "*",
+	//	Methods:        "GET, PUT, POST, DELETE",
+	//	RequestHeaders: "Origin, Authorization, Content-Type",
+	//}))
 
-	iris.Listen(":8080")
+	tweets := router.Group("/tweets")
+	{
+		tweets.GET("/", api.GetTweets)
+		tweets.POST("/", api.PostTweet)
+		tweets.GET("/:id", api.GetTweet)
+	}
+
+	users := router.Group("/users")
+	{
+		users.GET("/", api.GetUsers)
+		users.POST("/", api.PostUser)
+		users.GET("/:id", api.GetUser)
+	}
+
+	router.Run(":8080")
 }
