@@ -26,17 +26,17 @@ func GetTweet(tweetID int64) (model.Tweet, error) {
 	tweet, err := getTweetWithId(tweetID)
 
 	if err != nil {
-		return model.Tweet{}, errors.New("Tweet with given ID was not found.")
+		return model.Tweet{}, errors.New("")
 	}
 
 	return tweet, nil
 }
 
-func InsertTweet(tweet model.Tweet) model.Tweet {
+func InsertTweet(tweet model.Tweet) (model.Tweet, error) {
 	tweetID := insertTweetToDatabase(tweet)
 	tweet.ID = tweetID
 
-	return tweet
+	return tweet, nil
 }
 
 func getTweetWithId(tweetID int64) (model.Tweet, error) {

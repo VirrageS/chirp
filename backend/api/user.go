@@ -7,17 +7,15 @@ import (
 
 	"gopkg.in/gin-gonic/gin.v1"
 
+	"errors"
 	"github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/services"
 )
 
 func GetUsers(context *gin.Context) {
 	users, err := services.GetUsers()
-
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
-		})
+		context.AbortWithError(err.Code, err.Err)
 		return
 	}
 
@@ -25,21 +23,18 @@ func GetUsers(context *gin.Context) {
 }
 
 func GetUser(context *gin.Context) {
-	parameterID := context.Query("id")
+	parameterID := context.Param("id")
+
 	userID, err := strconv.ParseInt(parameterID, 10, 64)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid user ID.",
-		})
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID, it was not an integer."))
 		return
 	}
 
-	responseUser, err := services.GetUser(userID)
+	responseUser, err2 := services.GetUser(userID)
 
-	if err != nil {
-		context.JSON(http.StatusNotFound, gin.H{
-			"error": "User with given ID not found.",
-		})
+	if err2 != nil {
+		context.AbortWithError(err2.Code, err2.Err)
 		return
 	}
 
@@ -60,9 +55,7 @@ func PostUser(context *gin.Context) {
 	newUser, err := services.PostUser(requestUser)
 
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		context.AbortWithError(err.Code, err.Err)
 		return
 	}
 

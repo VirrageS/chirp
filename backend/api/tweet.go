@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/gin-gonic/gin.v1"
 
+	"errors"
 	"github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/services"
 )
@@ -18,11 +19,8 @@ func GetTweets(context *gin.Context) {
 	// ...
 
 	tweets, err := services.GetTweets()
-
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
-		})
+		context.AbortWithError(err.Code, err.Err)
 		return
 	}
 
@@ -30,22 +28,17 @@ func GetTweets(context *gin.Context) {
 }
 
 func GetTweet(context *gin.Context) {
-	parameterID := context.Query("id")
+	parameterID := context.Param("id")
 
 	tweetID, err := strconv.ParseInt(parameterID, 10, 64)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid tweet ID.",
-		})
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID, it was not an integer."))
 		return
 	}
 
-	responseTweet, err := services.GetTweet(tweetID)
-
-	if err != nil {
-		context.JSON(http.StatusNotFound, gin.H{
-			"error": "Tweet with given ID not found.",
-		})
+	responseTweet, err2 := services.GetTweet(tweetID)
+	if err2 != nil {
+		context.AbortWithError(err2.Code, err2.Err)
 		return
 	}
 
@@ -58,9 +51,7 @@ func PostTweet(context *gin.Context) {
 
 	tweetAuthorID, err := strconv.ParseInt(tweetAuthorIDString, 10, 64)
 	if err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": "Author ID was not a number.",
-		})
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID, it was not an integer."))
 		return
 	}
 
@@ -69,12 +60,9 @@ func PostTweet(context *gin.Context) {
 		Content:  content,
 	}
 
-	responseTweet, err := services.PostTweet(requestTweet)
-
-	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
-		})
+	responseTweet, err2 := services.PostTweet(requestTweet)
+	if err2 != nil {
+		context.AbortWithError(err2.Code, err2.Err)
 		return
 	}
 
