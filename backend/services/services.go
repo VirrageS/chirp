@@ -19,9 +19,9 @@ func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
 		return nil, appErrors.UnexpectedError
 	}
 
-	APITweets, err := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+	APITweets, err2 := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
-	if err != nil {
+	if err2 != nil {
 		return nil, appErrors.UnexpectedError
 	}
 
@@ -99,15 +99,6 @@ func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
 }
 
 func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
-	ok := validatePostUserParameters(user)
-
-	if !ok {
-		return APIModel.User{}, &appErrors.AppError{
-			Code: http.StatusBadRequest,
-			Err:  errors.New("Invalid request parameters"),
-		}
-	}
-
 	databaseUser := covertAPINewUserToDatabaseUser(user)
 
 	newUser, err := database.InsertUser(databaseUser)
@@ -123,22 +114,6 @@ func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	APIUser := convertDatabaseUserToAPIUser(newUser)
 
 	return APIUser, nil
-}
-
-func validatePostUserParameters(user APIModel.NewUser) bool {
-	isOk := true
-
-	if user.Name == "" {
-		isOk = false
-	}
-	if user.Username == "" {
-		isOk = false
-	}
-	if user.Email == "" {
-		isOk = false
-	}
-
-	return isOk
 }
 
 func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, *appErrors.AppError) {

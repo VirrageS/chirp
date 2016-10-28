@@ -56,7 +56,7 @@ func getUserWithId(userID int64) (model.User, error) {
 }
 
 func insertUserToDatabase(user model.User) int64 {
-	userID := len(users)
+	userID := len(users) + 1
 	user.ID = int64(userID)
 
 	users = append(users, user)

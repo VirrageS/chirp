@@ -10,6 +10,7 @@ import (
 	"errors"
 	"github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/services"
+	"strings"
 )
 
 func GetUsers(context *gin.Context) {
@@ -46,19 +47,51 @@ func PostUser(context *gin.Context) {
 	username := context.PostForm("username")
 	email := context.PostForm("email")
 
+	err := validatePostUserParameters(name, username, email)
+
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, err)
+	}
+
 	requestUser := model.NewUser{
 		Name:     name,
 		Username: username,
 		Email:    email,
 	}
 
-	newUser, err := services.PostUser(requestUser)
+	newUser, err2 := services.PostUser(requestUser)
 
-	if err != nil {
-		context.AbortWithError(err.Code, err.Err)
+	if err2 != nil {
+		context.AbortWithError(err2.Code, err2.Err)
 		return
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", newUser.ID))
 	context.JSON(http.StatusCreated, newUser)
+}
+
+func validatePostUserParameters(name, username, email string) error {
+	ok := true
+	var invalidFields []string
+
+
+	if name == "" {
+		ok = false
+		invalidFields = append(invalidFields, "name")
+	}
+	if username == "" {
+		ok = false
+		invalidFields = append(invalidFields, "username")
+	}
+	if email == "" {
+		ok = false
+		invalidFields = append(invalidFields, "email")
+	}
+
+	if !ok {
+		errMsg := "Invalid request, fields: " + strings.Join(invalidFields, ", ") + " are required."
+		return errors.New(errMsg)
+	}
+
+	return nil
 }
