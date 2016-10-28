@@ -23,8 +23,6 @@ func GetUsers() ([]model.User, error) {
 
 func GetUser(userID int64) (model.User, error) {
 	user, err := getUserWithId(userID)
-
-	/* Emulate DB query fail? */
 	if err != nil {
 		return model.User{}, errors.New("")
 	}

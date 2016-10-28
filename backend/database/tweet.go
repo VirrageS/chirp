@@ -24,7 +24,6 @@ func GetTweets() ([]model.Tweet, error) {
 
 func GetTweet(tweetID int64) (model.Tweet, error) {
 	tweet, err := getTweetWithId(tweetID)
-
 	if err != nil {
 		return model.Tweet{}, errors.New("")
 	}

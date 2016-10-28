@@ -33,7 +33,6 @@ func GetUser(context *gin.Context) {
 	}
 
 	responseUser, err2 := services.GetUser(userID)
-
 	if err2 != nil {
 		context.AbortWithError(err2.Code, err2.Err)
 		return
@@ -48,7 +47,6 @@ func PostUser(context *gin.Context) {
 	email := context.PostForm("email")
 
 	err := validatePostUserParameters(name, username, email)
-
 	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, err)
 	}
@@ -60,7 +58,6 @@ func PostUser(context *gin.Context) {
 	}
 
 	newUser, err2 := services.PostUser(requestUser)
-
 	if err2 != nil {
 		context.AbortWithError(err2.Code, err2.Err)
 		return
@@ -71,24 +68,19 @@ func PostUser(context *gin.Context) {
 }
 
 func validatePostUserParameters(name, username, email string) error {
-	ok := true
 	var invalidFields []string
 
-
 	if name == "" {
-		ok = false
 		invalidFields = append(invalidFields, "name")
 	}
 	if username == "" {
-		ok = false
 		invalidFields = append(invalidFields, "username")
 	}
 	if email == "" {
-		ok = false
 		invalidFields = append(invalidFields, "email")
 	}
 
-	if !ok {
+	if len(invalidFields) > 0 {
 		errMsg := "Invalid request, fields: " + strings.Join(invalidFields, ", ") + " are required."
 		return errors.New(errMsg)
 	}
