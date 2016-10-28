@@ -12,10 +12,12 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
+	"github.com/VirrageS/chirp/backend/middleware"
 )
 
 func main() {
 	router := gin.Default()
+	router.Use(middleware.ErrorHandler())
 
 	//router.Use(cors.Middleware(cors.Config{
 	//	Origins:        "*",
