@@ -4,7 +4,6 @@ package main
 	TODO:
 	  - use c.bind() feature of Gin
 	  - add logging (probably using https://github.com/golang/glog)
-	  - fix error handling (replace with middleware, see: https://github.com/gin-gonic/gin/issues/274
 */
 
 import (

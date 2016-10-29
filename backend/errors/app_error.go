@@ -1,6 +1,8 @@
 package errors
 
-import "errors"
+import (
+	"errors"
+)
 
 type AppError struct {
 	Code int
@@ -12,6 +14,6 @@ var UnexpectedError = &AppError{
 	Err:  errors.New("Unexpected error."),
 }
 
-func (error AppError) Error() string {
-	return error.Err.Error()
+func (err AppError) Error() string {
+	return err.Err.Error()
 }

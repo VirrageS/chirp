@@ -1,13 +1,13 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"errors"
 	"github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/services"
 )
@@ -32,7 +32,7 @@ func GetTweet(context *gin.Context) {
 
 	tweetID, err := strconv.ParseInt(parameterID, 10, 64)
 	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID, it was not an integer."))
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
 		return
 	}
 
@@ -51,7 +51,7 @@ func PostTweet(context *gin.Context) {
 
 	tweetAuthorID, err := strconv.ParseInt(tweetAuthorIDString, 10, 64)
 	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID, it was not an integer."))
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
 		return
 	}
 

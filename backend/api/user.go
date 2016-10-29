@@ -1,16 +1,16 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"errors"
 	"github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/services"
-	"strings"
 )
 
 func GetUsers(context *gin.Context) {
@@ -28,7 +28,7 @@ func GetUser(context *gin.Context) {
 
 	userID, err := strconv.ParseInt(parameterID, 10, 64)
 	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID, it was not an integer."))
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
 		return
 	}
 
@@ -81,8 +81,8 @@ func validatePostUserParameters(name, username, email string) error {
 	}
 
 	if len(invalidFields) > 0 {
-		errMsg := "Invalid request, fields: " + strings.Join(invalidFields, ", ") + " are required."
-		return errors.New(errMsg)
+		errorMesssage := "Invalid request. Fields: " + strings.Join(invalidFields, ", ") + " are required."
+		return errors.New(errorMesssage)
 	}
 
 	return nil

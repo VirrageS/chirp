@@ -2,36 +2,35 @@ package services
 
 import (
 	"errors"
+	"net/http"
+	"time"
 
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 	appErrors "github.com/VirrageS/chirp/backend/errors"
-
-	"net/http"
-	"time"
 )
 
 func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
-	databaseTweets, err := database.GetTweets()
+	databaseTweets, databaseError := database.GetTweets()
 
-	if err != nil {
+	if databaseError != nil {
 		return nil, appErrors.UnexpectedError
 	}
 
-	APITweets, err2 := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+	APITweets, serviceError := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
-	if err2 != nil {
-		return nil, appErrors.UnexpectedError
+	if serviceError != nil {
+		return nil, serviceError
 	}
 
 	return APITweets, nil
 }
 
 func GetTweet(tweetID int64) (APIModel.Tweet, *appErrors.AppError) {
-	databaseTweet, err := database.GetTweet(tweetID)
+	databaseTweet, databaseError := database.GetTweet(tweetID)
 
-	if err != nil {
+	if databaseError != nil {
 		// Later on we'll need to add type switch here to check the type of error, because several things
 		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
 		return APIModel.Tweet{}, &appErrors.AppError{
@@ -40,10 +39,10 @@ func GetTweet(tweetID int64) (APIModel.Tweet, *appErrors.AppError) {
 		}
 	}
 
-	APITweet, err2 := convertDatabaseTweetToAPITweet(databaseTweet)
+	APITweet, serviceError := convertDatabaseTweetToAPITweet(databaseTweet)
 
-	if err2 != nil {
-		return APIModel.Tweet{}, err2
+	if serviceError != nil {
+		return APIModel.Tweet{}, serviceError
 	}
 
 	return APITweet, nil
@@ -52,26 +51,26 @@ func GetTweet(tweetID int64) (APIModel.Tweet, *appErrors.AppError) {
 func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError) {
 	databaseTweet := convertAPINewTweetToDatabaseTweet(newTweet)
 
-	addedTweet, err := database.InsertTweet(databaseTweet)
+	addedTweet, databaseError := database.InsertTweet(databaseTweet)
 
-	if err != nil {
+	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
 		return APIModel.Tweet{}, appErrors.UnexpectedError
 	}
 
-	APITweet, err2 := convertDatabaseTweetToAPITweet(addedTweet)
+	APITweet, serviceError := convertDatabaseTweetToAPITweet(addedTweet)
 
-	if err2 != nil {
-		return APIModel.Tweet{}, err2
+	if serviceError != nil {
+		return APIModel.Tweet{}, serviceError
 	}
 
 	return APITweet, nil
 }
 
 func GetUsers() ([]APIModel.User, *appErrors.AppError) {
-	databaseUsers, err := database.GetUsers()
+	databaseUsers, databaseError := database.GetUsers()
 
-	if err != nil {
+	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
 		return nil, appErrors.UnexpectedError
 	}
@@ -82,9 +81,9 @@ func GetUsers() ([]APIModel.User, *appErrors.AppError) {
 }
 
 func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
-	databaseUser, err := database.GetUser(userId)
+	databaseUser, databaseError := database.GetUser(userId)
 
-	if err != nil {
+	if databaseError != nil {
 		// Maybe later on we'll need to add type switch here to check the type of error, because several things
 		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
 		return APIModel.User{}, &appErrors.AppError{
@@ -101,9 +100,9 @@ func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
 func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	databaseUser := covertAPINewUserToDatabaseUser(user)
 
-	newUser, err := database.InsertUser(databaseUser)
+	newUser, databaseError := database.InsertUser(databaseUser)
 
-	if err != nil {
+	if databaseError != nil {
 		// again, one error only for now...
 		return APIModel.User{}, &appErrors.AppError{
 			Code: http.StatusConflict,

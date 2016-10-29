@@ -10,11 +10,3 @@ type Tweet struct {
 	CreatedAt    time.Time
 	Content      string
 }
-
-type User struct {
-	ID        int64
-	Name      string
-	Username  string
-	Email     string
-	CreatedAt time.Time
-}
