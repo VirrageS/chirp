@@ -4,6 +4,9 @@ package main
 	TODO:
 	  - use c.bind() feature of Gin
 	  - add logging (probably using https://github.com/golang/glog)
+	  - generate a good secret key and implement reading it from config file
+	    (useful: http://security.stackexchange.com/questions/95972/what-are-requirements-for-hmac-secret-key,
+	    	     https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/)
 */
 
 import (
@@ -17,6 +20,7 @@ import (
 func main() {
 	router := gin.Default()
 	router.Use(middleware.ErrorHandler())
+	router.Use(middleware.TokenAuthenticator())
 
 	//router.Use(cors.Middleware(cors.Config{
 	//	Origins:        "*",
