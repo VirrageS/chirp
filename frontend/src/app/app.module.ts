@@ -11,7 +11,7 @@ import { NavigationBarComponent } from './layout';
 
 import {
   HomeComponent, SearchComponent,
-  LoginComponent, LogoutComponent
+  SingupComponent, LoginComponent, LogoutComponent
 } from './components';
 
 import { MeModule } from './me'
@@ -28,6 +28,7 @@ import { MeModule } from './me'
       { path: 'home', component: HomeComponent },
       { path: 'search', component: SearchComponent },
 
+      { path: 'singup', component: SingupComponent },
       { path: 'login', component: LoginComponent },
       { path: 'logout', component: LogoutComponent },
     ])

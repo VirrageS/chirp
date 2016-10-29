@@ -10,6 +10,11 @@ import { User, UserService } from '../shared';
       <h1>Singup</h1>
       <form *ngIf="active" (ngSubmit)="onSubmit()" #singupForm="ngForm">
         <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" class="form-control" id="username" [(ngModel)]="user.username" optional>
+        </div>
+
+        <div class="form-group">
           <label for="email">Email</label>
           <input type="email" class="form-control" id="email"
                  required
@@ -38,13 +43,13 @@ import { User, UserService } from '../shared';
     </div>
   `
 })
-export class LoginComponent {
+export class SingupComponent {
   user: User;
 
   constructor(private _userService: UserService) {}
 
   onSubmit() {
-    this._userService.loginUser(this.user)
+    this._userService.singupUser(this.user)
       .subscribe(
         result => {
           console.log(result);
