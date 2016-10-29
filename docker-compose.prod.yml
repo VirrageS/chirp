@@ -1,7 +1,7 @@
 version: '2'
 services:
   frontend:
-    restart: "no"
+    restart: always
     build: ./frontend
     ports:
       - "3000:3000"
@@ -17,6 +17,7 @@ services:
     ports:
       - "8000:8000"
     depends_on:
+      - mongodb
       - postgres
       - redis
     volumes:
