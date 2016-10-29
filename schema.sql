@@ -23,6 +23,7 @@ CREATE INDEX users_facebook_token_idx ON users (facebook_token);
 CREATE INDEX users_google_token_idx ON users (google_token);
 CREATE INDEX users_username_idx ON users (username);
 CREATE INDEX users_email_idx ON users (email);
+CREATE INDEX users_active_idx ON users (active);
 
 
 
@@ -41,7 +42,7 @@ CREATE INDEX followers_idx ON followers (follower, following);
 
 CREATE TABLE tweets (
   id          SERIAL PRIMARY KEY,
-  user_id     INTEGER REFERENCES users (id) NOT NULL ON DELETE CASCADE,
+  author_id   INTEGER REFERENCES users (id) NOT NULL ON DELETE CASCADE,
   created_at  TIMESTAMP NOT NULL DEFAULT now(),
   content     VARCHAR(150) NOT NULL
 );
