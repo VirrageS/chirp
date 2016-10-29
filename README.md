@@ -18,3 +18,12 @@ Now run
     $ npm start
 
 now open browser to [localhost:3000](http://localhost:3000/) and done! :)
+
+
+## Docker
+
+Before we begin we have to install `docker-compose` command [Install](https://docs.docker.com/compose/install/)
+
+Then we need to run this everytime we want to build project
+
+    $ docker-compose build && docker-compose up
