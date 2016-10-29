@@ -7,8 +7,8 @@ import { User, UserService } from '../shared';
   template: `
     {{diagnostic}}
     <div class="container">
-      <h1>Singup</h1>
-      <form *ngIf="active" (ngSubmit)="onSubmit()" #singupForm="ngForm">
+      <h1>Login</h1>
+      <form *ngIf="active" (ngSubmit)="onSubmit()" #loginForm="ngForm">
         <div class="form-group">
           <label for="email">Email</label>
           <input type="email" class="form-control" id="email"
@@ -33,7 +33,7 @@ import { User, UserService } from '../shared';
           Password is required
         </div>
 
-        <button type="submit" class="btn btn-default" [disabled]="!singupForm.form.valid">Submit</button>
+        <button type="submit" class="btn btn-default" [disabled]="!loginForm.form.valid">Submit</button>
       </form>
     </div>
   `
