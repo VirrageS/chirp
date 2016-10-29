@@ -9,7 +9,7 @@ services:
       - backend
     volumes:
       - ./frontend:/frontend
-    command: npm start
+    command: npm build
 
   backend:
     restart: always
@@ -17,7 +17,6 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - mongodb
       - postgres
       - redis
     volumes:
