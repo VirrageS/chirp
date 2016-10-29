@@ -23,10 +23,8 @@ func GetUsers() ([]model.User, error) {
 
 func GetUser(userID int64) (model.User, error) {
 	user, err := getUserWithId(userID)
-
-	/* Emulate DB query fail? */
 	if err != nil {
-		return model.User{}, errors.New("User with given ID was not found.")
+		return model.User{}, errors.New("")
 	}
 
 	return user, nil
@@ -34,7 +32,7 @@ func GetUser(userID int64) (model.User, error) {
 
 func InsertUser(user model.User) (model.User, error) {
 	if userAlreadyExists(user) {
-		return model.User{}, errors.New("User with given username already exists.")
+		return model.User{}, errors.New("")
 	}
 
 	userID := insertUserToDatabase(user)
@@ -52,11 +50,11 @@ func getUserWithId(userID int64) (model.User, error) {
 		}
 	}
 
-	return model.User{}, errors.New("User with given ID was not found.")
+	return model.User{}, errors.New("")
 }
 
 func insertUserToDatabase(user model.User) int64 {
-	userID := len(users)
+	userID := len(users) + 1
 	user.ID = int64(userID)
 
 	users = append(users, user)

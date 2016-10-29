@@ -2,66 +2,77 @@ package services
 
 import (
 	"errors"
-	"fmt"
+	"net/http"
+	"time"
 
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
-
-	"time"
+	appErrors "github.com/VirrageS/chirp/backend/errors"
 )
 
-func GetTweets() ([]APIModel.Tweet, error) {
-	databaseTweets, err := database.GetTweets()
+func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
+	databaseTweets, databaseError := database.GetTweets()
 
-	if err != nil {
-		return nil, errors.New("Oooops, something went wrong!")
+	if databaseError != nil {
+		return nil, appErrors.UnexpectedError
 	}
 
-	APITweets, err := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+	APITweets, serviceError := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
-	if err != nil {
-		return nil, err
+	if serviceError != nil {
+		return nil, serviceError
 	}
 
 	return APITweets, nil
 }
 
-func GetTweet(tweetID int64) (APIModel.Tweet, error) {
-	databaseTweet, err := database.GetTweet(tweetID)
+func GetTweet(tweetID int64) (APIModel.Tweet, *appErrors.AppError) {
+	databaseTweet, databaseError := database.GetTweet(tweetID)
 
-	if err != nil {
-		return APIModel.Tweet{}, err
+	if databaseError != nil {
+		// Later on we'll need to add type switch here to check the type of error, because several things
+		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
+		return APIModel.Tweet{}, &appErrors.AppError{
+			Code: http.StatusNotFound,
+			Err:  errors.New("User with given ID was not found."),
+		}
 	}
 
-	APITweet, err := convertDatabaseTweetToAPITweet(databaseTweet)
+	APITweet, serviceError := convertDatabaseTweetToAPITweet(databaseTweet)
 
-	if err != nil {
-		return APIModel.Tweet{}, errors.New("Oooops, something went wrong!")
+	if serviceError != nil {
+		return APIModel.Tweet{}, serviceError
 	}
 
 	return APITweet, nil
 }
 
-func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, error) {
+func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError) {
 	databaseTweet := convertAPINewTweetToDatabaseTweet(newTweet)
 
-	addedTweet := database.InsertTweet(databaseTweet)
+	addedTweet, databaseError := database.InsertTweet(databaseTweet)
 
-	APITweet, err := convertDatabaseTweetToAPITweet(addedTweet)
+	if databaseError != nil {
+		// for now its an unexpected error, but later on we'll probably need an error type switch here too
+		return APIModel.Tweet{}, appErrors.UnexpectedError
+	}
 
-	if err != nil {
-		return APIModel.Tweet{}, errors.New("Oooops, something went wrong!")
+	APITweet, serviceError := convertDatabaseTweetToAPITweet(addedTweet)
+
+	if serviceError != nil {
+		return APIModel.Tweet{}, serviceError
 	}
 
 	return APITweet, nil
 }
 
-func GetUsers() ([]APIModel.User, error) {
-	databaseUsers, err := database.GetUsers()
+func GetUsers() ([]APIModel.User, *appErrors.AppError) {
+	databaseUsers, databaseError := database.GetUsers()
 
-	if err != nil {
-		return nil, errors.New("Oooops, something went wrong!")
+	if databaseError != nil {
+		// for now its an unexpected error, but later on we'll probably need an error type switch here too
+		return nil, appErrors.UnexpectedError
 	}
 
 	APIUsers := convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers)
@@ -69,11 +80,16 @@ func GetUsers() ([]APIModel.User, error) {
 	return APIUsers, nil
 }
 
-func GetUser(userId int64) (APIModel.User, error) {
-	databaseUser, err := database.GetUser(userId)
+func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
+	databaseUser, databaseError := database.GetUser(userId)
 
-	if err != nil {
-		return APIModel.User{}, err
+	if databaseError != nil {
+		// Maybe later on we'll need to add type switch here to check the type of error, because several things
+		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
+		return APIModel.User{}, &appErrors.AppError{
+			Code: http.StatusNotFound,
+			Err:  errors.New("User with given ID was not found."),
+		}
 	}
 
 	APIUser := convertDatabaseUserToAPIUser(databaseUser)
@@ -81,19 +97,17 @@ func GetUser(userId int64) (APIModel.User, error) {
 	return APIUser, nil
 }
 
-func PostUser(user APIModel.NewUser) (APIModel.User, error) {
-	ok, errs := validatePostUserParameters(user)
-
-	if !ok {
-		return APIModel.User{}, errs[0] // TODO: replace with custom error type that can hold array of messages
-	}
-
+func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	databaseUser := covertAPINewUserToDatabaseUser(user)
 
-	newUser, err := database.InsertUser(databaseUser)
+	newUser, databaseError := database.InsertUser(databaseUser)
 
-	if err != nil {
-		return APIModel.User{}, err
+	if databaseError != nil {
+		// again, one error only for now...
+		return APIModel.User{}, &appErrors.AppError{
+			Code: http.StatusConflict,
+			Err:  errors.New("User with given username already exists."),
+		}
 	}
 
 	APIUser := convertDatabaseUserToAPIUser(newUser)
@@ -101,27 +115,7 @@ func PostUser(user APIModel.NewUser) (APIModel.User, error) {
 	return APIUser, nil
 }
 
-func validatePostUserParameters(user APIModel.NewUser) (bool, []error) {
-	var errs []error
-	isOk := true
-
-	if user.Name == "" {
-		isOk = false
-		errs = append(errs, errors.New("user name cannot be empty"))
-	}
-	if user.Username == "" {
-		isOk = false
-		errs = append(errs, errors.New("user username cannot be empty"))
-	}
-	if user.Email == "" {
-		isOk = false
-		errs = append(errs, errors.New("user email cannot be empty"))
-	}
-
-	return isOk, errs
-}
-
-func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, error) {
+func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, *appErrors.AppError) {
 	id := tweet.ID
 	userID := tweet.AuthorID
 	likeCount := tweet.LikeCount
@@ -132,10 +126,11 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 	authorFullData, err := database.GetUser(userID)
 
 	if err != nil {
-		errorMessage := fmt.Sprintf("no integrity in database, "+
-			"user with id = %d was not found (but should have been found)",
-			userID)
-		return APIModel.Tweet{}, errors.New(errorMessage)
+		// log this instead and return an error with proper message
+		// errorMessage := fmt.Sprintf("no integrity in database, "+
+		//	"user with id = %d was not found (but should have been found)",
+		//	userID)
+		return APIModel.Tweet{}, appErrors.UnexpectedError
 	}
 
 	APIAuthorFullData := convertDatabaseUserToAPIUser(authorFullData)
@@ -165,14 +160,14 @@ func convertAPINewTweetToDatabaseTweet(tweet APIModel.NewTweet) databaseModel.Tw
 	}
 }
 
-func convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]APIModel.Tweet, error) {
+func convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]APIModel.Tweet, *appErrors.AppError) {
 	var APITweets []APIModel.Tweet
 
 	for _, databaseTweet := range databaseTweets {
 		APITweet, err := convertDatabaseTweetToAPITweet(databaseTweet)
 
 		if err != nil {
-			return nil, errors.New("Oooops, something went wrong!")
+			return nil, appErrors.UnexpectedError
 		}
 
 		APITweets = append(APITweets, APITweet)

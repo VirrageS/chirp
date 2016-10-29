@@ -4,7 +4,6 @@ package main
 	TODO:
 	  - use c.bind() feature of Gin
 	  - add logging (probably using https://github.com/golang/glog)
-	  - fix error handling (replace with middleware, see: https://github.com/gin-gonic/gin/issues/274
 */
 
 import (
@@ -12,10 +11,12 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
+	"github.com/VirrageS/chirp/backend/middleware"
 )
 
 func main() {
 	router := gin.Default()
+	router.Use(middleware.ErrorHandler())
 
 	//router.Use(cors.Middleware(cors.Config{
 	//	Origins:        "*",
