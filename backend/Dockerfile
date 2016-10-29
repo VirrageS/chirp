@@ -5,4 +5,4 @@ RUN adduser --disabled-password --gecos '' docker
 WORKDIR /go/src/github.com/VirrageS/chirp/backend
 COPY . /go/src/github.com/VirrageS/chirp/backend
 
-RUN go get && go install
+RUN go get -d && go install
