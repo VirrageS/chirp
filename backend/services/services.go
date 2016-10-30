@@ -9,6 +9,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 	appErrors "github.com/VirrageS/chirp/backend/errors"
+	"github.com/dgrijalva/jwt-go"
 )
 
 func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
@@ -81,7 +82,7 @@ func GetUsers() ([]APIModel.User, *appErrors.AppError) {
 }
 
 func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
-	databaseUser, databaseError := database.GetUser(userId)
+	databaseUser, databaseError := database.GetUserByID(userId)
 
 	if databaseError != nil {
 		// Maybe later on we'll need to add type switch here to check the type of error, because several things
@@ -97,12 +98,12 @@ func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
 	return APIUser, nil
 }
 
-func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
+func RegisterUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	databaseUser := covertAPINewUserToDatabaseUser(user)
 
-	newUser, databaseError := database.InsertUser(databaseUser)
+	newUser, err := database.InsertUser(databaseUser)
 
-	if databaseError != nil {
+	if err != nil {
 		// again, one error only for now...
 		return APIModel.User{}, &appErrors.AppError{
 			Code: http.StatusConflict,
@@ -110,9 +111,44 @@ func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 		}
 	}
 
-	APIUser := convertDatabaseUserToAPIUser(newUser)
+	apiUser := convertDatabaseUserToAPIUser(newUser)
 
-	return APIUser, nil
+	return apiUser, nil
+}
+
+func LoginUser(username, password string) (string, *appErrors.AppError) {
+	databaseUser, databaseError := database.GetUserByUsername(username)
+
+	// TODO: hash the password before comparing
+	if databaseError != nil || databaseUser.Password != password {
+		return "", &appErrors.AppError{
+			Code: http.StatusUnauthorized,
+			Err:  errors.New("Invalid username or password."),
+		}
+	}
+
+	token, serviceError := createTokenForUser(databaseUser)
+	if serviceError != nil {
+		return "", serviceError
+	}
+
+	return token, nil
+}
+
+func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
+	secretKey := []byte("just a random secret string")
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userID": user.ID,
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", appErrors.UnexpectedError
+	}
+
+	return tokenString, nil
 }
 
 func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, *appErrors.AppError) {
@@ -123,7 +159,7 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
-	authorFullData, err := database.GetUser(userID)
+	authorFullData, err := database.GetUserByID(userID)
 
 	if err != nil {
 		// log this instead and return an error with proper message
@@ -189,30 +225,41 @@ func convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []databaseModel.
 
 func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 	id := user.ID
-	name := user.Name
 	username := user.Username
 	email := user.Email
 	createdAt := user.CreatedAt
+	lastLogin := user.LastLogin
+	name := user.Name
+	active := user.Active
+	avatarUrl := user.AvatarUrl
 
 	return APIModel.User{
 		ID:        id,
-		Name:      name,
 		Username:  username,
 		Email:     email,
 		CreatedAt: createdAt,
+		LastLogin: lastLogin,
+		Active:    active,
+		Name:      name,
+		AvatarUrl: avatarUrl,
 	}
 }
 
 func covertAPINewUserToDatabaseUser(user APIModel.NewUser) databaseModel.User {
-	name := user.Name
 	username := user.Username
+	password := user.Password
 	email := user.Email
+	name := user.Name
 
 	return databaseModel.User{
 		ID:        0,
-		Name:      name,
 		Username:  username,
+		Password:  password,
 		Email:     email,
 		CreatedAt: time.Now(),
+		LastLogin: time.Now(),
+		Active:    true,
+		Name:      name,
+		AvatarUrl: "",
 	}
 }

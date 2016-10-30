@@ -31,13 +31,15 @@ func TokenAuthenticator() gin.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			user, present := claims["userID"]
-			if !present {
+			claimUserID, present := claims["userID"]
+			userID, ok := claimUserID.(float64)
+
+			if !present || !ok {
 				context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 				return
 			}
 
-			context.Set("userID", user)
+			context.Set("userID", int64(userID))
 		} else {
 			context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 			return

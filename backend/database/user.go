@@ -10,10 +10,14 @@ import (
 var users = []model.User{
 	{
 		ID:        1,
-		Name:      "george",
-		Username:  "fisher",
+		Username:  "corpsegridner",
+		Password:  "fuckthealliance",
 		Email:     "corpsegrinder@cannibalcorpse.com",
 		CreatedAt: time.Unix(0, 0),
+		LastLogin: time.Unix(0, 0),
+		Active:    true,
+		Name:      "George Fisher",
+		AvatarUrl: "",
 	},
 }
 
@@ -21,8 +25,17 @@ func GetUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func GetUser(userID int64) (model.User, error) {
+func GetUserByID(userID int64) (model.User, error) {
 	user, err := getUserWithId(userID)
+	if err != nil {
+		return model.User{}, errors.New("")
+	}
+
+	return user, nil
+}
+
+func GetUserByUsername(username string) (model.User, error) {
+	user, err := getUserWithUsername(username)
 	if err != nil {
 		return model.User{}, errors.New("")
 	}
@@ -46,6 +59,16 @@ func InsertUser(user model.User) (model.User, error) {
 func getUserWithId(userID int64) (model.User, error) {
 	for _, user := range users {
 		if user.ID == userID {
+			return user, nil
+		}
+	}
+
+	return model.User{}, errors.New("")
+}
+
+func getUserWithUsername(username string) (model.User, error) {
+	for _, user := range users {
+		if user.Username == username {
 			return user, nil
 		}
 	}

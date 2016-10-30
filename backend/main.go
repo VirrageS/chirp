@@ -20,7 +20,6 @@ import (
 func main() {
 	router := gin.Default()
 	router.Use(middleware.ErrorHandler())
-	router.Use(middleware.TokenAuthenticator())
 
 	//router.Use(cors.Middleware(cors.Config{
 	//	Origins:        "*",
@@ -31,15 +30,20 @@ func main() {
 	tweets := router.Group("/tweets")
 	{
 		tweets.GET("/", api.GetTweets)
-		tweets.POST("/", api.PostTweet)
+		tweets.POST("/", middleware.TokenAuthenticator(), api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
 	}
 
 	users := router.Group("/users")
 	{
 		users.GET("/", api.GetUsers)
-		users.POST("/", api.PostUser)
 		users.GET("/:id", api.GetUser)
+	}
+
+	auth := router.Group("/auth")
+	{
+		auth.POST("/register", api.RegisterUser)
+		auth.POST("/login", api.LoginUser)
 	}
 
 	router.Run(":8080")

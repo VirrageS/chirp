@@ -46,14 +46,9 @@ func GetTweet(context *gin.Context) {
 }
 
 func PostTweet(context *gin.Context) {
-	tweetAuthorIDString := context.PostForm("author_id")
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	tweetAuthorID := (context.MustGet("userID").(int64))
 	content := context.PostForm("content")
-
-	tweetAuthorID, err := strconv.ParseInt(tweetAuthorIDString, 10, 64)
-	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
-		return
-	}
 
 	requestTweet := model.NewTweet{
 		AuthorID: tweetAuthorID,
