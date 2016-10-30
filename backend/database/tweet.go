@@ -22,6 +22,18 @@ func GetTweets() ([]model.Tweet, error) {
 	return tweets, nil
 }
 
+func GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
+	var usersTweets []model.Tweet
+
+	for _, tweet := range tweets {
+		if tweet.AuthorID == userID {
+			usersTweets = append(usersTweets, tweet)
+		}
+	}
+
+	return usersTweets, nil
+}
+
 func GetTweet(tweetID int64) (model.Tweet, error) {
 	tweet, err := getTweetWithId(tweetID)
 	if err != nil {

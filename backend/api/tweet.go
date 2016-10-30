@@ -70,3 +70,18 @@ func PostTweet(context *gin.Context) {
 		"tweet": responseTweet,
 	})
 }
+
+func MyTweets(context *gin.Context) {
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	tweetAuthorID := (context.MustGet("userID").(int64))
+
+	tweets, err := services.GetTweetsOfUserWithID(tweetAuthorID)
+	if err != nil {
+		context.AbortWithError(err.Code, err.Err)
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{
+		"tweets": tweets,
+	})
+}

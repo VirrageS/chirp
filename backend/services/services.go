@@ -28,6 +28,23 @@ func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
 	return APITweets, nil
 }
 
+// Use GetTweets() with filtering parameters instead, when filtering will be supported
+func GetTweetsOfUserWithID(userID int64) ([]APIModel.Tweet, *appErrors.AppError) {
+	databaseTweets, databaseError := database.GetTweetsOfUserWithID(userID)
+
+	if databaseError != nil {
+		return nil, appErrors.UnexpectedError
+	}
+
+	APITweets, serviceError := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+
+	if serviceError != nil {
+		return nil, serviceError
+	}
+
+	return APITweets, nil
+}
+
 func GetTweet(tweetID int64) (APIModel.Tweet, *appErrors.AppError) {
 	databaseTweet, databaseError := database.GetTweet(tweetID)
 

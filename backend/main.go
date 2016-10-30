@@ -31,7 +31,8 @@ func main() {
 	{
 		tweets.GET("/", api.GetTweets)
 		tweets.POST("/", middleware.TokenAuthenticator, api.PostTweet)
-		tweets.GET("/:id", api.GetTweet)
+		tweets.GET("/my/", middleware.TokenAuthenticator, api.MyTweets)
+		tweets.GET("/show/:id", api.GetTweet)
 	}
 
 	users := router.Group("/users")
