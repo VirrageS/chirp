@@ -24,7 +24,9 @@ func GetTweets(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, tweets)
+	context.JSON(http.StatusOK, gin.H{
+		"tweets": tweets,
+	})
 }
 
 func GetTweet(context *gin.Context) {
@@ -42,7 +44,9 @@ func GetTweet(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, responseTweet)
+	context.JSON(http.StatusOK, gin.H{
+		"tweet": responseTweet,
+	})
 }
 
 func PostTweet(context *gin.Context) {
@@ -62,5 +66,7 @@ func PostTweet(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", responseTweet.ID))
-	context.JSON(http.StatusCreated, responseTweet)
+	context.JSON(http.StatusCreated, gin.H{
+		"tweet": responseTweet,
+	})
 }

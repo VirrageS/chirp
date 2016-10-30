@@ -36,7 +36,9 @@ func RegisterUser(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", newUser.ID))
-	context.JSON(http.StatusCreated, newUser)
+	context.JSON(http.StatusCreated, gin.H{
+		"user": newUser,
+	})
 }
 
 func LoginUser(context *gin.Context) {
@@ -53,7 +55,9 @@ func LoginUser(context *gin.Context) {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 	}
 
-	context.JSON(http.StatusOK, token)
+	context.JSON(http.StatusOK, gin.H{
+		"auth_token": token,
+	})
 }
 
 func validateRegisterUserParameters(name, username, email, password string) error {

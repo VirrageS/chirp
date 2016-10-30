@@ -30,7 +30,7 @@ func main() {
 	tweets := router.Group("/tweets")
 	{
 		tweets.GET("/", api.GetTweets)
-		tweets.POST("/", middleware.TokenAuthenticator(), api.PostTweet)
+		tweets.POST("/", middleware.TokenAuthenticator, api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
 	}
 

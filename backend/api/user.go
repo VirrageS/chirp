@@ -17,7 +17,9 @@ func GetUsers(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, users)
+	context.JSON(http.StatusOK, gin.H{
+		"users": users,
+	})
 }
 
 func GetUser(context *gin.Context) {
@@ -35,5 +37,7 @@ func GetUser(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, responseUser)
+	context.JSON(http.StatusOK, gin.H{
+		"user": responseUser,
+	})
 }
