@@ -34,8 +34,8 @@ func GetUserByID(userID int64) (model.User, error) {
 	return user, nil
 }
 
-func GetUserByUsername(username string) (model.User, error) {
-	user, err := getUserWithUsername(username)
+func GetUserByEmail(email string) (model.User, error) {
+	user, err := getUserWithEmail(email)
 	if err != nil {
 		return model.User{}, errors.New("")
 	}
@@ -45,6 +45,7 @@ func GetUserByUsername(username string) (model.User, error) {
 
 func InsertUser(user model.User) (model.User, error) {
 	if userAlreadyExists(user) {
+		// TODO: return a message that informs the user which one of username/email is already taken
 		return model.User{}, errors.New("")
 	}
 
@@ -66,9 +67,9 @@ func getUserWithId(userID int64) (model.User, error) {
 	return model.User{}, errors.New("")
 }
 
-func getUserWithUsername(username string) (model.User, error) {
+func getUserWithEmail(email string) (model.User, error) {
 	for _, user := range users {
-		if user.Username == username {
+		if user.Email == email {
 			return user, nil
 		}
 	}
@@ -87,7 +88,7 @@ func insertUserToDatabase(user model.User) int64 {
 
 func userAlreadyExists(userToCheck model.User) bool {
 	for _, user := range users {
-		if user.Username == userToCheck.Username {
+		if user.Username == userToCheck.Username || user.Email == userToCheck.Email {
 			return true
 		}
 	}

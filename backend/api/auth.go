@@ -43,16 +43,16 @@ func RegisterUser(context *gin.Context) {
 }
 
 func LoginUser(context *gin.Context) {
-	username := context.PostForm("username")
+	email := context.PostForm("email")
 	password := context.PostForm("password")
 
-	err := validateLoginUserParameters(username, password)
+	err := validateLoginUserParameters(email, password)
 	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	token, serviceError := services.LoginUser(username, password)
+	token, serviceError := services.LoginUser(email, password)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 		return
@@ -87,11 +87,11 @@ func validateRegisterUserParameters(name, username, email, password string) erro
 	return nil
 }
 
-func validateLoginUserParameters(username, password string) error {
+func validateLoginUserParameters(email, password string) error {
 	var invalidFields []string
 
-	if username == "" {
-		invalidFields = append(invalidFields, "username")
+	if email == "" {
+		invalidFields = append(invalidFields, "email")
 	}
 	if password == "" {
 		invalidFields = append(invalidFields, "password")

@@ -27,7 +27,7 @@ func TokenAuthenticator(context *gin.Context) {
 	})
 
 	if err != nil {
-		// log err
+		// TODO: log err
 		//fmt.Printf("Error parsing the token: = %v", err)
 		context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 		return

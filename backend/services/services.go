@@ -130,7 +130,7 @@ func RegisterUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 		// again, one error only for now...
 		return APIModel.User{}, &appErrors.AppError{
 			Code: http.StatusConflict,
-			Err:  errors.New("User with given username already exists."),
+			Err:  errors.New("User with given username or email already exists."),
 		}
 	}
 
@@ -139,14 +139,14 @@ func RegisterUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	return apiUser, nil
 }
 
-func LoginUser(username, password string) (string, *appErrors.AppError) {
-	databaseUser, databaseError := database.GetUserByUsername(username)
+func LoginUser(email, password string) (string, *appErrors.AppError) {
+	databaseUser, databaseError := database.GetUserByEmail(email)
 
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
 		return "", &appErrors.AppError{
 			Code: http.StatusUnauthorized,
-			Err:  errors.New("Invalid username or password."),
+			Err:  errors.New("Invalid email or password."),
 		}
 	}
 
