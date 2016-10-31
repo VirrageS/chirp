@@ -20,6 +20,7 @@ func RegisterUser(context *gin.Context) {
 	validationError := validateRegisterUserParameters(name, username, email, password)
 	if validationError != nil {
 		context.AbortWithError(http.StatusBadRequest, validationError)
+		return
 	}
 
 	requestUser := model.NewUser{
@@ -48,11 +49,13 @@ func LoginUser(context *gin.Context) {
 	err := validateLoginUserParameters(username, password)
 	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, err)
+		return
 	}
 
 	token, serviceError := services.LoginUser(username, password)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
+		return
 	}
 
 	context.JSON(http.StatusOK, gin.H{

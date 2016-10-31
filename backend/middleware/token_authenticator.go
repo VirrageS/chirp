@@ -8,9 +8,11 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/gin-gonic/gin.v1"
+
+	"github.com/VirrageS/chirp/backend/config"
 )
 
-var secretKey = []byte("just a random secret string")
+var secretKey = []byte(config.GetSecretKey())
 
 func TokenAuthenticator(context *gin.Context) {
 	fullTokenString := context.Request.Header.Get("Authorization")

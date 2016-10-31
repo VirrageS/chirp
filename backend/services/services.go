@@ -5,12 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 	appErrors "github.com/VirrageS/chirp/backend/errors"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/VirrageS/chirp/backend/config"
 )
+
+var secretKey = []byte(config.GetSecretKey())
 
 func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
 	databaseTweets, databaseError := database.GetTweets()
@@ -153,8 +157,6 @@ func LoginUser(username, password string) (string, *appErrors.AppError) {
 }
 
 func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
-	secretKey := []byte("just a random secret string")
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": user.ID,
 	})
@@ -162,6 +164,7 @@ func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
 	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
+		// log the error
 		return "", appErrors.UnexpectedError
 	}
 
