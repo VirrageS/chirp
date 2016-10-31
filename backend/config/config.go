@@ -1,21 +1,26 @@
 package config
 
 import (
-	"os"
-	"fmt"
 	"encoding/json"
-	"runtime"
+	"fmt"
+	"os"
 	"path"
+	"runtime"
 )
 
 type configuration struct {
-	SecretKey string
+	SecretKey           string
+	TokenValidityPeriod int
 }
 
 var config *configuration = initializeConfiguration()
 
-func GetSecretKey() string {
-	return config.SecretKey
+func GetSecretKey() []byte {
+	return []byte(config.SecretKey)
+}
+
+func GetTokenValidityPeriod() int {
+	return config.TokenValidityPeriod
 }
 
 func initializeConfiguration() *configuration {
@@ -35,8 +40,8 @@ func initializeConfiguration() *configuration {
 	if err != nil {
 		panic(fmt.Sprintf("Couldn't decode config file! Error = %v.", err))
 	}
-	if readConfig.SecretKey == "" {
-		panic("Secret key was not read properly!")
+	if readConfig.SecretKey == "" || readConfig.TokenValidityPeriod <= 0 {
+		panic("Config files does not contain valid values!")
 	}
 
 	return &readConfig

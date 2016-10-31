@@ -1,3 +1,4 @@
 {
-	"SecretKey": "just a random secret string"
+	"SecretKey": "just a random secret string",
+	"TokenValidityPeriod": 15
 }

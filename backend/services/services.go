@@ -2,19 +2,21 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 	appErrors "github.com/VirrageS/chirp/backend/errors"
-	"github.com/VirrageS/chirp/backend/config"
 )
 
-var secretKey = []byte(config.GetSecretKey())
+var secretKey = config.GetSecretKey()
+var tokenValidityDuration = time.Duration(config.GetTokenValidityPeriod())
 
 func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
 	databaseTweets, databaseError := database.GetTweets()
@@ -157,14 +159,18 @@ func LoginUser(username, password string) (string, *appErrors.AppError) {
 }
 
 func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
+	expirationTime := time.Now().Add(tokenValidityDuration * time.Minute)
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": user.ID,
+		"exp":    expirationTime.Unix(),
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
 		// log the error
+		fmt.Printf("Unexpected error: %v\n", err)
 		return "", appErrors.UnexpectedError
 	}
 
