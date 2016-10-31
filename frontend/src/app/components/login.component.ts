@@ -8,7 +8,7 @@ import { User, UserService } from '../shared';
     {{diagnostic}}
     <div class="container">
       <h1>Login</h1>
-      <form *ngIf="active" (ngSubmit)="onSubmit()" #loginForm="ngForm">
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
         <div class="form-group">
           <label for="email">Email</label>
           <input type="email" class="form-control" id="email"

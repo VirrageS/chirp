@@ -6,7 +6,7 @@ import { RouterModule }   from '@angular/router';
 
 import { AppComponent }   from './app.component';
 
-import { ApiService } from './shared';
+import { ApiService, UserService } from './shared';
 import { NavigationBarComponent } from './layout';
 
 import {
@@ -38,11 +38,14 @@ import { MeModule } from './me'
     NavigationBarComponent,
     HomeComponent,
     SearchComponent,
+
+    SingupComponent,
     LoginComponent,
     LogoutComponent,
   ],
   providers: [
-    ApiService
+    ApiService,
+    UserService,
   ],
   bootstrap: [AppComponent]
  })

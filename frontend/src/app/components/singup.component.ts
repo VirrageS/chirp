@@ -8,7 +8,7 @@ import { User, UserService } from '../shared';
     {{diagnostic}}
     <div class="container">
       <h1>Singup</h1>
-      <form *ngIf="active" (ngSubmit)="onSubmit()" #singupForm="ngForm">
+      <form (ngSubmit)="onSubmit()" #singupForm="ngForm">
         <div class="form-group">
           <label for="username">Username</label>
           <input type="text" class="form-control" id="username" [(ngModel)]="user.username" optional>

@@ -10,9 +10,8 @@
     "noImplicitAny": false
   },
   "exclude": [
-    "typings/index.d.ts",
-    "typings/globals/core-js",
-    "node_modules"
+    "node_modules",
+    "dist"
   ],
   "compileOnSave": false,
   "buildOnSave": false,

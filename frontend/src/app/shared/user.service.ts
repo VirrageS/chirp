@@ -15,12 +15,12 @@ export class UserService {
   }
 
   loginUser(body) {
-    let path: string = "/login";
+    let path: string = "/auth/login";
     return this.apiService.post(path, body);
   }
 
   singupUser(body) {
-    let path: string = "/singup";
+    let path: string = "/auth/register";
     return this.apiService.post(path, body);
   }
 
