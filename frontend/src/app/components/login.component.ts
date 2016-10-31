@@ -10,15 +10,15 @@ import { User, UserService } from '../shared';
       <h1>Login</h1>
       <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
         <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" class="form-control" id="email"
+          <label for="username">Username</label>
+          <input type="username" class="form-control" id="username"
                  required
-                 [(ngModel)]="user.email" name="email"
-                 #email="ngModel" >
+                 [(ngModel)]="user.username" name="username"
+                 #username="ngModel" >
         </div>
-        <div [hidden]="email.valid || email.pristine"
+        <div [hidden]="username.valid || username.pristine"
              class="alert alert-danger">
-          Email is required
+          Username is required
         </div>
 
         <div class="form-group">
@@ -41,7 +41,9 @@ import { User, UserService } from '../shared';
 export class LoginComponent {
   user: User;
 
-  constructor(private _userService: UserService) {}
+  constructor(private _userService: UserService) {
+    this.user = new User();
+  }
 
   onSubmit() {
     this._userService.loginUser(this.user)

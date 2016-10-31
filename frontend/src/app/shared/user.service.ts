@@ -21,6 +21,7 @@ export class UserService {
 
   singupUser(body) {
     let path: string = "/auth/register";
+    console.log(body);
     return this.apiService.post(path, body);
   }
 
