@@ -1,0 +1,2 @@
+secret_key: "just a random secret string"
+token_validity_period: 15

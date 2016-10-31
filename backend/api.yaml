@@ -473,7 +473,7 @@ paths:
             items:
               $ref: '#/definitions/User'
 
-  /auth_users:
+  /auth/register:
     post:
       summary: Creates a new user.
       parameters:
@@ -509,7 +509,43 @@ paths:
                 type: string
                 description: Error message.
 
-  /auth_user/{user_id}:
+  /auth/login:
+    post:
+      summary: Logs in a user.
+      parameters:
+        - name: email
+          in: query
+          type: string
+          description: Email of a user that attempts a login.
+          required: true
+        - name: password
+          in: query
+          type: string
+          description: Password of a user that attempts a login.
+          required: true
+      tags:
+        - AuthUsers
+      responses:
+        200:
+          description: Users authentication token.
+          schema:
+            $ref: '#/definitions/AuthToken'
+        400:
+          description: Bad request.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
+  /auth/{user_id}:
     patch:
       summary: Updates authentication and account data of a user with given ID.
       parameters:
@@ -870,20 +906,29 @@ definitions:
       email:
         type: string
         description: Email of the user.
-      name:
-        type: string
-        description: First name of the user.
       created_at:
         type: string
         format: date-time
         description: Creation time of the user.
+      last_login:
+        type: string
+        format: date-time
+        description: Last login time of the user.
+      active:
+        type: boolean
+        description: Tells if user is active or not.
+      name:
+        type: string
+        description: First name of the user.
+      avatar_url:
+        type: string
+        format: url
+        description: An URL to users avatar.
+
 
   AuthUser:
     type: object
     properties:
-      id:
-        type: integer
-        format: int64
       username:
         type: string
       password:
@@ -891,6 +936,12 @@ definitions:
       name:
         type: string
       email:
+        type: string
+
+  AuthToken:
+    type: object
+    properties:
+      auth_token:
         type: string
 
   Tweet:

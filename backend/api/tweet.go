@@ -24,7 +24,9 @@ func GetTweets(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, tweets)
+	context.JSON(http.StatusOK, gin.H{
+		"tweets": tweets,
+	})
 }
 
 func GetTweet(context *gin.Context) {
@@ -42,18 +44,15 @@ func GetTweet(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, responseTweet)
+	context.JSON(http.StatusOK, gin.H{
+		"tweet": responseTweet,
+	})
 }
 
 func PostTweet(context *gin.Context) {
-	tweetAuthorIDString := context.PostForm("author_id")
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	tweetAuthorID := (context.MustGet("userID").(int64))
 	content := context.PostForm("content")
-
-	tweetAuthorID, err := strconv.ParseInt(tweetAuthorIDString, 10, 64)
-	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
-		return
-	}
 
 	requestTweet := model.NewTweet{
 		AuthorID: tweetAuthorID,
@@ -67,5 +66,22 @@ func PostTweet(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", responseTweet.ID))
-	context.JSON(http.StatusCreated, responseTweet)
+	context.JSON(http.StatusCreated, gin.H{
+		"tweet": responseTweet,
+	})
+}
+
+func MyTweets(context *gin.Context) {
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	tweetAuthorID := (context.MustGet("userID").(int64))
+
+	tweets, err := services.GetTweetsOfUserWithID(tweetAuthorID)
+	if err != nil {
+		context.AbortWithError(err.Code, err.Err)
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{
+		"tweets": tweets,
+	})
 }
