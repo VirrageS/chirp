@@ -513,15 +513,15 @@ paths:
     post:
       summary: Logs in a user.
       parameters:
-        - name: username
+        - name: email
           in: query
           type: string
-          description: Logging users username.
+          description: Email of a user that attempts a login.
           required: true
         - name: password
           in: query
           type: string
-          description: Logging users username.
+          description: Password of a user that attempts a login.
           required: true
       tags:
         - AuthUsers
