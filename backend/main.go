@@ -7,7 +7,6 @@ package main
 	  - generate a good secret key
 	    (useful: http://security.stackexchange.com/questions/95972/what-are-requirements-for-hmac-secret-key,
 	    	     https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/)
-	  - update api swaggerfile
 */
 
 import (
