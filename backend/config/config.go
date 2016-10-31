@@ -1,48 +1,38 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path"
-	"runtime"
+
+	"github.com/spf13/viper"
 )
 
-type configuration struct {
-	SecretKey           string
-	TokenValidityPeriod int
-}
-
-var config *configuration = initializeConfiguration()
+var secretKey []byte
+var tokenValidityPeriod int
 
 func GetSecretKey() []byte {
-	return []byte(config.SecretKey)
+	return secretKey
 }
 
 func GetTokenValidityPeriod() int {
-	return config.TokenValidityPeriod
+	return tokenValidityPeriod
 }
 
-func initializeConfiguration() *configuration {
-	_, filename, _, _ := runtime.Caller(1)
-	filepath := path.Join(path.Dir(filename), "config.json")
+func init() {
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
 
-	file, err := os.Open(filepath)
+	err := viper.ReadInConfig()
 	if err != nil {
-		panic("Cannot open config file!")
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	readConfig := configuration{}
-
-	err = decoder.Decode(&readConfig)
-	if err != nil {
-		panic(fmt.Sprintf("Couldn't decode config file! Error = %v.", err))
-	}
-	if readConfig.SecretKey == "" || readConfig.TokenValidityPeriod <= 0 {
-		panic("Config files does not contain valid values!")
+		panic(fmt.Sprintf("Error reading config file: %v\n", err))
 	}
 
-	return &readConfig
+	configSecretKey := viper.GetString("secret_key")
+	configValidityPeriod := viper.GetInt("token_validity_period")
+	if configSecretKey == "" || configValidityPeriod <= 0 {
+		panic(fmt.Sprintf("Config file contains invalid data! secretKey = %s, validityPeriod = %d",
+			configSecretKey, configValidityPeriod))
+	}
+
+	secretKey = []byte(configSecretKey)
+	tokenValidityPeriod = configValidityPeriod
 }
