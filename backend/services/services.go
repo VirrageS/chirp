@@ -2,11 +2,11 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	log "github.com/Sirupsen/logrus"
 
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
@@ -166,11 +166,10 @@ func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
 		"exp":    expirationTime.Unix(),
 	})
 
-	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
-		// log the error
-		fmt.Printf("Unexpected error: %v\n", err)
+		log.WithError(err).Error("Failed to sign the token.")
+		// we should probably panic here, because the server will not be able to run if it can't auth users
 		return "", appErrors.UnexpectedError
 	}
 
@@ -178,7 +177,7 @@ func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
 }
 
 func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, *appErrors.AppError) {
-	id := tweet.ID
+	tweetID := tweet.ID
 	userID := tweet.AuthorID
 	likeCount := tweet.LikeCount
 	retweetCount := tweet.RetweetCount
@@ -188,17 +187,18 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 	authorFullData, err := database.GetUserByID(userID)
 
 	if err != nil {
-		// log this instead and return an error with proper message
-		// errorMessage := fmt.Sprintf("no integrity in database, "+
-		//	"user with id = %d was not found (but should have been found)",
-		//	userID)
+		// TODO: here we will also need to check the error type and have different handling for different erros
+		log.WithFields(log.Fields{
+			"tweetID": tweetID,
+			"userID": userID,
+		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
 		return APIModel.Tweet{}, appErrors.UnexpectedError
 	}
 
 	APIAuthorFullData := convertDatabaseUserToAPIUser(authorFullData)
 
 	APITweet := APIModel.Tweet{
-		ID:           id,
+		ID:           tweetID,
 		Author:       APIAuthorFullData,
 		LikeCount:    likeCount,
 		RetweetCount: retweetCount,

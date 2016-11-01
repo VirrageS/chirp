@@ -10,11 +10,18 @@ package main
 */
 
 import (
+	"os"
+
 	"gopkg.in/gin-gonic/gin.v1"
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/VirrageS/chirp/backend/api"
 	"github.com/VirrageS/chirp/backend/middleware"
 )
+
+func init() {
+	log.SetOutput(os.Stderr) // setup logrus logging library
+}
 
 func main() {
 	router := gin.Default()
