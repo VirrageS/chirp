@@ -24,7 +24,7 @@ func GetTweets(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"tweets": tweets,
 	})
 }
@@ -44,7 +44,7 @@ func GetTweet(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"tweet": responseTweet,
 	})
 }
@@ -66,7 +66,7 @@ func PostTweet(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", responseTweet.ID))
-	context.JSON(http.StatusCreated, gin.H{
+	context.IndentedJSON(http.StatusCreated, gin.H{
 		"tweet": responseTweet,
 	})
 }
@@ -102,7 +102,7 @@ func HomeFeed(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"tweets": tweets,
 	})
 }

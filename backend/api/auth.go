@@ -37,7 +37,7 @@ func RegisterUser(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", newUser.ID))
-	context.JSON(http.StatusCreated, gin.H{
+	context.IndentedJSON(http.StatusCreated, gin.H{
 		"user": newUser,
 	})
 }
@@ -58,7 +58,7 @@ func LoginUser(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"auth_token": token,
 	})
 }

@@ -85,7 +85,7 @@ func deleteTweetWithID(tweetID int64) error {
 		if tweet.ID == tweetID {
 			// remove tweet from the slice
 			tweets[i] = tweets[len(tweets)-1] // Replace with the last one
-			tweets = tweets[:len(tweets)-1]	// Chop off the last one
+			tweets = tweets[:len(tweets)-1]   // Chop off the last one
 
 			return nil
 		}
