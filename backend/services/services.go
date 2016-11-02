@@ -173,6 +173,7 @@ func LoginUser(email, password string) (string, *appErrors.AppError) {
 			Err:  errors.New("Invalid email or password."),
 		}
 	}
+	// TODO: update users last login time
 
 	token, serviceError := createTokenForUser(databaseUser)
 	if serviceError != nil {
@@ -300,14 +301,15 @@ func covertAPINewUserToDatabaseUser(user APIModel.NewUser) databaseModel.User {
 	password := user.Password
 	email := user.Email
 	name := user.Name
+	creationTime := time.Now()
 
 	return databaseModel.User{
 		ID:        0,
 		Username:  username,
 		Password:  password,
 		Email:     email,
-		CreatedAt: time.Now(),
-		LastLogin: time.Now(),
+		CreatedAt: creationTime,
+		LastLogin: creationTime,
 		Active:    true,
 		Name:      name,
 		AvatarUrl: "",
