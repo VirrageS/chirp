@@ -11,15 +11,15 @@ services:
 
   mongodb:
     extends:
-      file: docker-core.yml
+      file: core.yml
       service: mongodb
 
   postgres:
     extends:
-      file: docker-core.yml
+      file: core.yml
       service: postgres
 
   redis:
     extends:
-      file: docker-core.yml
+      file: core.yml
       service: redis
