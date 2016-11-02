@@ -32,12 +32,12 @@ CREATE INDEX followers_idx ON followers (first_user, second_user);
 
 CREATE TABLE posts ( -- should be named (tweets) or (chirps)?
   id       SERIAL PRIMARY KEY,
-  user_id  INTEGER REFERENCES users (id) NOT NULL ON DELETE CASCADE,
+  user_id  INTEGER REFERENCES users (id) ON DELETE CASCADE,
   post     VARCHAR(150) NOT NULL -- should be named (content) ?
 );
 
 CREATE INDEX posts_idx ON posts (id);
-CREATE INDEX posts_fulltext_idx ON posts USING GIN (to_tsvector(post));
+CREATE INDEX posts_fulltext_idx ON posts USING GIN (to_tsvector('english', post));
 
 
 CREATE TABLE tags (

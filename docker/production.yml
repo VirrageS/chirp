@@ -1,0 +1,25 @@
+version: '2'
+services:
+  frontend:
+    extends:
+      file: docker-frontend.yml
+      service: frontend
+    command: npm run build
+
+  backend:
+    extends:
+      file: docker-backend.yml
+      service: backend
+
+  nginx:
+    restart: always
+    build: ../nginx
+    ports:
+      - "80:80"
+    volumes:
+      - /www/static
+    volumes_from:
+      - frontend
+    links:
+      - frontend:frontend
+      - backend:backend

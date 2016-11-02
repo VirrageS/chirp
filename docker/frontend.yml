@@ -1,0 +1,25 @@
+version: '2'
+services:
+  frontend:
+    restart: always
+    build: ../frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/frontend
+    command: npm start
+
+  mongodb:
+    extends:
+      file: docker-core.yml
+      service: mongodb
+
+  postgres:
+    extends:
+      file: docker-core.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: docker-core.yml
+      service: redis

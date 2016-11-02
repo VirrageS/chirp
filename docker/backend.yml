@@ -1,0 +1,29 @@
+version: '2'
+services:
+  backend:
+    restart: always
+    build: ../backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+      - postgres
+      - redis
+    volumes:
+      - ../backend:/backend
+    command: /go/bin/backend
+
+  mongodb:
+    extends:
+      file: docker-core.yml
+      service: mongodb
+
+  postgres:
+    extends:
+      file: docker-core.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: docker-core.yml
+      service: redis
