@@ -50,7 +50,7 @@ func GetTweet(context *gin.Context) {
 }
 
 func PostTweet(context *gin.Context) {
-	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	tweetAuthorID := (context.MustGet("userID").(int64))
 	content := context.PostForm("content")
 
@@ -93,7 +93,7 @@ func DeleteTweet(context *gin.Context) {
 }
 
 func HomeFeed(context *gin.Context) {
-	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	tweetAuthorID := (context.MustGet("userID").(int64))
 
 	tweets, err := services.GetTweetsOfUserWithID(tweetAuthorID)
