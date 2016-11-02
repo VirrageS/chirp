@@ -14,7 +14,6 @@ RUN \
   apt-get update && apt-get install yarn
 
 RUN yarn global add typescript webpack webpack-dev-server tslint typings
-RUN npm rebuild node-sass
 
 WORKDIR /frontend
 COPY . /frontend

@@ -7,7 +7,7 @@ services:
       - "3000:3000"
     volumes:
       - ../frontend:/frontend
-    command: npm start
+    command: npm run rebuildstart
 
   mongodb:
     extends:
