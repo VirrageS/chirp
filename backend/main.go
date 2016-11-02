@@ -24,8 +24,13 @@ func main() {
 	{
 		tweets.GET("/", api.GetTweets)
 		tweets.POST("/", middleware.TokenAuthenticator, api.PostTweet)
-		tweets.GET("/my/", middleware.TokenAuthenticator, api.MyTweets)
-		tweets.GET("/show/:id", api.GetTweet)
+		tweets.GET("/:id", api.GetTweet)
+		tweets.DELETE("/:id", middleware.TokenAuthenticator, api.DeleteTweet)
+	}
+
+	homeFeed := router.Group("/home_feed")
+	{
+		homeFeed.GET("/", middleware.TokenAuthenticator, api.HomeFeed)
 	}
 
 	users := router.Group("/users")

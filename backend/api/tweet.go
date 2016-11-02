@@ -71,7 +71,28 @@ func PostTweet(context *gin.Context) {
 	})
 }
 
-func MyTweets(context *gin.Context) {
+func DeleteTweet(context *gin.Context) {
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	authenticatingUserID := (context.MustGet("userID").(int64))
+	tweetIDString := context.Param("id")
+
+	tweetID, parseError := strconv.ParseInt(tweetIDString, 10, 64)
+	if parseError != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
+		return
+	}
+
+	serviceError := services.DeleteTweet(authenticatingUserID, tweetID)
+
+	if serviceError != nil {
+		context.AbortWithError(serviceError.Code, serviceError.Err)
+		return
+	}
+
+	context.Status(http.StatusNoContent)
+}
+
+func HomeFeed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
 	tweetAuthorID := (context.MustGet("userID").(int64))
 

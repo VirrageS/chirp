@@ -91,6 +91,30 @@ func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError)
 	return APITweet, nil
 }
 
+func DeleteTweet(authenticatingUserID, tweetID int64) *appErrors.AppError {
+	databaseTweet, err := database.GetTweet(tweetID)
+
+	if err != nil {
+		return &appErrors.AppError{
+			Code: http.StatusNotFound,
+			Err:  errors.New("Tweet with given ID was not found."),
+		}
+	}
+	if databaseTweet.AuthorID != authenticatingUserID {
+		return &appErrors.AppError{
+			Code: http.StatusForbidden,
+			Err:  errors.New("User is not allowed to modify this resource."),
+		}
+	}
+
+	err = database.DeleteTweet(tweetID)
+	if err != nil {
+		return appErrors.UnexpectedError
+	}
+
+	return nil
+}
+
 func GetUsers() ([]APIModel.User, *appErrors.AppError) {
 	databaseUsers, databaseError := database.GetUsers()
 
