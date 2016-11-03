@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/config"
-	"time"
 )
 
 var secretKey = config.GetSecretKey()
@@ -27,8 +28,7 @@ func TokenAuthenticator(context *gin.Context) {
 	})
 
 	if err != nil {
-		// TODO: log err
-		//fmt.Printf("Error parsing the token: = %v", err)
+		log.WithError(err).Error("Failed to parse the token.")
 		context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 		return
 	}
@@ -37,7 +37,6 @@ func TokenAuthenticator(context *gin.Context) {
 		claimUserID, isSetID := claims["userID"]
 		userID, ok := claimUserID.(float64)
 		if !ok || !isSetID {
-			//fmt.Printf("ok = %d, isSetID = %d\n", ok, isSetID)
 			context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 			return
 		}
@@ -49,7 +48,6 @@ func TokenAuthenticator(context *gin.Context) {
 
 		context.Set("userID", int64(userID))
 	} else {
-		//fmt.Printf("ok = %d, token.Valid = %d\n", ok, token.Valid)
 		context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 		return
 	}

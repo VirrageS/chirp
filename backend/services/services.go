@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	log "github.com/Sirupsen/logrus"
+	"github.com/dgrijalva/jwt-go"
 
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
@@ -91,6 +91,30 @@ func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError)
 	return APITweet, nil
 }
 
+func DeleteTweet(userID, tweetID int64) *appErrors.AppError {
+	databaseTweet, err := database.GetTweet(tweetID)
+
+	if err != nil {
+		return &appErrors.AppError{
+			Code: http.StatusNotFound,
+			Err:  errors.New("Tweet with given ID was not found."),
+		}
+	}
+	if databaseTweet.AuthorID != userID {
+		return &appErrors.AppError{
+			Code: http.StatusForbidden,
+			Err:  errors.New("User is not allowed to modify this resource."),
+		}
+	}
+
+	err = database.DeleteTweet(tweetID)
+	if err != nil {
+		return appErrors.UnexpectedError
+	}
+
+	return nil
+}
+
 func GetUsers() ([]APIModel.User, *appErrors.AppError) {
 	databaseUsers, databaseError := database.GetUsers()
 
@@ -149,6 +173,7 @@ func LoginUser(email, password string) (string, *appErrors.AppError) {
 			Err:  errors.New("Invalid email or password."),
 		}
 	}
+	// TODO: update users last login time
 
 	token, serviceError := createTokenForUser(databaseUser)
 	if serviceError != nil {
@@ -190,7 +215,7 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 		// TODO: here we will also need to check the error type and have different handling for different erros
 		log.WithFields(log.Fields{
 			"tweetID": tweetID,
-			"userID": userID,
+			"userID":  userID,
 		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
 		return APIModel.Tweet{}, appErrors.UnexpectedError
 	}
@@ -276,14 +301,15 @@ func covertAPINewUserToDatabaseUser(user APIModel.NewUser) databaseModel.User {
 	password := user.Password
 	email := user.Email
 	name := user.Name
+	creationTime := time.Now()
 
 	return databaseModel.User{
 		ID:        0,
 		Username:  username,
 		Password:  password,
 		Email:     email,
-		CreatedAt: time.Now(),
-		LastLogin: time.Now(),
+		CreatedAt: creationTime,
+		LastLogin: creationTime,
 		Active:    true,
 		Name:      name,
 		AvatarUrl: "",

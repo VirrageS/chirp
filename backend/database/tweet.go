@@ -35,7 +35,7 @@ func GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
 }
 
 func GetTweet(tweetID int64) (model.Tweet, error) {
-	tweet, err := getTweetWithId(tweetID)
+	tweet, err := getTweetWithID(tweetID)
 	if err != nil {
 		return model.Tweet{}, errors.New("")
 	}
@@ -50,7 +50,18 @@ func InsertTweet(tweet model.Tweet) (model.Tweet, error) {
 	return tweet, nil
 }
 
-func getTweetWithId(tweetID int64) (model.Tweet, error) {
+func DeleteTweet(tweetID int64) error {
+	err := deleteTweetWithID(tweetID)
+	if err != nil {
+		return errors.New("")
+	}
+
+	return nil
+}
+
+/* Functions that mock databse queries */
+
+func getTweetWithID(tweetID int64) (model.Tweet, error) {
 	for _, tweet := range tweets {
 		if tweet.ID == tweetID {
 			return tweet, nil
@@ -67,4 +78,18 @@ func insertTweetToDatabase(tweet model.Tweet) int64 {
 	tweets = append(tweets, tweet)
 
 	return int64(tweetID)
+}
+
+func deleteTweetWithID(tweetID int64) error {
+	for i, tweet := range tweets {
+		if tweet.ID == tweetID {
+			// remove tweet from the slice
+			tweets[i] = tweets[len(tweets)-1] // Replace with the last one
+			tweets = tweets[:len(tweets)-1]   // Chop off the last one
+
+			return nil
+		}
+	}
+
+	return errors.New("Tweet with given ID was not found.")
 }

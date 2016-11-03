@@ -860,9 +860,9 @@ paths:
                 type: string
                 description: Error message.
 
-  /home_timeline:
+  /home_feed:
     get:
-      summary: Get authenticating users home timeline which is a combination of authenticating user's tweets and tweets of people he/she follows.
+      summary: Get authenticating users home feed which is a combination of authenticating user's tweets and tweets of people he/she follows.
       parameters:
         - name: Authorization
           in: header

@@ -24,7 +24,7 @@ func GetTweets(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"tweets": tweets,
 	})
 }
@@ -44,7 +44,7 @@ func GetTweet(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"tweet": responseTweet,
 	})
 }
@@ -66,12 +66,33 @@ func PostTweet(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", responseTweet.ID))
-	context.JSON(http.StatusCreated, gin.H{
+	context.IndentedJSON(http.StatusCreated, gin.H{
 		"tweet": responseTweet,
 	})
 }
 
-func MyTweets(context *gin.Context) {
+func DeleteTweet(context *gin.Context) {
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	authenticatingUserID := (context.MustGet("userID").(int64))
+	tweetIDString := context.Param("id")
+
+	tweetID, parseError := strconv.ParseInt(tweetIDString, 10, 64)
+	if parseError != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
+		return
+	}
+
+	serviceError := services.DeleteTweet(authenticatingUserID, tweetID)
+
+	if serviceError != nil {
+		context.AbortWithError(serviceError.Code, serviceError.Err)
+		return
+	}
+
+	context.Status(http.StatusNoContent)
+}
+
+func HomeFeed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	tweetAuthorID := (context.MustGet("userID").(int64))
 
@@ -81,7 +102,7 @@ func MyTweets(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
+	context.IndentedJSON(http.StatusOK, gin.H{
 		"tweets": tweets,
 	})
 }

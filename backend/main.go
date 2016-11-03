@@ -12,8 +12,8 @@ package main
 import (
 	"os"
 
-	"gopkg.in/gin-gonic/gin.v1"
 	log "github.com/Sirupsen/logrus"
+	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
 	"github.com/VirrageS/chirp/backend/middleware"
@@ -31,8 +31,13 @@ func main() {
 	{
 		tweets.GET("/", api.GetTweets)
 		tweets.POST("/", middleware.TokenAuthenticator, api.PostTweet)
-		tweets.GET("/my/", middleware.TokenAuthenticator, api.MyTweets)
-		tweets.GET("/show/:id", api.GetTweet)
+		tweets.GET("/:id", api.GetTweet)
+		tweets.DELETE("/:id", middleware.TokenAuthenticator, api.DeleteTweet)
+	}
+
+	homeFeed := router.Group("/home_feed")
+	{
+		homeFeed.GET("/", middleware.TokenAuthenticator, api.HomeFeed)
 	}
 
 	users := router.Group("/users")
