@@ -11,6 +11,18 @@ Chirp is simplified Twitter written in Angular 2 and Go.
 
 ## Getting started (BACKEND)
 
+Install Go language: https://golang.org/doc/install (don't forget to set your GOPATH).
+
+Now run
+
+    $ go get github.com/VirrageS/chirp
+    $ cd $GOPATH/src/github.com/VirrageS/chirp/backend
+    $ go get .
+    $ export PATH=$PATH:$GOPATH/bin
+    $ go install
+    $ backend
+
+Now you've got your chirp backend running on localhost:8080!
 
 ## Getting started (FRONTEND)
 
