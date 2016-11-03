@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	log "github.com/Sirupsen/logrus"
+	"github.com/dgrijalva/jwt-go"
 
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
@@ -91,7 +91,7 @@ func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError)
 	return APITweet, nil
 }
 
-func DeleteTweet(authenticatingUserID, tweetID int64) *appErrors.AppError {
+func DeleteTweet(userID, tweetID int64) *appErrors.AppError {
 	databaseTweet, err := database.GetTweet(tweetID)
 
 	if err != nil {
@@ -100,7 +100,7 @@ func DeleteTweet(authenticatingUserID, tweetID int64) *appErrors.AppError {
 			Err:  errors.New("Tweet with given ID was not found."),
 		}
 	}
-	if databaseTweet.AuthorID != authenticatingUserID {
+	if databaseTweet.AuthorID != userID {
 		return &appErrors.AppError{
 			Code: http.StatusForbidden,
 			Err:  errors.New("User is not allowed to modify this resource."),
@@ -215,7 +215,7 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 		// TODO: here we will also need to check the error type and have different handling for different erros
 		log.WithFields(log.Fields{
 			"tweetID": tweetID,
-			"userID": userID,
+			"userID":  userID,
 		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
 		return APIModel.Tweet{}, appErrors.UnexpectedError
 	}

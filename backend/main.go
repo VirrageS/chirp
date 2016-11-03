@@ -12,8 +12,8 @@ package main
 import (
 	"os"
 
-	"gopkg.in/gin-gonic/gin.v1"
 	log "github.com/Sirupsen/logrus"
+	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
 	"github.com/VirrageS/chirp/backend/middleware"
