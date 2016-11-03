@@ -5,9 +5,7 @@ services:
     build: ../frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ../frontend:/frontend
-    command: npm run rebuildstart
+    command: npm start
 
   mongodb:
     extends:

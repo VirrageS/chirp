@@ -1,7 +1,5 @@
 FROM node:6.9
 
-RUN adduser --disabled-password --gecos '' docker
-
 # Fix bug https://github.com/npm/npm/issues/9863
 RUN cd $(npm root -g)/npm \
   && npm install fs-extra \
@@ -13,10 +11,14 @@ RUN \
   echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
   apt-get update && apt-get install yarn
 
+ENV NODE_ENV=development
+
 RUN yarn global add typescript webpack webpack-dev-server tslint typings
 
-WORKDIR /frontend
-COPY . /frontend
+RUN mkdir /frontend
+COPY package.json typings.json /frontend/
+WORKDIR /frontend/
 
 RUN yarn install
-RUN typings install
+
+COPY . /frontend

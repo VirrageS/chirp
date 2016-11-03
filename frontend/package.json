@@ -4,13 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "rebuildstart": "npm rebuild node-sass && webpack-dev-server --inline --progress --display-error-details --display-cached --host=0.0.0.0 --port 3000",
     "start": "webpack-dev-server --inline --progress --display-error-details --display-cached --host=0.0.0.0 --port 3000",
     "test": "karma start",
     "build": "rimraf dist && node --max-old-space-size=512 ./node_modules/webpack/bin/webpack.js --config config/webpack.prod.js --progress --profile --bail",
     "postinstall": "typings install"
   },
-  "author": "Janusz Marcinkiewicz",
+  "homepage": "https://github.com/VirrageS/chirp",
   "license": "MIT",
   "dependencies": {
     "@angular/common": "~2.1.0",
@@ -26,19 +25,23 @@
     "angular-in-memory-web-api": "~0.1.5",
     "bootstrap": "^3.3.7",
     "core-js": "^2.4.1",
+    "css-loader": "^0.23.1",
     "html-loader": "^0.4.4",
     "lodash": "^4.16.2",
     "node-sass": "^3.10.1",
     "reflect-metadata": "^0.1.8",
     "rxjs": "^5.0.0-beta.12",
+    "sass-loader": "^4.0.2",
     "systemjs": "0.19.39",
     "typings": "^1.4.0",
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.2",
+    "webpack-merge": "^0.15.0",
     "zone.js": "^0.6.25"
   },
   "devDependencies": {
     "angular2-template-loader": "^0.4.0",
     "concurrently": "^3.0.0",
-    "css-loader": "^0.23.1",
     "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "^0.8.5",
     "html-webpack-plugin": "^2.15.0",
@@ -52,13 +55,8 @@
     "phantomjs-prebuilt": "^2.1.7",
     "raw-loader": "^0.5.1",
     "rimraf": "^2.5.2",
-    "sass-loader": "^4.0.2",
     "style-loader": "^0.13.1",
     "ts-loader": "^0.8.1",
-    "typescript": "^2.0.3",
-    "typings": "^1.4.0",
-    "webpack": "^1.13.0",
-    "webpack-dev-server": "^1.16.1",
-    "webpack-merge": "^0.14.0"
+    "typescript": "^2.0.3"
   }
 }
