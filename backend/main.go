@@ -4,38 +4,52 @@ package main
 	TODO:
 	  - use c.bind() feature of Gin
 	  - add logging (probably using https://github.com/golang/glog)
+	  - generate a good secret key
+	    (useful: http://security.stackexchange.com/questions/95972/what-are-requirements-for-hmac-secret-key,
+	    	     https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/)
 */
 
 import (
-	//"github.com/itsjamie/gin-cors"
+	"os"
+
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
 	"github.com/VirrageS/chirp/backend/middleware"
 )
 
+func init() {
+	log.SetOutput(os.Stderr) // setup logrus logging library
+}
+
 func main() {
 	router := gin.Default()
 	router.Use(middleware.ErrorHandler())
 
-	//router.Use(cors.Middleware(cors.Config{
-	//	Origins:        "*",
-	//	Methods:        "GET, PUT, POST, DELETE",
-	//	RequestHeaders: "Origin, Authorization, Content-Type",
-	//}))
-
 	tweets := router.Group("/tweets")
 	{
 		tweets.GET("/", api.GetTweets)
-		tweets.POST("/", api.PostTweet)
+		tweets.POST("/", middleware.TokenAuthenticator, api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
+		tweets.DELETE("/:id", middleware.TokenAuthenticator, api.DeleteTweet)
+	}
+
+	homeFeed := router.Group("/home_feed")
+	{
+		homeFeed.GET("/", middleware.TokenAuthenticator, api.HomeFeed)
 	}
 
 	users := router.Group("/users")
 	{
 		users.GET("/", api.GetUsers)
-		users.POST("/", api.PostUser)
 		users.GET("/:id", api.GetUser)
+	}
+
+	auth := router.Group("/auth")
+	{
+		auth.POST("/register", api.RegisterUser)
+		auth.POST("/login", api.LoginUser)
 	}
 
 	router.Run(":8080")

@@ -1,6 +1,12 @@
 # Chirp
 
-Chirp is simplified Twitter written in Angular 2 and ...
+Chirp is simplified Twitter written in Angular 2 and Go.
+
+
+## Delete unused branches
+
+    $ git fetch --all --prune
+    $ git branch --merged master | grep -v 'master$' | xargs git branch -d
 
 
 ## Getting started (BACKEND)

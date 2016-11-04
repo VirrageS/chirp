@@ -5,14 +5,38 @@ import (
 	"net/http"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/dgrijalva/jwt-go"
+
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 	appErrors "github.com/VirrageS/chirp/backend/errors"
 )
 
+var secretKey = config.GetSecretKey()
+var tokenValidityDuration = time.Duration(config.GetTokenValidityPeriod())
+
 func GetTweets() ([]APIModel.Tweet, *appErrors.AppError) {
 	databaseTweets, databaseError := database.GetTweets()
+
+	if databaseError != nil {
+		return nil, appErrors.UnexpectedError
+	}
+
+	APITweets, serviceError := convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+
+	if serviceError != nil {
+		return nil, serviceError
+	}
+
+	return APITweets, nil
+}
+
+// Use GetTweets() with filtering parameters instead, when filtering will be supported
+func GetTweetsOfUserWithID(userID int64) ([]APIModel.Tweet, *appErrors.AppError) {
+	databaseTweets, databaseError := database.GetTweetsOfUserWithID(userID)
 
 	if databaseError != nil {
 		return nil, appErrors.UnexpectedError
@@ -67,6 +91,30 @@ func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError)
 	return APITweet, nil
 }
 
+func DeleteTweet(userID, tweetID int64) *appErrors.AppError {
+	databaseTweet, err := database.GetTweet(tweetID)
+
+	if err != nil {
+		return &appErrors.AppError{
+			Code: http.StatusNotFound,
+			Err:  errors.New("Tweet with given ID was not found."),
+		}
+	}
+	if databaseTweet.AuthorID != userID {
+		return &appErrors.AppError{
+			Code: http.StatusForbidden,
+			Err:  errors.New("User is not allowed to modify this resource."),
+		}
+	}
+
+	err = database.DeleteTweet(tweetID)
+	if err != nil {
+		return appErrors.UnexpectedError
+	}
+
+	return nil
+}
+
 func GetUsers() ([]APIModel.User, *appErrors.AppError) {
 	databaseUsers, databaseError := database.GetUsers()
 
@@ -81,7 +129,7 @@ func GetUsers() ([]APIModel.User, *appErrors.AppError) {
 }
 
 func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
-	databaseUser, databaseError := database.GetUser(userId)
+	databaseUser, databaseError := database.GetUserByID(userId)
 
 	if databaseError != nil {
 		// Maybe later on we'll need to add type switch here to check the type of error, because several things
@@ -97,46 +145,85 @@ func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
 	return APIUser, nil
 }
 
-func PostUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
+func RegisterUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	databaseUser := covertAPINewUserToDatabaseUser(user)
 
-	newUser, databaseError := database.InsertUser(databaseUser)
+	newUser, err := database.InsertUser(databaseUser)
 
-	if databaseError != nil {
+	if err != nil {
 		// again, one error only for now...
 		return APIModel.User{}, &appErrors.AppError{
 			Code: http.StatusConflict,
-			Err:  errors.New("User with given username already exists."),
+			Err:  errors.New("User with given username or email already exists."),
 		}
 	}
 
-	APIUser := convertDatabaseUserToAPIUser(newUser)
+	apiUser := convertDatabaseUserToAPIUser(newUser)
 
-	return APIUser, nil
+	return apiUser, nil
+}
+
+func LoginUser(email, password string) (string, *appErrors.AppError) {
+	databaseUser, databaseError := database.GetUserByEmail(email)
+
+	// TODO: hash the password before comparing
+	if databaseError != nil || databaseUser.Password != password {
+		return "", &appErrors.AppError{
+			Code: http.StatusUnauthorized,
+			Err:  errors.New("Invalid email or password."),
+		}
+	}
+	// TODO: update users last login time
+
+	token, serviceError := createTokenForUser(databaseUser)
+	if serviceError != nil {
+		return "", serviceError
+	}
+
+	return token, nil
+}
+
+func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
+	expirationTime := time.Now().Add(tokenValidityDuration * time.Minute)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userID": user.ID,
+		"exp":    expirationTime.Unix(),
+	})
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		log.WithError(err).Error("Failed to sign the token.")
+		// we should probably panic here, because the server will not be able to run if it can't auth users
+		return "", appErrors.UnexpectedError
+	}
+
+	return tokenString, nil
 }
 
 func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, *appErrors.AppError) {
-	id := tweet.ID
+	tweetID := tweet.ID
 	userID := tweet.AuthorID
 	likeCount := tweet.LikeCount
 	retweetCount := tweet.RetweetCount
 	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
-	authorFullData, err := database.GetUser(userID)
+	authorFullData, err := database.GetUserByID(userID)
 
 	if err != nil {
-		// log this instead and return an error with proper message
-		// errorMessage := fmt.Sprintf("no integrity in database, "+
-		//	"user with id = %d was not found (but should have been found)",
-		//	userID)
+		// TODO: here we will also need to check the error type and have different handling for different erros
+		log.WithFields(log.Fields{
+			"tweetID": tweetID,
+			"userID":  userID,
+		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
 		return APIModel.Tweet{}, appErrors.UnexpectedError
 	}
 
 	APIAuthorFullData := convertDatabaseUserToAPIUser(authorFullData)
 
 	APITweet := APIModel.Tweet{
-		ID:           id,
+		ID:           tweetID,
 		Author:       APIAuthorFullData,
 		LikeCount:    likeCount,
 		RetweetCount: retweetCount,
@@ -189,30 +276,42 @@ func convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []databaseModel.
 
 func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 	id := user.ID
-	name := user.Name
 	username := user.Username
 	email := user.Email
 	createdAt := user.CreatedAt
+	lastLogin := user.LastLogin
+	name := user.Name
+	active := user.Active
+	avatarUrl := user.AvatarUrl
 
 	return APIModel.User{
 		ID:        id,
-		Name:      name,
 		Username:  username,
 		Email:     email,
 		CreatedAt: createdAt,
+		LastLogin: lastLogin,
+		Active:    active,
+		Name:      name,
+		AvatarUrl: avatarUrl,
 	}
 }
 
 func covertAPINewUserToDatabaseUser(user APIModel.NewUser) databaseModel.User {
-	name := user.Name
 	username := user.Username
+	password := user.Password
 	email := user.Email
+	name := user.Name
+	creationTime := time.Now()
 
 	return databaseModel.User{
 		ID:        0,
-		Name:      name,
 		Username:  username,
+		Password:  password,
 		Email:     email,
-		CreatedAt: time.Now(),
+		CreatedAt: creationTime,
+		LastLogin: creationTime,
+		Active:    true,
+		Name:      name,
+		AvatarUrl: "",
 	}
 }
