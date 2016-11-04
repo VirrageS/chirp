@@ -38,5 +38,5 @@ func main() {
 		users.GET("/:id", api.GetUser)
 	}
 
-	router.Run(":8000")
+	router.Run(":8080")
 }

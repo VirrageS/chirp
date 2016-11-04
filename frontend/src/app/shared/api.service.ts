@@ -16,7 +16,7 @@ export class ApiService {
   apiUrl: string;
 
   constructor(private _http: Http) {
-    this.apiUrl = 'http://0.0.0.0:8000'
+    this.apiUrl = 'http://0.0.0.0:8080'
     if (process.env.ENV === 'production') {
       this.apiUrl = '' // TODO: we should set some apiUrl when on production
     }
