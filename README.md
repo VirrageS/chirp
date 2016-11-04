@@ -3,10 +3,12 @@
 Chirp is simplified Twitter written in Angular 2 and Go.
 
 
+
 ## Delete unused branches
 
     $ git fetch --all --prune
     $ git branch --merged master | grep -v 'master$' | xargs git branch -d
+
 
 
 ## Getting started (BACKEND)
@@ -18,11 +20,20 @@ Now run
     $ go get github.com/VirrageS/chirp
     $ cd $GOPATH/src/github.com/VirrageS/chirp/backend
     $ go get .
-    $ export PATH=$PATH:$GOPATH/bin
     $ go install
+    $ $GOPATH/bin/backend
+
+Now you've got your chirp backend running on [localhost:8080](http://localhost:8080/)!
+
+
+### Running backend easier
+
+You can add `$GOPATH/bin` to your `$PATH` and run `backend` easier.
+
+    $ export PATH=$PATH:$GOPATH/bin
     $ backend
 
-Now you've got your chirp backend running on localhost:8080!
+
 
 ## Getting started (FRONTEND)
 
