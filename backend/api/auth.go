@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/services"
@@ -12,25 +11,13 @@ import (
 )
 
 func RegisterUser(context *gin.Context) {
-	name := context.PostForm("name")
-	username := context.PostForm("username")
-	email := context.PostForm("email")
-	password := context.PostForm("password")
-
-	validationError := validateRegisterUserParameters(name, username, email, password)
-	if validationError != nil {
-		context.AbortWithError(http.StatusBadRequest, validationError)
+	var newUserForm model.NewUserForm
+	if bindError := context.BindJSON(&newUserForm); bindError != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Fields: name, username, password and email are required."))
 		return
 	}
 
-	requestUser := model.NewUser{
-		Username: username,
-		Password: password,
-		Email:    email,
-		Name:     name,
-	}
-
-	newUser, serviceError := services.RegisterUser(requestUser)
+	newUser, serviceError := services.RegisterUser(newUserForm)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 		return
@@ -43,16 +30,12 @@ func RegisterUser(context *gin.Context) {
 }
 
 func LoginUser(context *gin.Context) {
-	email := context.PostForm("email")
-	password := context.PostForm("password")
-
-	err := validateLoginUserParameters(email, password)
-	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, err)
-		return
+	var loginForm model.LoginForm
+	if bindError := context.BindJSON(&loginForm); bindError != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Fields: email and password are required."))
 	}
 
-	token, serviceError := services.LoginUser(email, password)
+	token, serviceError := services.LoginUser(loginForm)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 		return
@@ -61,46 +44,4 @@ func LoginUser(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, gin.H{
 		"auth_token": token,
 	})
-}
-
-func validateRegisterUserParameters(name, username, email, password string) error {
-	var invalidFields []string
-
-	if name == "" {
-		invalidFields = append(invalidFields, "name")
-	}
-	if username == "" {
-		invalidFields = append(invalidFields, "username")
-	}
-	if email == "" {
-		invalidFields = append(invalidFields, "email")
-	}
-	if password == "" {
-		invalidFields = append(invalidFields, "password")
-	}
-
-	if len(invalidFields) > 0 {
-		errorMessage := "Invalid request. Fields: " + strings.Join(invalidFields, ", ") + " are required."
-		return errors.New(errorMessage)
-	}
-
-	return nil
-}
-
-func validateLoginUserParameters(email, password string) error {
-	var invalidFields []string
-
-	if email == "" {
-		invalidFields = append(invalidFields, "email")
-	}
-	if password == "" {
-		invalidFields = append(invalidFields, "password")
-	}
-
-	if len(invalidFields) > 0 {
-		errorMessage := "Invalid request. Fields " + strings.Join(invalidFields, ", ") + " are required."
-		return errors.New(errorMessage)
-	}
-
-	return nil
 }

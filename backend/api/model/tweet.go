@@ -11,7 +11,11 @@ type Tweet struct {
 	Content      string    `json: "content"`
 }
 
+type NewTweetContent struct {
+	Content string `json: "content" binding:"required"`
+}
+
 type NewTweet struct {
-	AuthorID int64  `json: "id"`
-	Content  string `json: "content"`
+	AuthorID int64
+	Content  string
 }

@@ -73,6 +73,7 @@ func GetTweet(tweetID int64) (APIModel.Tweet, *appErrors.AppError) {
 }
 
 func PostTweet(newTweet APIModel.NewTweet) (APIModel.Tweet, *appErrors.AppError) {
+	// TODO: reject if content is empty or when user submitted the same tweet more than once
 	databaseTweet := convertAPINewTweetToDatabaseTweet(newTweet)
 
 	addedTweet, databaseError := database.InsertTweet(databaseTweet)
@@ -145,8 +146,8 @@ func GetUser(userId int64) (APIModel.User, *appErrors.AppError) {
 	return APIUser, nil
 }
 
-func RegisterUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
-	databaseUser := covertAPINewUserToDatabaseUser(user)
+func RegisterUser(newUserForm APIModel.NewUserForm) (APIModel.User, *appErrors.AppError) {
+	databaseUser := covertAPINewUserToDatabaseUser(newUserForm)
 
 	newUser, err := database.InsertUser(databaseUser)
 
@@ -163,7 +164,10 @@ func RegisterUser(user APIModel.NewUser) (APIModel.User, *appErrors.AppError) {
 	return apiUser, nil
 }
 
-func LoginUser(email, password string) (string, *appErrors.AppError) {
+func LoginUser(loginForm APIModel.LoginForm) (string, *appErrors.AppError) {
+	email := loginForm.Email
+	password := loginForm.Password
+
 	databaseUser, databaseError := database.GetUserByEmail(email)
 
 	// TODO: hash the password before comparing
@@ -296,7 +300,7 @@ func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 	}
 }
 
-func covertAPINewUserToDatabaseUser(user APIModel.NewUser) databaseModel.User {
+func covertAPINewUserToDatabaseUser(user APIModel.NewUserForm) databaseModel.User {
 	username := user.Username
 	password := user.Password
 	email := user.Email
