@@ -56,20 +56,20 @@ CREATE TABLE tags (
 CREATE UNIQUE INDEX tags_lowercase_name_idx ON tags ((lower(name)));
 
 
-CREATE TABLE posts_tags (
-  post_id  INTEGER REFERENCES posts (id),
+CREATE TABLE tweets_tags (
+  tweet_id  INTEGER REFERENCES tweets (id),
   tag_id  INTEGER REFERENCES tags (id),
 
-  PRIMARY KEY (post_id, tag_id)
+  PRIMARY KEY (tweet_id, tag_id)
 );
 
-CREATE INDEX posts_tags_posts_idx ON posts_tags (post_id);
-CREATE INDEX posts_tags_tags_idx ON posts_tags (tag_id);
-CREATE INDEX posts_tags_idx ON posts_tags (post_id, tag_id);
+CREATE INDEX tweets_tags_tweets_idx ON tweets_tags (tweet_id);
+CREATE INDEX tweets_tags_tags_idx ON tweets_tags (tag_id);
+CREATE INDEX tweets_tags_idx ON tweets_tags (tweet_id, tag_id);
 
 
 
 -- FIXTURES --
 
 -- users --
-INSERT INTO users (username, email, password, created_on) VALUES ('admin', 'admin@admin.com', 'admin', now());
+INSERT INTO users (username, email, password, created_at) VALUES ('admin', 'admin@admin.com', 'admin', now());
