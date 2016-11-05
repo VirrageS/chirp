@@ -1,0 +1,11 @@
+machine:
+  node:
+    version: 6
+
+dependencies:
+  override:
+    - cd frontend && npm install --dev
+
+test:
+  override:
+    - cd frontend && npm test

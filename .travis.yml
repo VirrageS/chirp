@@ -1,0 +1,11 @@
+language: go
+go:
+  - 1.6.3
+  - 1.7.3
+os:
+  - linux
+install:
+  - go get github.com/VirrageS/chirp/backend
+before_script:
+script:
+  - go test ./backend/...
