@@ -27,29 +27,26 @@ func main() {
 	router := gin.Default()
 	router.Use(middleware.ErrorHandler())
 
-	tweets := router.Group("/tweets")
+	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator)
 	{
+		tweets := authorizedRoutes.Group("tweets")
 		tweets.GET("/", api.GetTweets)
-		tweets.POST("/", middleware.TokenAuthenticator, api.PostTweet)
+		tweets.POST("/", api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
-		tweets.DELETE("/:id", middleware.TokenAuthenticator, api.DeleteTweet)
-	}
+		tweets.DELETE("/:id", api.DeleteTweet)
 
-	homeFeed := router.Group("/home_feed")
-	{
-		homeFeed.GET("/", middleware.TokenAuthenticator, api.HomeFeed)
-	}
+		homeFeed := authorizedRoutes.Group("home_feed")
+		homeFeed.GET("/", api.HomeFeed)
 
-	users := router.Group("/users")
-	{
+		users := authorizedRoutes.Group("users")
 		users.GET("/", api.GetUsers)
 		users.GET("/:id", api.GetUser)
 	}
 
-	auth := router.Group("/auth")
+	accounts := router.Group("")
 	{
-		auth.POST("/register", api.RegisterUser)
-		auth.POST("/login", api.LoginUser)
+		accounts.POST("/signup", api.RegisterUser)
+		accounts.POST("/login", api.LoginUser)
 	}
 
 	router.Run(":8080")
