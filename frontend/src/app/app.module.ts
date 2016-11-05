@@ -3,6 +3,7 @@ import { BrowserModule }  from '@angular/platform-browser';
 import { FormsModule }    from '@angular/forms';
 import { HttpModule }     from '@angular/http';
 import { RouterModule }   from '@angular/router';
+import { APP_BASE_HREF }    from '@angular/common';
 
 import { AppComponent }   from './app.component';
 
@@ -44,6 +45,7 @@ import { MeModule } from './me'
     LogoutComponent,
   ],
   providers: [
+    { provide: APP_BASE_HREF, useValue: '/home' },
     ApiService,
     UserService,
   ],
