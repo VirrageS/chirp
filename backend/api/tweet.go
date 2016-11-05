@@ -52,11 +52,15 @@ func GetTweet(context *gin.Context) {
 func PostTweet(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	tweetAuthorID := (context.MustGet("userID").(int64))
-	content := context.PostForm("content")
+	var newTweetContent model.NewTweetContent
+
+	if bindError := context.BindJSON(&newTweetContent); bindError != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Field content is required."))
+	}
 
 	requestTweet := model.NewTweet{
 		AuthorID: tweetAuthorID,
-		Content:  content,
+		Content:  newTweetContent.Content,
 	}
 
 	responseTweet, err2 := services.PostTweet(requestTweet)
