@@ -5,4 +5,4 @@ export { SingupComponent } from './singup.component';
 export { LoginComponent } from './login.component';
 export { LogoutComponent } from './logout.component';
 
-export { TweetComponent } from './tweet/tweet.component';
+export { TweetsModule } from './tweet';

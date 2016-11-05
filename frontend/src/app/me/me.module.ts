@@ -4,11 +4,11 @@ import { RouterModule }   from '@angular/router';
 import { FormsModule }    from '@angular/forms';
 
 import { MeComponent }        from './me.component';
-import { TweetsComponent }    from './tweets.component';
+import { MyTweetsComponent }  from './my-tweets.component';
 import { FollowingComponent } from './following.component';
 import { FollowersComponent } from './followers.component';
 
-import { TweetComponent } from '../components';
+import { TweetsModule } from '../components';
 
 
 @NgModule({
@@ -20,20 +20,20 @@ import { TweetComponent } from '../components';
       { path: 'me', component: MeComponent,
         children: [
           { path: '', redirectTo: 'tweets' },
-          { path: 'tweets', component: TweetsComponent },
+          { path: 'tweets', component: MyTweetsComponent },
           { path: 'following', component: FollowingComponent },
           { path: 'followers', component: FollowersComponent },
         ]
       }
-    ])
+    ]),
+
+    TweetsModule,
   ],
   declarations: [
     MeComponent,
-    TweetsComponent,
+    MyTweetsComponent,
     FollowingComponent,
     FollowersComponent,
-
-    TweetComponent,
   ],
   providers: []
 })
