@@ -227,12 +227,14 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 	APIAuthorFullData := convertDatabaseUserToAPIUser(authorFullData)
 
 	APITweet := APIModel.Tweet{
-		ID:           tweetID,
-		Author:       APIAuthorFullData,
-		LikeCount:    likeCount,
-		RetweetCount: retweetCount,
-		CreatedAt:    createdAt,
-		Content:      content,
+		ID:        tweetID,
+		Author:    APIAuthorFullData,
+		Likes:     likeCount,
+		Retweets:  retweetCount,
+		CreatedAt: createdAt,
+		Content:   content,
+		Liked:     false,
+		Retweeted: false,
 	}
 	return APITweet, nil
 }
