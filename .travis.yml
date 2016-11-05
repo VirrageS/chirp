@@ -8,4 +8,4 @@ install:
   - go get github.com/VirrageS/chirp/backend
 before_script:
 script:
-  - cd backend && go test
+  - go test ./backend/...
