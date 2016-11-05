@@ -473,7 +473,7 @@ paths:
             items:
               $ref: '#/definitions/User'
 
-  /auth/register:
+  /register:
     post:
       summary: Creates a new user.
       parameters:
@@ -509,7 +509,7 @@ paths:
                 type: string
                 description: Error message.
 
-  /auth/login:
+  /login:
     post:
       summary: Logs in a user.
       parameters:
@@ -953,11 +953,11 @@ definitions:
         description: ID of the tweet.
       author:
         $ref: '#/definitions/User'
-      like_count:
+      likes:
         type: integer
         format: int64
         description: Number of likes of the tweet.
-      retweet_count:
+      retweets:
         type: integer
         format: int64
         description: Number of retweets of the tweet.
