@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
 
+import { Tweet } from '../shared';
+
+
 @Component({
-  styleUrls: ['./me.component.scss'],
-  templateUrl: './me.component.html'
+  selector: 'me',
+  templateUrl: './me.component.html',
+  styleUrls: ['./me.component.scss']
 })
 export class MeComponent {
-  followers: number = 2934890;
-  following: number = 384;
-  tweets: number = 809;
+  followers: number = 2934890
+  following: number = 384
+  tweets: number = 234
 }
