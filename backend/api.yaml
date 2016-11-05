@@ -924,6 +924,9 @@ definitions:
         type: string
         format: url
         description: An URL to users avatar.
+      following:
+        type: boolean
+        description: Informs if authenticating user follows this user.
 
 
   AuthUser:
@@ -953,11 +956,11 @@ definitions:
         description: ID of the tweet.
       author:
         $ref: '#/definitions/User'
-      like_count:
+      likes:
         type: integer
         format: int64
         description: Number of likes of the tweet.
-      retweet_count:
+      retweets:
         type: integer
         format: int64
         description: Number of retweets of the tweet.
@@ -968,6 +971,13 @@ definitions:
       content:
         type: string
         description: Content of the tweet.
+      liked:
+        type: boolean
+        description: Informs if authenticating user liked this tweet.
+      retweeted:
+        type: boolean
+        description: Informs if authenticating user retweeted this tweet.
+
 
   NewTweet:
     type: object

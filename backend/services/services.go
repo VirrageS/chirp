@@ -208,8 +208,8 @@ func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {
 func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, *appErrors.AppError) {
 	tweetID := tweet.ID
 	userID := tweet.AuthorID
-	likeCount := tweet.LikeCount
-	retweetCount := tweet.RetweetCount
+	likes := tweet.Likes
+	retweets := tweet.Retweets
 	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
@@ -227,12 +227,14 @@ func convertDatabaseTweetToAPITweet(tweet databaseModel.Tweet) (APIModel.Tweet, 
 	APIAuthorFullData := convertDatabaseUserToAPIUser(authorFullData)
 
 	APITweet := APIModel.Tweet{
-		ID:           tweetID,
-		Author:       APIAuthorFullData,
-		LikeCount:    likeCount,
-		RetweetCount: retweetCount,
-		CreatedAt:    createdAt,
-		Content:      content,
+		ID:        tweetID,
+		Author:    APIAuthorFullData,
+		Likes:     likes,
+		Retweets:  retweets,
+		CreatedAt: createdAt,
+		Content:   content,
+		Liked:     false,
+		Retweeted: false,
 	}
 	return APITweet, nil
 }
@@ -242,12 +244,12 @@ func convertAPINewTweetToDatabaseTweet(tweet APIModel.NewTweet) databaseModel.Tw
 	content := tweet.Content
 
 	return databaseModel.Tweet{
-		ID:           0,
-		AuthorID:     authorId,
-		LikeCount:    0,
-		RetweetCount: 0,
-		CreatedAt:    time.Now(),
-		Content:      content,
+		ID:        0,
+		AuthorID:  authorId,
+		Likes:     0,
+		Retweets:  0,
+		CreatedAt: time.Now(),
+		Content:   content,
 	}
 }
 
@@ -297,6 +299,7 @@ func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 		Active:    active,
 		Name:      name,
 		AvatarUrl: avatarUrl,
+		Following: false,
 	}
 }
 
