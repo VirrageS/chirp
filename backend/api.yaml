@@ -473,7 +473,7 @@ paths:
             items:
               $ref: '#/definitions/User'
 
-  /auth/register:
+  /signup:
     post:
       summary: Creates a new user.
       parameters:
@@ -509,7 +509,7 @@ paths:
                 type: string
                 description: Error message.
 
-  /auth/login:
+  /login:
     post:
       summary: Logs in a user.
       parameters:
