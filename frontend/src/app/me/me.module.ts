@@ -8,7 +8,7 @@ import { TweetsComponent }    from './tweets.component';
 import { FollowingComponent } from './following.component';
 import { FollowersComponent } from './followers.component';
 
-// import { HeroService } from './hero.service';
+import { TweetComponent } from '../components';
 
 
 @NgModule({
@@ -31,10 +31,10 @@ import { FollowersComponent } from './followers.component';
     MeComponent,
     TweetsComponent,
     FollowingComponent,
-    FollowersComponent
+    FollowersComponent,
+
+    TweetComponent,
   ],
-  providers: [
-    // HeroService
-  ]
+  providers: []
 })
 export class MeModule {}

@@ -5,7 +5,6 @@ import { User, UserService } from '../shared';
 
 @Component({
   template: `
-    {{diagnostic}}
     <div class="container">
       <h1>Login</h1>
       <form (ngSubmit)="onSubmit()" #loginForm="ngForm">

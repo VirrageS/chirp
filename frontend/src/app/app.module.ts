@@ -7,7 +7,7 @@ import { APP_BASE_HREF }    from '@angular/common';
 
 import { AppComponent }   from './app.component';
 
-import { ApiService, UserService } from './shared';
+import { ApiService, UserService, TweetService } from './shared';
 import { NavigationBarComponent } from './layout';
 
 import {
@@ -48,6 +48,7 @@ import { MeModule } from './me'
     { provide: APP_BASE_HREF, useValue: '/home' },
     ApiService,
     UserService,
+    TweetService,
   ],
   bootstrap: [AppComponent]
  })

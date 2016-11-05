@@ -1,0 +1,19 @@
+<div class="tweet">
+  <div class="tweet__header">
+    <div class="avatar"></div>
+    <div class="user">
+      <div class="user__name">{{ tweet.author.name }}</div>
+      <div class="user__username">@{{ tweet.author.username }}</div>
+    </div>
+  </div>
+  <div class="tweet__content">
+    {{ tweet.content }}
+  </div>
+  <div class="tweet__controllers">
+    <div *ngIf="!tweet.liked" class="button" (click)=_like()>Like ({{ tweet.likes }})</div>
+    <div *ngIf="tweet.liked" class="button" (click)=_unlike()>Unlike ({{ tweet.likes }})</div>
+
+    <div *ngIf="!tweet.retweeted" class="button" (click)=_retweet()>Retweet ({{ tweet.retweets }})</div>
+    <div *ngIf="tweet.retweeted" class="button" (click)=_unretweet()>Unretweet ({{ tweet.retweets }})</div>
+  </div>
+</div>

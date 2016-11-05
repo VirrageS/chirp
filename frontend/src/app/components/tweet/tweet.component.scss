@@ -1,0 +1,43 @@
+$name-color: #000000;
+$username-color: rgba(0, 0, 0, .52);
+
+.tweet {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 20px;
+
+  &__header {
+    display: flex;
+    flex-direction: row;
+  }
+
+  &__content {
+    margin: 20px 0px;
+
+    font-size: 1.3em;
+  }
+
+  &__controllers {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.user {
+  display: flex;
+  flex-direction: column;
+
+  &__name {
+    font-size: 1.05em;
+    font-weight: 700;
+
+    color: $name-color;
+  }
+
+  &__username {
+    font-size: 0.9em;
+
+    color: $username-color;
+  }
+}
