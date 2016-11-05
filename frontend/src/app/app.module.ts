@@ -12,7 +12,8 @@ import { NavigationBarComponent } from './layout';
 
 import {
   HomeComponent, SearchComponent,
-  SingupComponent, LoginComponent, LogoutComponent
+  SingupComponent, LoginComponent, LogoutComponent,
+  TweetsModule
 } from './components';
 
 import { MeModule } from './me'
@@ -23,7 +24,6 @@ import { MeModule } from './me'
     HttpModule,
     BrowserModule,
     FormsModule,
-    MeModule,
     RouterModule.forRoot([
       { path: '', redirectTo: '/home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
@@ -32,7 +32,10 @@ import { MeModule } from './me'
       { path: 'singup', component: SingupComponent },
       { path: 'login', component: LoginComponent },
       { path: 'logout', component: LogoutComponent },
-    ])
+    ]),
+
+    MeModule,
+    TweetsModule,
   ],
   declarations: [
     AppComponent,

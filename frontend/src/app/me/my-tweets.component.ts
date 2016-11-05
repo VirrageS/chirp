@@ -5,16 +5,10 @@ import { Tweet } from '../shared';
 
 @Component({
   template: `
-    <div class="feed">
-      <tweet
-        *ngFor="let tweet of tweets"
-        [tweet]="tweet"
-      >
-      </tweet>
-    </div>
+    <tweets [tweets]="tweets"></tweets>
   `
 })
-export class TweetsComponent {
+export class MyTweetsComponent {
   tweets: Tweet[] = [
    {id: 1, author: {id: 2, name: "Name", username: "Username", email: "", password: "", created_at: ""}, likes: 1, retweets: 1, liked: false, retweeted: false, created_at: "", content: "Hello"}
  ]
