@@ -11,4 +11,5 @@ type User struct {
 	Active    bool      `json:"active"`
 	Name      string    `json:"name"`
 	AvatarUrl string    `json:"avatar_url"`
+	Following bool      `json:"following"`
 }

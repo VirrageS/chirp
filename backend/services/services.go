@@ -299,6 +299,7 @@ func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 		Active:    active,
 		Name:      name,
 		AvatarUrl: avatarUrl,
+		Following: false,
 	}
 }
 
