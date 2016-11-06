@@ -260,7 +260,7 @@ func convertAPINewTweetToDatabaseTweet(tweet APIModel.NewTweet) databaseModel.Tw
 }
 
 func convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]APIModel.Tweet, *appErrors.AppError) {
-	var APITweets []APIModel.Tweet
+	APITweets := make([]APIModel.Tweet, 0)
 
 	for _, databaseTweet := range databaseTweets {
 		APITweet, err := convertDatabaseTweetToAPITweet(databaseTweet)
@@ -276,7 +276,7 @@ func convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseMod
 }
 
 func convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []databaseModel.User) []APIModel.User {
-	var convertedUsers []APIModel.User
+	convertedUsers := make([]APIModel.User, 0)
 
 	for _, databaseUser := range databaseUsers {
 		APIUser := convertDatabaseUserToAPIUser(databaseUser)
