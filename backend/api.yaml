@@ -529,7 +529,7 @@ paths:
         200:
           description: Users authentication token.
           schema:
-            $ref: '#/definitions/AuthToken'
+            $ref: '#/definitions/LoginResponse'
         400:
           description: Bad request.
           schema:
@@ -941,9 +941,11 @@ definitions:
       email:
         type: string
 
-  AuthToken:
+  LoginResponse:
     type: object
     properties:
+      user:
+        $ref: '#/definitions/User'
       auth_token:
         type: string
 
