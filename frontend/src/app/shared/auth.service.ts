@@ -2,13 +2,18 @@ import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 
 import { ApiService } from './api.service';
+import { StoreHelper } from './store-helper';
 
 
 @Injectable()
 export class AuthService implements CanActivate {
   TOKEN_KEY: string = "AUTH_TOKEN"
 
-  constructor(private _apiService: ApiService, private _router: Router) {
+  constructor(
+      private _apiService: ApiService,
+      private _router: Router,
+      private _storeHelper: StoreHelper
+  ) {
     const token = window.localStorage.getItem(this.TOKEN_KEY)
 
     if (token) {
@@ -18,6 +23,7 @@ export class AuthService implements CanActivate {
 
   setToken(token: string) {
     window.localStorage.setItem(this.TOKEN_KEY, token)
+    console.log(token)
     this._apiService.setHeaders({
       Authorization: `Bearer ${token}`
     })
@@ -47,9 +53,11 @@ export class AuthService implements CanActivate {
   login(body) {
     return this._apiService.post("/login", body)
       .do((res: any) => this.setToken(res.auth_token))
+      .do((res: any) => this._storeHelper.update('user', res.user))
   }
 
   logout() {
     window.localStorage.removeItem(this.TOKEN_KEY)
+    this._storeHelper.update('user', {})
   }
 }

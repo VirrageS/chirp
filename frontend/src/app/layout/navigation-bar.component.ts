@@ -31,8 +31,6 @@ export class NavigationBarComponent {
   user?: User
 
   constructor(private _userService: UserService, private _store: Store) {
-    // this._userService.getUser().subscribe();
-
     this._store.changes.pluck('user')
       .subscribe((user: any) => this.user = user)
   }
