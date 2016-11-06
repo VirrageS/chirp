@@ -27,11 +27,13 @@ func main() {
 	router.Use(cors.New(configureCORS()))
 	router.Use(middleware.ErrorHandler())
 
+	contentTypeChecker := middleware.ContentTypeChecker()
+
 	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator)
 	{
 		tweets := authorizedRoutes.Group("tweets")
 		tweets.GET("/", api.GetTweets)
-		tweets.POST("/", api.PostTweet)
+		tweets.POST("/", contentTypeChecker, api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
 		tweets.DELETE("/:id", api.DeleteTweet)
 
@@ -45,8 +47,8 @@ func main() {
 
 	accounts := router.Group("")
 	{
-		accounts.POST("/signup", api.RegisterUser)
-		accounts.POST("/login", api.LoginUser)
+		accounts.POST("/signup", contentTypeChecker, api.RegisterUser)
+		accounts.POST("/login", contentTypeChecker, api.LoginUser)
 	}
 
 	router.Run(":8080")
