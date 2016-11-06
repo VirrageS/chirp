@@ -1,32 +1,22 @@
 import { Injectable } from '@angular/core';
+
 import { ApiService } from './api.service';
+import { StoreHelper } from './store-helper';
+
 
 @Injectable()
 export class UserService {
-  user_path: string = "/user"
-  user_id: string = ""
+  user_id: number = 0
 
-  constructor(private apiService: ApiService) {
-    // TODO: get user_id
-  }
+  constructor(private _apiService: ApiService, private _storeHelper: StoreHelper) {}
 
   getUser() {
-    return this.apiService.get(this.user_path + this.user_id);
+    return this._apiService.get("/user/" + this.user_id)
+      .do(user => this._storeHelper.add('user', user))
   }
 
-  loginUser(body) {
-    let path: string = "/auth/login";
-    return this.apiService.post(path, body);
-  }
-
-  singupUser(body) {
-    let path: string = "/auth/register";
-    console.log(body);
-    return this.apiService.post(path, body);
-  }
-
-  getTweets() {
-    let path: string = "/tweets";
-    return this.apiService.get(this.user_path + "/" + this.user_id + path);
+  getTweets(path) {
+    return this._apiService.get("/user/" + this.user_id + path)
+      .do(tweets => this._storeHelper.add('tweets', tweets))
   }
 }

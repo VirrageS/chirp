@@ -10,6 +10,8 @@ import { FollowersComponent } from './followers.component';
 
 import { TweetsModule } from '../components';
 
+import { AuthService } from '../shared';
+
 
 @NgModule({
   imports: [
@@ -17,7 +19,10 @@ import { TweetsModule } from '../components';
     FormsModule,
 
     RouterModule.forChild([
-      { path: 'me', component: MeComponent,
+      {
+        path: 'me',
+        component: MeComponent,
+        canActivate: [AuthService],
         children: [
           { path: '', redirectTo: 'tweets' },
           { path: 'tweets', component: MyTweetsComponent },
@@ -35,6 +40,8 @@ import { TweetsModule } from '../components';
     FollowingComponent,
     FollowersComponent,
   ],
-  providers: []
+  providers: [
+    AuthService,
+  ]
 })
 export class MeModule {}

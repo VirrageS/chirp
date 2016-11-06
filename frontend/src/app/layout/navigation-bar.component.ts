@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
 
+import { UserService, User } from '../shared';
+import { Store } from '../store';
+
+
 @Component({
   selector: 'navigation-bar',
-  styles: [require('./navigation-bar.component.scss')],
+  styleUrls: ['./navigation-bar.component.scss'],
   template: `
     <div class="navigation-bar shadow-1">
       <div class="menu">
@@ -24,7 +28,12 @@ import { Component } from '@angular/core';
   `
 })
 export class NavigationBarComponent {
-  user = {
-    name: 'Chirp'
+  user?: User
+
+  constructor(private _userService: UserService, private _store: Store) {
+    // this._userService.getUser().subscribe();
+
+    this._store.changes.pluck('user')
+      .subscribe((user: any) => this.user = user)
   }
 }
