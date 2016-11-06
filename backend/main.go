@@ -55,6 +55,6 @@ func main() {
 func configureCORS() (config cors.Config) {
 	config = cors.DefaultConfig()
 	config.AllowAllOrigins = true
-	config.AllowCredentials = true
+	config.AddAllowHeaders("Authorization")
 	return
 }
