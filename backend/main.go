@@ -32,16 +32,16 @@ func main() {
 	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator)
 	{
 		tweets := authorizedRoutes.Group("tweets")
-		tweets.GET("/", api.GetTweets)
-		tweets.POST("/", contentTypeChecker, api.PostTweet)
+		tweets.GET("", api.GetTweets)
+		tweets.POST("", contentTypeChecker, api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
 		tweets.DELETE("/:id", api.DeleteTweet)
 
 		homeFeed := authorizedRoutes.Group("home_feed")
-		homeFeed.GET("/", api.HomeFeed)
+		homeFeed.GET("", api.HomeFeed)
 
 		users := authorizedRoutes.Group("users")
-		users.GET("/", api.GetUsers)
+		users.GET("", api.GetUsers)
 		users.GET("/:id", api.GetUser)
 	}
 
