@@ -33,15 +33,14 @@ func LoginUser(context *gin.Context) {
 	var loginForm model.LoginForm
 	if bindError := context.BindJSON(&loginForm); bindError != nil {
 		context.AbortWithError(http.StatusBadRequest, errors.New("Fields: email and password are required."))
+		return
 	}
 
-	token, serviceError := services.LoginUser(loginForm)
+	loginResponse, serviceError := services.LoginUser(loginForm)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, gin.H{
-		"auth_token": token,
-	})
+	context.IndentedJSON(http.StatusOK, loginResponse)
 }

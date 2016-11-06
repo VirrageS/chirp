@@ -164,7 +164,7 @@ func RegisterUser(newUserForm APIModel.NewUserForm) (APIModel.User, *appErrors.A
 	return apiUser, nil
 }
 
-func LoginUser(loginForm APIModel.LoginForm) (string, *appErrors.AppError) {
+func LoginUser(loginForm APIModel.LoginForm) (*APIModel.LoginResponse, *appErrors.AppError) {
 	email := loginForm.Email
 	password := loginForm.Password
 
@@ -172,19 +172,25 @@ func LoginUser(loginForm APIModel.LoginForm) (string, *appErrors.AppError) {
 
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
-		return "", &appErrors.AppError{
-			Code: http.StatusUnauthorized,
-			Err:  errors.New("Invalid email or password."),
-		}
+		return nil, &appErrors.AppError{
+				Code: http.StatusUnauthorized,
+				Err:  errors.New("Invalid email or password."),
+			}
 	}
 	// TODO: update users last login time
 
 	token, serviceError := createTokenForUser(databaseUser)
 	if serviceError != nil {
-		return "", serviceError
+		return nil, serviceError
 	}
 
-	return token, nil
+	apiUser := convertDatabaseUserToAPIUser(databaseUser)
+	response := &APIModel.LoginResponse{
+		AuthToken: token,
+		User:      apiUser,
+	}
+
+	return response, nil
 }
 
 func createTokenForUser(user databaseModel.User) (string, *appErrors.AppError) {

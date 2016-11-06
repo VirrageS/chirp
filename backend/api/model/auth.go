@@ -11,3 +11,8 @@ type LoginForm struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
+
+type LoginResponse struct {
+	AuthToken string `json:"auth_token"`
+	User      User   `json:"user"`
+}
