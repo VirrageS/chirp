@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 
+	"database/sql"
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
@@ -293,7 +294,7 @@ func convertDatabaseUserToAPIUser(user *databaseModel.User) *APIModel.User {
 	createdAt := user.CreatedAt
 	lastLogin := user.LastLogin
 	name := user.Name
-	avatarUrl := user.AvatarUrl
+	avatarUrl := user.AvatarUrl.String
 
 	return &APIModel.User{
 		ID:        id,
@@ -314,15 +315,24 @@ func covertAPINewUserToDatabaseUser(user *APIModel.NewUserForm) *databaseModel.U
 	name := user.Name
 	creationTime := time.Now()
 
-	return &databaseModel.User{
-		ID:        0,
-		Username:  username,
-		Password:  password,
-		Email:     email,
-		CreatedAt: creationTime,
-		LastLogin: creationTime,
-		Active:    true,
-		Name:      name,
-		AvatarUrl: "",
+	return databaseModel.User{
+		ID:            0,
+		TwitterToken:  toSqlNullString(""),
+		FacebookToken: toSqlNullString(""),
+		GoogleToken:   toSqlNullString(""),
+		Username:      username,
+		Password:      password,
+		Email:         email,
+		CreatedAt:     creationTime,
+		LastLogin:     creationTime,
+		Active:        true,
+		Name:          name,
+		AvatarUrl:     toSqlNullString(""),
 	}
+}
+
+// converts string to database NullString
+// TODO: Maybe move to a new 'util' package
+func toSqlNullString(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
 }

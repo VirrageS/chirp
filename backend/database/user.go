@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 
 var users = []model.User{
 	{
-		ID:        1,
+		ID:        123,
 		Username:  "corpsegridner",
 		Password:  "fuckthealliance",
 		Email:     "corpsegrinder@cannibalcorpse.com",
@@ -17,7 +18,7 @@ var users = []model.User{
 		LastLogin: time.Unix(0, 0),
 		Active:    true,
 		Name:      "George Fisher",
-		AvatarUrl: "",
+		AvatarUrl: sql.NullString{String: "", Valid: false},
 	},
 }
 
