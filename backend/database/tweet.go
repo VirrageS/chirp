@@ -10,7 +10,7 @@ import (
 var tweets = []model.Tweet{
 	{
 		ID:        1,
-		AuthorID:  users[0].ID,
+		AuthorID:  1,
 		Likes:     0,
 		Retweets:  0,
 		CreatedAt: time.Unix(0, 0),

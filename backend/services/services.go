@@ -170,7 +170,6 @@ func LoginUser(loginForm APIModel.LoginForm) (*APIModel.LoginResponse, *appError
 	password := loginForm.Password
 
 	databaseUser, databaseError := database.GetUserByEmail(email)
-
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
 		return nil, &appErrors.AppError{
