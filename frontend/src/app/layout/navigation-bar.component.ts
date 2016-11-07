@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'navigation-bar',
-  styles: [require('./navigation-bar.component.scss')],
+  styleUrls: ['./navigation-bar.component.scss'],
   template: `
     <div class="navigation-bar shadow-1">
       <div class="menu">

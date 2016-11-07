@@ -26,7 +26,6 @@ CREATE INDEX users_email_idx ON users (email);
 CREATE INDEX users_active_idx ON users (active);
 
 
-
 CREATE TABLE followers (
   follower   INTEGER REFERENCES users (id) ON DELETE CASCADE,
   following  INTEGER REFERENCES users (id) ON DELETE CASCADE,
@@ -38,18 +37,15 @@ CREATE INDEX followers_follower_idx ON followers (follower);
 CREATE INDEX followers_following_idx ON followers (following);
 CREATE INDEX followers_idx ON followers (follower, following);
 
-
-
 CREATE TABLE tweets (
   id          SERIAL PRIMARY KEY,
-  author_id   INTEGER REFERENCES users (id) NOT NULL ON DELETE CASCADE,
+  author_id   INTEGER REFERENCES users (id) ON DELETE CASCADE,
   created_at  TIMESTAMP NOT NULL DEFAULT now(),
   content     VARCHAR(150) NOT NULL
 );
 
-CREATE INDEX posts_idx ON tweets (id);
-CREATE INDEX posts_fulltext_idx ON tweets USING GIN (to_tsvector(content));
-
+CREATE INDEX tweets_idx ON tweets (id);
+CREATE INDEX tweets_fulltext_idx ON tweets USING GIN (to_tsvector('english', content));
 
 
 CREATE TABLE tags (
@@ -60,28 +56,20 @@ CREATE TABLE tags (
 CREATE UNIQUE INDEX tags_lowercase_name_idx ON tags ((lower(name)));
 
 
-
-CREATE TABLE posts_tags (
-  post_id  INTEGER REFERENCES posts (id),
+CREATE TABLE tweets_tags (
+  tweet_id  INTEGER REFERENCES tweets (id),
   tag_id  INTEGER REFERENCES tags (id),
 
-  PRIMARY KEY (post_id, tag_id)
+  PRIMARY KEY (tweet_id, tag_id)
 );
 
-CREATE INDEX posts_tags_posts_idx ON posts_tags (post_id);
-CREATE INDEX posts_tags_tags_idx ON posts_tags (tag_id);
-CREATE INDEX posts_tags_idx ON posts_tags (post_id, tag_id);
+CREATE INDEX tweets_tags_tweets_idx ON tweets_tags (tweet_id);
+CREATE INDEX tweets_tags_tags_idx ON tweets_tags (tag_id);
+CREATE INDEX tweets_tags_idx ON tweets_tags (tweet_id, tag_id);
 
 
-/*
---- GENERAL IDEA IN NOSQL DATABASE ---
 
-TABLE likes (
-  posts.id, user.id, 1
-)
+-- FIXTURES --
 
-TABLE shares (
-  posts.id, user.id, 1
-)
-
-*/
+-- users --
+INSERT INTO users (username, email, password, created_at) VALUES ('admin', 'admin@admin.com', 'admin', now());

@@ -1,0 +1,23 @@
+version: '2'
+services:
+  frontend:
+    restart: always
+    build: ../frontend
+    ports:
+      - "3000:3000"
+    command: npm start
+
+  mongodb:
+    extends:
+      file: core.yml
+      service: mongodb
+
+  postgres:
+    extends:
+      file: core.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: core.yml
+      service: redis

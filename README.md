@@ -53,3 +53,27 @@ Now run
     $ npm start
 
 now open browser to [localhost:3000](http://localhost:3000/) and done! :)
+
+
+## Docker
+
+Before we begin we have to install `docker-compose` command [Install](https://docs.docker.com/compose/install/)
+
+Then, depending on the services we want to start we have to type:
+
+
+### Backend with services
+
+    $ docker-compose -f docker/backend.yml build && docker-compose -f docker/backend.yml up
+
+### Frontend with services
+
+    $ docker-compose -f docker/frontend.yml build && docker-compose -f docker/frontend.yml up
+
+### Basic services
+
+    $ docker-compose -f docker/core.yml build && docker-compose -f docker/core.yml up
+
+### Production
+
+    $ docker-compose -f docker/production.yml build && docker-compose -f docker/production.yml up
