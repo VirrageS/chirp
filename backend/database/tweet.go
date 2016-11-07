@@ -9,12 +9,12 @@ import (
 
 var tweets = []model.Tweet{
 	{
-		ID:           1,
-		AuthorID:     users[0].ID,
-		LikeCount:    0,
-		RetweetCount: 0,
-		CreatedAt:    time.Unix(0, 0),
-		Content:      "siema siema siema",
+		ID:        1,
+		AuthorID:  users[0].ID,
+		Likes:     0,
+		Retweets:  0,
+		CreatedAt: time.Unix(0, 0),
+		Content:   "siema siema siema",
 	},
 }
 
