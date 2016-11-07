@@ -23,7 +23,6 @@ export class ApiService {
   }
 
   get(path: string): Observable<any> {
-    console.log(this.headers)
     return this._http.get(`${this.apiUrl}${path}`, { headers: this.headers, body: {} })
       .retryWhen(error => error.delay(this.retry))
       .timeout(this.timeout, new Error('Delay exceeded'))
