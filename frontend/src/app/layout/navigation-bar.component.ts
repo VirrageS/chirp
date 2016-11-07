@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { AuthService, UserService, User } from '../shared';
+import { AuthService, User } from '../shared';
 import { Store } from '../store';
 
 
@@ -32,7 +32,6 @@ export class NavigationBarComponent {
 
   constructor(
     private _authService: AuthService,
-    private _userService: UserService,
     private _store: Store
   ) {
     this._store.changes.pluck('user')
@@ -40,6 +39,6 @@ export class NavigationBarComponent {
   }
 
   private _authenticated() {
-    return this._authService.isAuthenticated();
+    return this._authService.isAuthenticated()
   }
 }

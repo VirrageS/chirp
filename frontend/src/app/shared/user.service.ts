@@ -20,12 +20,12 @@ export class UserService {
   }
 
   getUser() {
-    return this._apiService.get("/user/" + this.user.id)
+    return this._apiService.get("/users/" + this.user.id)
       .do(user => this._storeHelper.add('user', user))
   }
 
   getTweets(path) {
-    return this._apiService.get("/user/" + this.user.id + path)
+    return this._apiService.get("/users/" + this.user.id + path)
       .do(tweets => this._storeHelper.add('tweets', tweets))
   }
 

@@ -1,0 +1,17 @@
+.create-tweet {
+  display: block;
+  background-color: white;
+
+  &:not(last-child) {
+    margin-bottom: 20px;
+  }
+
+  &__title {
+    padding: 5px 0px 15px 0px;
+
+    font-size: 1.8em;
+    font-weight: 200;
+
+    text-align: center;
+  }
+}
