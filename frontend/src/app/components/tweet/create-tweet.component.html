@@ -1,0 +1,18 @@
+<div class="container">
+  <h1>Create Tweet</h1>
+  <form (ngSubmit)="onSubmit()" #tweetForm="ngForm">
+    <div class="form-group">
+      <label for="content">Content</label>
+      <input type="textarea" class="form-control" id="content"
+             required
+             [(ngModel)]="tweet.content" name="content"
+             #content="ngModel" >
+    </div>
+    <div [hidden]="content.valid || content.pristine"
+         class="alert alert-danger">
+      Content is required
+    </div>
+
+    <button type="submit" class="btn btn-default" [disabled]="!tweetForm.form.valid">Post</button>
+  </form>
+</div>

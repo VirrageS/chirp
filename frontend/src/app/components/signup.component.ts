@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
+import { Router }    from '@angular/router';
 
-import { User, UserService } from '../shared';
+import { User, AuthService } from '../shared';
 
 
 @Component({
   template: `
     <div class="container">
-      <h1>Singup</h1>
+      <h1>Sign Up</h1>
       <form (ngSubmit)="onSubmit()" #singupForm="ngForm">
         <div class="form-group">
           <label for="name">Name</label>
@@ -64,22 +65,28 @@ import { User, UserService } from '../shared';
     </div>
   `
 })
-export class SingupComponent {
-  user: User;
+export class SignupComponent {
+  user: User
+  errors: string[]
 
-  constructor(private _userService: UserService) {
-    this.user = new User();
+  constructor(private _authService: AuthService, private _router: Router) {
+    this.user = {
+      name: "",
+      username: "",
+      email: "",
+      password: ""
+    }
   }
 
   onSubmit() {
-    this._userService.singupUser(this.user)
+    this._authService.signup(this.user)
       .subscribe(
         result => {
-          console.log(result);
+          this._router.navigateByUrl('login')
         },
         error => {
-          console.log(error);
+          this.errors = error["errors"]
         }
-      );
+      )
   }
 }

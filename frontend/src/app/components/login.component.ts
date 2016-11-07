@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 
-import { User, UserService } from '../shared';
+import { User, AuthService } from '../shared';
 
 
 @Component({
@@ -9,15 +10,16 @@ import { User, UserService } from '../shared';
       <h1>Login</h1>
       <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
         <div class="form-group">
-          <label for="username">Username</label>
-          <input type="username" class="form-control" id="username"
+          <label for="email">Email</label>
+          <input type="email" class="form-control" id="email"
                  required
-                 [(ngModel)]="user.username" name="username"
-                 #username="ngModel" >
+                 [(ngModel)]="user.email" name="email"
+                 #email="ngModel"
+                 pattern="[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}" >
         </div>
-        <div [hidden]="username.valid || username.pristine"
+        <div [hidden]="email.valid || email.pristine"
              class="alert alert-danger">
-          Username is required
+          Email is required
         </div>
 
         <div class="form-group">
@@ -38,20 +40,24 @@ import { User, UserService } from '../shared';
   `
 })
 export class LoginComponent {
-  user: User;
+  user: User
+  errors: string[]
 
-  constructor(private _userService: UserService) {
-    this.user = new User();
+  constructor(private _authService: AuthService, private _router: Router) {
+    this.user = {
+      email: "",
+      password: ""
+    }
   }
 
   onSubmit() {
-    this._userService.loginUser(this.user)
+    this._authService.login(this.user)
       .subscribe(
         result => {
-          console.log(result);
+          this._router.navigateByUrl('home')
         },
         error => {
-          console.log(error);
+          this.errors = error["errors"]
         }
       );
   }

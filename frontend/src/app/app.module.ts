@@ -7,12 +7,16 @@ import { APP_BASE_HREF }    from '@angular/common';
 
 import { AppComponent }   from './app.component';
 
-import { ApiService, UserService, TweetService } from './shared';
-import { NavigationBarComponent } from './layout';
+import {
+  ApiService, AuthService, StoreHelper,
+  TweetService, UserService
+} from './shared';
+import { Store } from './store';
 
+import { NavigationBarComponent } from './layout';
 import {
   HomeComponent, SearchComponent,
-  SingupComponent, LoginComponent, LogoutComponent,
+  SignupComponent, LoginComponent, LogoutComponent,
   TweetsModule
 } from './components';
 
@@ -29,9 +33,9 @@ import { MeModule } from './me'
       { path: 'home', component: HomeComponent },
       { path: 'search', component: SearchComponent },
 
-      { path: 'singup', component: SingupComponent },
+      { path: 'signup', component: SignupComponent },
       { path: 'login', component: LoginComponent },
-      { path: 'logout', component: LogoutComponent },
+      { path: 'logout', component: LogoutComponent, canActivate: [AuthService] },
     ]),
 
     MeModule,
@@ -43,15 +47,18 @@ import { MeModule } from './me'
     HomeComponent,
     SearchComponent,
 
-    SingupComponent,
+    SignupComponent,
     LoginComponent,
     LogoutComponent,
   ],
   providers: [
-    { provide: APP_BASE_HREF, useValue: '/home' },
+    { provide: APP_BASE_HREF, useValue: '/' },
     ApiService,
     UserService,
     TweetService,
+    AuthService,
+    StoreHelper,
+    Store,
   ],
   bootstrap: [AppComponent]
  })

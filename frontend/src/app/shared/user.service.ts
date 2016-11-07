@@ -1,32 +1,36 @@
 import { Injectable } from '@angular/core';
+
+import { Store } from '../store';
 import { ApiService } from './api.service';
+import { StoreHelper } from './store-helper';
+import { User } from './user.model';
+
 
 @Injectable()
 export class UserService {
-  user_path: string = "/user"
-  user_id: string = ""
+  user?: User
 
-  constructor(private apiService: ApiService) {
-    // TODO: get user_id
+  constructor(
+    private _apiService: ApiService,
+    private _store: Store,
+    private _storeHelper: StoreHelper
+  ) {
+    this._store.changes.pluck('user')
+      .subscribe((user: any) => this.user = user)
   }
 
   getUser() {
-    return this.apiService.get(this.user_path + this.user_id);
+    return this._apiService.get("/user/" + this.user.id)
+      .do(user => this._storeHelper.add('user', user))
   }
 
-  loginUser(body) {
-    let path: string = "/auth/login";
-    return this.apiService.post(path, body);
+  getTweets(path) {
+    return this._apiService.get("/user/" + this.user.id + path)
+      .do(tweets => this._storeHelper.add('tweets', tweets))
   }
 
-  singupUser(body) {
-    let path: string = "/auth/register";
-    console.log(body);
-    return this.apiService.post(path, body);
-  }
-
-  getTweets() {
-    let path: string = "/tweets";
-    return this.apiService.get(this.user_path + "/" + this.user_id + path);
+  getFeed() {
+    return this._apiService.get("/home_feed")
+      .do(tweets => this._storeHelper.add('tweets', tweets))
   }
 }

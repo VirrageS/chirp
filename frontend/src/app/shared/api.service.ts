@@ -49,6 +49,10 @@ export class ApiService {
       .map(this._getJson)
   }
 
+  setHeaders(headers) {
+    Object.keys(headers).forEach(header => this.headers.set(header, headers[header]))
+  }
+
   private _getJson(response: Response) {
     return response.json();
   }
