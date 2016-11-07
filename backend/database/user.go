@@ -1,15 +1,17 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/VirrageS/chirp/backend/database/model"
 )
 
 var users = []model.User{
 	{
-		ID:        1,
+		ID:        123,
 		Username:  "corpsegridner",
 		Password:  "fuckthealliance",
 		Email:     "corpsegrinder@cannibalcorpse.com",
@@ -17,7 +19,7 @@ var users = []model.User{
 		LastLogin: time.Unix(0, 0),
 		Active:    true,
 		Name:      "George Fisher",
-		AvatarUrl: "",
+		AvatarUrl: sql.NullString{String: "", Valid: false},
 	},
 }
 
@@ -26,8 +28,14 @@ func GetUsers() ([]model.User, error) {
 }
 
 func GetUserByID(userID int64) (model.User, error) {
-	user, err := getUserWithId(userID)
+	var user model.User
+
+	row := Database.QueryRow("SELECT * from users WHERE id=$1", userID)
+	err := row.Scan(&user.ID, &user.TwitterToken, &user.FacebookToken, &user.GoogleToken, &user.Username,
+		&user.Password, &user.Email, &user.CreatedAt, &user.LastLogin, &user.Active,
+		&user.Name, &user.AvatarUrl)
 	if err != nil {
+		logrus.WithError(err).Error("Database query error.")
 		return model.User{}, errors.New("")
 	}
 
