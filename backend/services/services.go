@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 
+	"database/sql"
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
@@ -169,13 +170,12 @@ func LoginUser(loginForm APIModel.LoginForm) (*APIModel.LoginResponse, *appError
 	password := loginForm.Password
 
 	databaseUser, databaseError := database.GetUserByEmail(email)
-
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
 		return nil, &appErrors.AppError{
-				Code: http.StatusUnauthorized,
-				Err:  errors.New("Invalid email or password."),
-			}
+			Code: http.StatusUnauthorized,
+			Err:  errors.New("Invalid email or password."),
+		}
 	}
 	// TODO: update users last login time
 
@@ -294,7 +294,7 @@ func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 	lastLogin := user.LastLogin
 	name := user.Name
 	active := user.Active
-	avatarUrl := user.AvatarUrl
+	avatarUrl := user.AvatarUrl.String
 
 	return APIModel.User{
 		ID:        id,
@@ -317,14 +317,23 @@ func covertAPINewUserToDatabaseUser(user APIModel.NewUserForm) databaseModel.Use
 	creationTime := time.Now()
 
 	return databaseModel.User{
-		ID:        0,
-		Username:  username,
-		Password:  password,
-		Email:     email,
-		CreatedAt: creationTime,
-		LastLogin: creationTime,
-		Active:    true,
-		Name:      name,
-		AvatarUrl: "",
+		ID:            0,
+		TwitterToken:  toSqlNullString(""),
+		FacebookToken: toSqlNullString(""),
+		GoogleToken:   toSqlNullString(""),
+		Username:      username,
+		Password:      password,
+		Email:         email,
+		CreatedAt:     creationTime,
+		LastLogin:     creationTime,
+		Active:        true,
+		Name:          name,
+		AvatarUrl:     toSqlNullString(""),
 	}
+}
+
+// converts string to database NullString
+// TODO: Maybe move to a new 'util' package
+func toSqlNullString(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
 }
