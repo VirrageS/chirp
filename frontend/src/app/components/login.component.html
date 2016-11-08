@@ -6,8 +6,7 @@
       <input type="email" class="form-control" id="email"
              required
              [(ngModel)]="user.email" name="email"
-             #email="ngModel"
-             pattern="[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}" >
+             #email="ngModel" >
     </div>
     <div [hidden]="email.valid || email.pristine"
          class="alert alert-danger">
