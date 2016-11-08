@@ -4,17 +4,13 @@
   </div>
   <form (ngSubmit)="onSubmit()" #createTweetForm="ngForm">
     <div class="form-group">
-      <label for="content">Content</label>
-      <input type="textarea" class="form-control" id="content"
+      <textarea class="form-control" id="content" rows="4"
              required
              [(ngModel)]="tweet.content" name="content"
              #content="ngModel" >
-    </div>
-    <div [hidden]="content.valid || content.pristine"
-         class="alert alert-danger">
-      Content is required
+      </textarea>
     </div>
 
-    <button type="submit" class="btn btn-success" [disabled]="!createTweetForm.form.valid">Post</button>
+    <button type="submit" class="btn btn-primary" [disabled]="!createTweetForm.form.valid">Post</button>
   </form>
 </div>
