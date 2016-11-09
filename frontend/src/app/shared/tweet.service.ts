@@ -20,7 +20,7 @@ export class TweetService {
 
   createTweet(tweet: Tweet) {
     return this._apiService.post(this.tweet_path, tweet)
-      .do((tweet: Tweet) => this._storeHelper.add('tweets', tweet)) // TODO: change to my-tweets
+      .do((tweet: Tweet) => this._storeHelper.add("tweets", tweet)) // TODO: change to my-tweets
   }
 
   like(tweet_id: number) {

@@ -23,5 +23,13 @@ export class CreateTweetComponent {
 
   onSubmit(): void {
     this._tweetService.createTweet(this.tweet)
+      .subscribe(
+        res => {
+          this.tweet = {
+            content: ""
+          }
+        },
+        error => {}
+      )
   }
 }

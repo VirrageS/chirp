@@ -74,7 +74,6 @@ export class AuthService implements CanActivate {
 
   login(body) {
     return this._apiService.post("/login", body)
-      .do((res: any) => console.log(res.user))
       .do((res: any) => this.setAuthorization(res.auth_token, res.user))
   }
 

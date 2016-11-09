@@ -11,9 +11,7 @@ import { Store } from '../store';
   `
 })
 export class MyTweetsComponent implements OnInit {
-  tweets: Tweet[] = [
-    {id: 1, author: {id: 2, name: "Name", username: "Username", email: "", password: "", created_at: ""}, likes: 1, retweets: 1, liked: false, retweeted: false, created_at: "", content: "Hello"}
-  ]
+  tweets: Tweet[] = []
 
   constructor(
     private _userService: UserService,
@@ -22,10 +20,11 @@ export class MyTweetsComponent implements OnInit {
 
   }
 
- ngOnInit(): void {
-   this._userService.getFeed()
+  ngOnInit(): void {
+    this._userService.getFeed()
+      .subscribe((tweets: any) => this.tweets = tweets)
 
-  //  this._store.changes.pluck('tweets')
-  //    .subscribe((tweets: any) => this.tweets = tweets)
- }
+    this._store.changes.pluck("tweets")
+      .subscribe((tweets: any) => this.tweets = tweets)
+  }
 }

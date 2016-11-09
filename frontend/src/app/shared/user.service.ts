@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import * as _ from 'lodash';
 
 import { Store } from '../store';
 import { ApiService } from './api.service';
@@ -21,16 +22,20 @@ export class UserService {
 
   getUser() {
     return this._apiService.get("/users/" + this.user.id)
-      .do(user => this._storeHelper.add('user', user))
+      .do(user => this._storeHelper.add("user", user))
   }
 
   getTweets(path) {
     return this._apiService.get("/users/" + this.user.id + path)
-      .do(tweets => this._storeHelper.add('tweets', tweets))
+      .do(tweets => this._storeHelper.add("tweets", tweets))
   }
 
   getFeed() {
     return this._apiService.get("/home_feed")
-      .do(tweets => this._storeHelper.add('tweets', tweets))
+      .do(tweets => {
+        _.each(tweets, (tweet) => {
+          this._storeHelper.add("tweets", tweet)
+        })
+      })
   }
 }
