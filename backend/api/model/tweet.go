@@ -3,8 +3,8 @@ package model
 import "time"
 
 type Tweet struct {
-	ID        int64     `json:"author_id"`
-	Author    User      `json:"user"`
+	ID        int64     `json:"id"`
+	Author    User      `json:"author"`
 	Likes     int64     `json:"likes"`
 	Retweets  int64     `json:"retweets"`
 	CreatedAt time.Time `json:"created_at"`
