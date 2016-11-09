@@ -24,9 +24,7 @@ func RegisterUser(context *gin.Context) {
 	}
 
 	context.Header("Location", fmt.Sprintf("/user/%d", newUser.ID))
-	context.IndentedJSON(http.StatusCreated, gin.H{
-		"user": newUser,
-	})
+	context.IndentedJSON(http.StatusCreated, newUser)
 }
 
 func LoginUser(context *gin.Context) {

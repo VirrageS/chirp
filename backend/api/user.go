@@ -17,9 +17,7 @@ func GetUsers(context *gin.Context) {
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, gin.H{
-		"users": users,
-	})
+	context.IndentedJSON(http.StatusOK, users)
 }
 
 func GetUser(context *gin.Context) {
@@ -37,7 +35,5 @@ func GetUser(context *gin.Context) {
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, gin.H{
-		"user": responseUser,
-	})
+	context.IndentedJSON(http.StatusOK, responseUser)
 }

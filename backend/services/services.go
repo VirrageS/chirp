@@ -173,9 +173,9 @@ func LoginUser(loginForm APIModel.LoginForm) (*APIModel.LoginResponse, *appError
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
 		return nil, &appErrors.AppError{
-				Code: http.StatusUnauthorized,
-				Err:  errors.New("Invalid email or password."),
-			}
+			Code: http.StatusUnauthorized,
+			Err:  errors.New("Invalid email or password."),
+		}
 	}
 	// TODO: update users last login time
 
@@ -293,7 +293,6 @@ func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 	createdAt := user.CreatedAt
 	lastLogin := user.LastLogin
 	name := user.Name
-	active := user.Active
 	avatarUrl := user.AvatarUrl
 
 	return APIModel.User{
@@ -302,7 +301,6 @@ func convertDatabaseUserToAPIUser(user databaseModel.User) APIModel.User {
 		Email:     email,
 		CreatedAt: createdAt,
 		LastLogin: lastLogin,
-		Active:    active,
 		Name:      name,
 		AvatarUrl: avatarUrl,
 		Following: false,
