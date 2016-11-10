@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
@@ -40,12 +39,6 @@ func TokenAuthenticator(context *gin.Context) {
 			context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 			return
 		}
-
-		if unexpired := claims.VerifyExpiresAt(time.Now().Unix(), true); !unexpired {
-			context.AbortWithError(http.StatusUnauthorized, errors.New("Authentication token has expired."))
-			return
-		}
-
 		context.Set("userID", int64(userID))
 	} else {
 		context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
