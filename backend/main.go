@@ -23,6 +23,11 @@ func init() {
 }
 
 func main() {
+	router := setupRouter()
+	router.Run(":8080")
+}
+
+func setupRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.New(configureCORS()))
 	router.Use(middleware.ErrorHandler())
@@ -51,7 +56,7 @@ func main() {
 		accounts.POST("/login", contentTypeChecker, api.LoginUser)
 	}
 
-	router.Run(":8080")
+	return router
 }
 
 func configureCORS() (config cors.Config) {
