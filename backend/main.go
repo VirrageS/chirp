@@ -29,7 +29,7 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	router := gin.Default()
-	router.Use(cors.New(configureCORS()))
+	router.Use(cors.New(*setupCORS()))
 	router.Use(middleware.ErrorHandler())
 
 	contentTypeChecker := middleware.ContentTypeChecker()
@@ -59,9 +59,10 @@ func setupRouter() *gin.Engine {
 	return router
 }
 
-func configureCORS() (config cors.Config) {
-	config = cors.DefaultConfig()
+func setupCORS() *cors.Config {
+	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AddAllowHeaders("Authorization")
-	return
+
+	return &config
 }
