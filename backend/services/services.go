@@ -57,7 +57,7 @@ func GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError) {
 	if databaseError != nil {
 		// Later on we'll need to add type switch here to check the type of error, because several things
 		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
-		return &APIModel.Tweet{}, &appErrors.AppError{
+		return nil, &appErrors.AppError{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),
 		}
@@ -66,7 +66,7 @@ func GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError) {
 	APITweet, serviceError := convertDatabaseTweetToAPITweet(&databaseTweet)
 
 	if serviceError != nil {
-		return &APIModel.Tweet{}, serviceError
+		return nil, serviceError
 	}
 
 	return APITweet, nil
@@ -80,13 +80,13 @@ func PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *appErrors.AppErro
 
 	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
-		return &APIModel.Tweet{}, appErrors.UnexpectedError
+		return nil, appErrors.UnexpectedError
 	}
 
 	APITweet, serviceError := convertDatabaseTweetToAPITweet(&addedTweet)
 
 	if serviceError != nil {
-		return &APIModel.Tweet{}, serviceError
+		return nil, serviceError
 	}
 
 	return APITweet, nil
@@ -135,7 +135,7 @@ func GetUser(userId int64) (*APIModel.User, *appErrors.AppError) {
 	if databaseError != nil {
 		// Maybe later on we'll need to add type switch here to check the type of error, because several things
 		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
-		return &APIModel.User{}, &appErrors.AppError{
+		return nil, &appErrors.AppError{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),
 		}
@@ -153,7 +153,7 @@ func RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *appErrors
 
 	if err != nil {
 		// again, one error only for now...
-		return &APIModel.User{}, &appErrors.AppError{
+		return nil, &appErrors.AppError{
 			Code: http.StatusConflict,
 			Err:  errors.New("User with given username or email already exists."),
 		}
@@ -187,7 +187,7 @@ func LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *appErro
 	apiUser := convertDatabaseUserToAPIUser(&databaseUser)
 	response := &APIModel.LoginResponse{
 		AuthToken: token,
-		User:      *apiUser,
+		User:      apiUser,
 	}
 
 	return response, nil
@@ -227,14 +227,14 @@ func convertDatabaseTweetToAPITweet(tweet *databaseModel.Tweet) (*APIModel.Tweet
 			"tweetID": tweetID,
 			"userID":  userID,
 		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
-		return &APIModel.Tweet{}, appErrors.UnexpectedError
+		return nil, appErrors.UnexpectedError
 	}
 
-	APIAuthorFullData := convertDatabaseUserToAPIUser(&authorFullData)
+	author := convertDatabaseUserToAPIUser(&authorFullData)
 
 	APITweet := &APIModel.Tweet{
 		ID:        tweetID,
-		Author:    *APIAuthorFullData,
+		Author:    author,
 		Likes:     likes,
 		Retweets:  retweets,
 		CreatedAt: createdAt,
