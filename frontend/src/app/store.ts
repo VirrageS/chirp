@@ -6,13 +6,19 @@ import { User, Tweet } from './shared';
 
 
 export interface State {
-  tweets: Array<Tweet>
+  feed: Array<Tweet>
+  my_tweets: Array<Tweet>
   user: User
+  following: Array<User>
+  followers: Array<User>
 }
 
 const defaultState = {
-  tweets: [],
-  user: {}
+  feed: [],
+  my_tweets: [],
+  user: {},
+  following: [],
+  followers: [],
 }
 
 const _store = new BehaviorSubject<State>(defaultState);

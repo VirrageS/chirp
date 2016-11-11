@@ -21,10 +21,10 @@ export class MyTweetsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this._userService.getFeed()
+    this._userService.getTweets()
       .subscribe((tweets: any) => this.tweets = tweets)
 
-    this._store.changes.pluck("tweets")
+    this._store.changes.pluck("my_tweets")
       .subscribe((tweets: any) => this.tweets = tweets)
   }
 }

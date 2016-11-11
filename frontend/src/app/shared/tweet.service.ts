@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 
 import { ApiService } from './api.service';
 import { StoreHelper } from './store-helper';
-import { UserService } from './user.service';
 import { Tweet } from './tweet.model';
 
 
@@ -12,7 +11,6 @@ export class TweetService {
 
   constructor(
     private _apiService: ApiService,
-    private _userService: UserService, // TODO: remove this if not necessary
     private _storeHelper: StoreHelper
   ) {
 
@@ -20,7 +18,7 @@ export class TweetService {
 
   createTweet(tweet: Tweet) {
     return this._apiService.post(this.tweet_path, tweet)
-      .do((tweet: Tweet) => this._storeHelper.add("tweets", tweet)) // TODO: change to my-tweets
+      .do((tweet: Tweet) => this._storeHelper.add("my_tweets", tweet))
   }
 
   like(tweet_id: number) {
