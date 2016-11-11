@@ -1,0 +1,19 @@
+.login {
+  max-width: 500px;
+  margin: 0 auto;
+
+  &__title {
+    margin-bottom: 20px;
+
+    font-size: 2em;
+    font-weight: 200;
+    text-align: center;
+  }
+
+  button {
+    display: block;
+    margin: 0 auto;
+    margin-top: 30px;
+    width: 120px;
+  }
+}

@@ -53,7 +53,7 @@ export class AuthService implements CanActivate {
   isAuthenticated(): boolean {
     const token = window.localStorage.getItem(this.TOKEN_KEY)
     const user = window.localStorage.getItem(this.USER_KEY)
-    return (token !== null && user !== null)
+    return (!!token && !!user)
   }
 
   canActivate(): boolean {
