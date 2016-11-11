@@ -5,9 +5,8 @@ import { Tweet } from '../../shared';
 
 @Component({
   selector: 'tweets',
-  styles: [`.tweets { max-width: 800px; margin: 0 auto; background-color: white; } .tweets .tweet { margin: 10px 0px; }`],
   template: `
-    <div class="tweets">
+    <div class="tweets shadow-2">
       <tweet
         *ngFor="let tweet of tweets"
         [tweet]="tweet"
@@ -15,7 +14,8 @@ import { Tweet } from '../../shared';
       >
       </tweet>
     </div>
-  `
+  `,
+  styleUrls: ['./tweets.component.scss']
 })
 export class TweetsComponent {
   @Input() tweets: Tweet[]
