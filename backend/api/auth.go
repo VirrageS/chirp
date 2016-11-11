@@ -17,7 +17,7 @@ func RegisterUser(context *gin.Context) {
 		return
 	}
 
-	newUser, serviceError := services.RegisterUser(newUserForm)
+	newUser, serviceError := services.RegisterUser(&newUserForm)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 		return
@@ -34,7 +34,7 @@ func LoginUser(context *gin.Context) {
 		return
 	}
 
-	loginResponse, serviceError := services.LoginUser(loginForm)
+	loginResponse, serviceError := services.LoginUser(&loginForm)
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
 		return

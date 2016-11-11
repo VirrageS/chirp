@@ -25,6 +25,11 @@ paths:
         The tweets endpoint returns list of tweets that fulfill given
         search criteria.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: author_id
           in: query
           description: ID of the tweet author.
@@ -79,16 +84,17 @@ paths:
     post:
       summary: Authenticating user adds a new tweet.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: content
           in: body
           description: content of the tweet
           required: true
           schema:
             $ref: '#/definitions/NewTweet'
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -126,6 +132,11 @@ paths:
     get:
       summary: Get a tweet with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
@@ -156,16 +167,17 @@ paths:
     delete:
       summary: Authentication user deletes a tweet with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -202,6 +214,11 @@ paths:
     put:
       summary: Authenticating user updates a tweet with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
@@ -214,10 +231,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/NewTweet'
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -265,16 +278,17 @@ paths:
     post:
       summary: Authenticating user likes a tweet with given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -308,16 +322,17 @@ paths:
     post:
       summary: Authenticating user unlikes a tweet with given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -351,16 +366,17 @@ paths:
     post:
       summary: Authenticating user retweets a tweet with given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -394,16 +410,17 @@ paths:
     post:
       summary: Authenticating user unretweets a tweet with given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Tweets
       responses:
@@ -437,6 +454,11 @@ paths:
     get:
       summary: Returns likers of a given tweet.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
@@ -457,6 +479,11 @@ paths:
     get:
       summary: Returns retweeters of a given tweet.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: tweet_id
           in: path
           description: ID of the tweet.
@@ -597,6 +624,11 @@ paths:
         The users endpoint returns list of users that fulfill given
         search criteria.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: username
           in: query
           type: string
@@ -630,6 +662,11 @@ paths:
     get:
       summary: Get data of a user with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: user_id
           in: path
           description: ID of the user to follow.
@@ -662,16 +699,17 @@ paths:
     post:
       summary: Authenticated user follows user with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: user_id
           in: path
           description: ID of the user to follow.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: authorization token, should be sent in Authorization header
-          type: string
       tags:
         - Users
       responses:
@@ -712,16 +750,17 @@ paths:
     post:
       summary: Authenticated user unfollows user with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: user_id
           in: path
           description: ID of the user to unfollow.
           required: true
           type: integer
           format: int64
-        - name: Authorization
-          in: header
-          description: Authorization token, should be sent in Authorization header.
-          type: string
       tags:
         - Users
       responses:
@@ -762,6 +801,11 @@ paths:
     get:
       summary: Get list of followers of user with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: user_id
           in: path
           description: ID of the user.
@@ -796,6 +840,11 @@ paths:
     get:
       summary: Get list of users followed by a user with a given ID.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: user_id
           in: path
           description: ID of the user.
@@ -830,6 +879,11 @@ paths:
     get:
       summary: Get user timeline.
       parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
         - name: user_id
           in: path
           description: ID of the user.
@@ -866,8 +920,9 @@ paths:
       parameters:
         - name: Authorization
           in: header
-          description: Authorization token, should be sent in Authorization header.
           type: string
+          required: true
+          description: Authorization token using Bearer schema.
       tags:
         - Home Timeline
       responses:
@@ -927,7 +982,6 @@ definitions:
       following:
         type: boolean
         description: Informs if authenticating user follows this user.
-
 
   AuthUser:
     type: object

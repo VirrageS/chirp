@@ -59,7 +59,7 @@ func PostTweet(context *gin.Context) {
 		Content:  newTweetContent.Content,
 	}
 
-	responseTweet, err2 := services.PostTweet(requestTweet)
+	responseTweet, err2 := services.PostTweet(&requestTweet)
 	if err2 != nil {
 		context.AbortWithError(err2.Code, err2.Err)
 		return
