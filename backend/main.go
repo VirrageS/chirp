@@ -15,19 +15,34 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
+	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/middleware"
+	"github.com/VirrageS/chirp/backend/service"
 )
 
 func init() {
 	log.SetOutput(os.Stderr) // setup logrus logging library
+
 }
 
 func main() {
-	router := setupRouter()
+	router := createServer()
 	router.Run(":8080")
 }
 
-func setupRouter() *gin.Engine {
+// TODO: Move all setup to another package or file
+func createServer() *gin.Engine {
+	// setup Database
+	DBConnection := database.NewDatabaseConnection()
+	userDB := database.NewUserDB(DBConnection)
+
+	service := service.NewService(userDB)
+	api := api.NewAPI(service)
+
+	return setupRouter(api)
+}
+
+func setupRouter(api *api.API) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.New(*setupCORS()))
 	router.Use(middleware.ErrorHandler())
