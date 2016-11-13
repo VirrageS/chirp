@@ -314,7 +314,7 @@ func covertAPINewUserToDatabaseUser(user *APIModel.NewUserForm) *databaseModel.U
 	name := user.Name
 	creationTime := time.Now()
 
-	return databaseModel.User{
+	return &databaseModel.User{
 		ID:            0,
 		TwitterToken:  toSqlNullString(""),
 		FacebookToken: toSqlNullString(""),
