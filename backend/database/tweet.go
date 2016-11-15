@@ -2,56 +2,61 @@ package database
 
 import (
 	"errors"
-	"time"
 
+	"database/sql"
+	log "github.com/Sirupsen/logrus"
 	"github.com/VirrageS/chirp/backend/database/model"
 )
 
-var tweets = []model.Tweet{
-	{
-		ID:        1,
-		AuthorID:  1,
-		Likes:     0,
-		Retweets:  0,
-		CreatedAt: time.Unix(0, 0),
-		Content:   "siema siema siema",
-	},
+type TweetDataAcessor interface {
+	GetTweets() ([]model.Tweet, error)
+	GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error)
+	GetTweet(tweetID int64) (model.Tweet, error)
+	InsertTweet(tweet model.Tweet) (model.Tweet, error)
+	DeleteTweet(tweetID int64) error
 }
 
-func GetTweets() ([]model.Tweet, error) {
-	return tweets, nil
+type TweetDB struct {
+	*sql.DB
 }
 
-func GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
-	var usersTweets []model.Tweet
+func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
+	return &TweetDB{databaseConnection}
+}
 
-	for _, tweet := range tweets {
-		if tweet.AuthorID == userID {
-			usersTweets = append(usersTweets, tweet)
-		}
+func (db *TweetDB) GetTweets() ([]model.Tweet, error) {
+	return getTweets(db)
+}
+
+func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
+	return getTweetsOfUserWithID(db, userID)
+}
+
+func (db *TweetDB) GetTweet(tweetID int64) (model.Tweet, error) {
+	tweet, err := getTweetUsingQuery(db, "SELECT * FROM tweets WHERE id=$1;", tweetID)
+	if err == sql.ErrNoRows {
+		return model.Tweet{}, errors.New("") // no users found error
 	}
-
-	return usersTweets, nil
-}
-
-func GetTweet(tweetID int64) (model.Tweet, error) {
-	tweet, err := getTweetWithID(tweetID)
 	if err != nil {
-		return model.Tweet{}, errors.New("")
+		return model.Tweet{}, errors.New("") // db error
 	}
 
 	return tweet, nil
 }
 
-func InsertTweet(tweet model.Tweet) (model.Tweet, error) {
-	tweetID := insertTweetToDatabase(tweet)
+func (db *TweetDB) InsertTweet(tweet model.Tweet) (model.Tweet, error) {
+	tweetID, err := insertTweetToDatabase(db, tweet)
+	if err != nil {
+		return model.Tweet{}, errors.New("") // db error
+	}
+
 	tweet.ID = tweetID
 
 	return tweet, nil
 }
 
-func DeleteTweet(tweetID int64) error {
-	err := deleteTweetWithID(tweetID)
+func (db *TweetDB) DeleteTweet(tweetID int64) error {
+	err := deleteTweetWithID(db, tweetID)
 	if err != nil {
 		return errors.New("")
 	}
@@ -59,37 +64,105 @@ func DeleteTweet(tweetID int64) error {
 	return nil
 }
 
-/* Functions that mock databse queries */
+func getTweetUsingQuery(db *TweetDB, query string, args ...interface{}) (model.Tweet, error) {
+	var tweet model.Tweet
 
-func getTweetWithID(tweetID int64) (model.Tweet, error) {
-	for _, tweet := range tweets {
-		if tweet.ID == tweetID {
-			return tweet, nil
-		}
+	row := db.QueryRow(query, args...)
+	err := row.Scan(&tweet.ID, &tweet.AuthorID, &tweet.CreatedAt, &tweet.Content)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.WithFields(log.Fields{
+			"error": err,
+			"query": query,
+			"args":  args,
+		}).Error("GetTweetUsingQuery database error.")
 	}
 
-	return model.Tweet{}, errors.New("Tweet with given ID was not found.")
+	return tweet, err
 }
 
-func insertTweetToDatabase(tweet model.Tweet) int64 {
-	tweetID := len(tweets) + 1
-	tweet.ID = int64(tweetID)
+func insertTweetToDatabase(db *TweetDB, tweet model.Tweet) (int64, error) {
+	query, err := db.Prepare("INSERT INTO tweets (author_id, created_at, content) " +
+		"VALUES ($1, $2, $3) RETURNING id")
+	if err != nil {
+		log.WithField("query", query).WithError(err).Error("insertTweetToDatabase query prepare error.")
+		return 0, errors.New("")
+	}
+	defer query.Close()
 
-	tweets = append(tweets, tweet)
-
-	return int64(tweetID)
-}
-
-func deleteTweetWithID(tweetID int64) error {
-	for i, tweet := range tweets {
-		if tweet.ID == tweetID {
-			// remove tweet from the slice
-			tweets[i] = tweets[len(tweets)-1] // Replace with the last one
-			tweets = tweets[:len(tweets)-1]   // Chop off the last one
-
-			return nil
-		}
+	var newID int64
+	// for Postgres we need to use query with RETURNING id to get the ID of the inserted tweet
+	err = query.QueryRow(tweet.AuthorID, tweet.CreatedAt, tweet.Content).Scan(&newID)
+	if err != nil {
+		log.WithError(err).Error("insertTweetToDatabase query execute error.")
+		return 0, errors.New("")
 	}
 
-	return errors.New("Tweet with given ID was not found.")
+	return newID, nil
+}
+
+func deleteTweetWithID(db *TweetDB, tweetID int64) error {
+	statement, err := db.Prepare("DELETE FROM tweets WHERE id=$1")
+	if err != nil {
+		log.WithField("query", statement).WithError(err).Error("deleteTweetWithID query prepare error.")
+		errors.New("")
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(tweetID)
+	if err != nil {
+		log.WithError(err).Error("deleteTweetWithID query execute error.")
+		return errors.New("")
+	}
+
+	return nil
+}
+
+func getTweets(db *TweetDB) ([]model.Tweet, error) {
+	rows, err := db.Query("SELECT * FROM tweets;")
+	if err != nil {
+		log.WithError(err).Error("GetTweets query error.")
+	}
+
+	var tweets []model.Tweet
+
+	defer rows.Close()
+	for rows.Next() {
+		var tweet model.Tweet
+		err := rows.Scan(&tweet.ID, &tweet.AuthorID, &tweet.CreatedAt, &tweet.Content)
+		// TODO: move error outside of the loop
+		if err != nil {
+			log.WithError(err).Error("GetTweets row scan error.")
+			return nil, errors.New("")
+		}
+
+		tweets = append(tweets, tweet)
+	}
+
+	return tweets, nil
+}
+
+// TODO: almost the same as getTweets()...
+func getTweetsOfUserWithID(db *TweetDB, userID int64) ([]model.Tweet, error) {
+	rows, err := db.Query("SELECT * FROM tweets WHERE id=$1;", userID)
+	if err != nil {
+		log.WithError(err).Error("GetTweets query error.")
+	}
+
+	var tweets []model.Tweet
+
+	defer rows.Close()
+	for rows.Next() {
+		var tweet model.Tweet
+		err := rows.Scan(&tweet.ID, &tweet.AuthorID, &tweet.CreatedAt, &tweet.Content)
+		// TODO: move error outside of the loop
+		if err != nil {
+			log.WithError(err).Error("GetTweets row scan error.")
+			return nil, errors.New("")
+		}
+
+		tweets = append(tweets, tweet)
+	}
+
+	return tweets, nil
 }

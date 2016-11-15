@@ -33,10 +33,10 @@ func main() {
 // TODO: Move all setup to another package or file
 func createServer() *gin.Engine {
 	// setup Database
-	DBConnection := database.NewDatabaseConnection()
-	userDB := database.NewUserDB(DBConnection)
+	databaseConnection := database.NewDatabaseConnection()
+	database := database.NewDatabase(databaseConnection)
 
-	service := service.NewService(userDB)
+	service := service.NewService(database)
 	api := api.NewAPI(service)
 
 	return setupRouter(api)

@@ -36,13 +36,15 @@ type Service struct {
 	// config with secretKey and tokenValidityDuration?
 	// DB to API model converter?
 	// API to DB model converter?
-	UserDB database.UserDataAccessor
+	UserDB  database.UserDataAccessor
+	TweetDB database.TweetDataAcessor
 }
 
 // Service constructor
-func NewService(userDB database.UserDataAccessor) *Service {
+func NewService(dbAccess database.Database) *Service {
 	return &Service{
-		UserDB: userDB,
+		UserDB:  dbAccess.UserDB,
+		TweetDB: dbAccess.TweetDB,
 	}
 }
 
@@ -51,7 +53,7 @@ var secretKey = config.GetSecretKey()
 var tokenValidityDuration = time.Duration(config.GetTokenValidityPeriod())
 
 func (service *Service) GetTweets() ([]*APIModel.Tweet, *appErrors.AppError) {
-	databaseTweets, databaseError := database.GetTweets()
+	databaseTweets, databaseError := service.TweetDB.GetTweets()
 
 	if databaseError != nil {
 		return nil, appErrors.UnexpectedError
@@ -68,7 +70,7 @@ func (service *Service) GetTweets() ([]*APIModel.Tweet, *appErrors.AppError) {
 
 // Use GetTweets() with filtering parameters instead, when filtering will be supported
 func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *appErrors.AppError) {
-	databaseTweets, databaseError := database.GetTweetsOfUserWithID(userID)
+	databaseTweets, databaseError := service.TweetDB.GetTweetsOfUserWithID(userID)
 
 	if databaseError != nil {
 		return nil, appErrors.UnexpectedError
@@ -84,7 +86,7 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, 
 }
 
 func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError) {
-	databaseTweet, databaseError := database.GetTweet(tweetID)
+	databaseTweet, databaseError := service.TweetDB.GetTweet(tweetID)
 
 	if databaseError != nil {
 		// Later on we'll need to add type switch here to check the type of error, because several things
@@ -108,7 +110,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
 	databaseTweet := service.convertAPINewTweetToDatabaseTweet(newTweet)
 
-	addedTweet, databaseError := database.InsertTweet(*databaseTweet)
+	addedTweet, databaseError := service.TweetDB.InsertTweet(*databaseTweet)
 
 	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
@@ -125,7 +127,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 }
 
 func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
-	databaseTweet, err := database.GetTweet(tweetID)
+	databaseTweet, err := service.TweetDB.GetTweet(tweetID)
 
 	if err != nil {
 		return &appErrors.AppError{
@@ -140,7 +142,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
 		}
 	}
 
-	err = database.DeleteTweet(tweetID)
+	err = service.TweetDB.DeleteTweet(tweetID)
 	if err != nil {
 		return appErrors.UnexpectedError
 	}

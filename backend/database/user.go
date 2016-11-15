@@ -152,6 +152,7 @@ func getUsers(db *UserDB) ([]model.User, error) {
 		err = rows.Scan(&user.ID, &user.TwitterToken, &user.FacebookToken, &user.GoogleToken, &user.Username,
 			&user.Email, &user.Password, &user.CreatedAt, &user.LastLogin, &user.Active,
 			&user.Name, &user.AvatarUrl)
+		// TODO: move error outside of the loop
 		if err != nil {
 			log.WithError(err).Error("GetUsers row scan error.")
 			return nil, errors.New("")

@@ -10,6 +10,18 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+type Database struct {
+	UserDB  UserDataAccessor
+	TweetDB TweetDataAcessor
+}
+
+func NewDatabase(databaseConnection *sql.DB) Database {
+	return Database{
+		UserDB:  NewUserDB(databaseConnection),
+		TweetDB: NewTweetDB(databaseConnection),
+	}
+}
+
 func NewDatabaseConnection() *sql.DB {
 	// TODO: read user data, host and port from config file or something like that
 
