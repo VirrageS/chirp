@@ -25,15 +25,15 @@ func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
 }
 
 func (db *TweetDB) GetTweets() ([]model.Tweet, error) {
-	return getTweets(db)
+	return db.getTweets()
 }
 
 func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
-	return getTweetsOfUserWithID(db, userID)
+	return db.getTweetsOfUserWithID(userID)
 }
 
 func (db *TweetDB) GetTweet(tweetID int64) (model.Tweet, error) {
-	tweet, err := getTweetUsingQuery(db, "SELECT * FROM tweets WHERE id=$1;", tweetID)
+	tweet, err := db.getTweetUsingQuery("SELECT * FROM tweets WHERE id=$1;", tweetID)
 	if err == sql.ErrNoRows {
 		return model.Tweet{}, errors.New("") // no users found error
 	}
@@ -45,7 +45,7 @@ func (db *TweetDB) GetTweet(tweetID int64) (model.Tweet, error) {
 }
 
 func (db *TweetDB) InsertTweet(tweet model.Tweet) (model.Tweet, error) {
-	tweetID, err := insertTweetToDatabase(db, tweet)
+	tweetID, err := db.insertTweetToDatabase(tweet)
 	if err != nil {
 		return model.Tweet{}, errors.New("") // db error
 	}
@@ -56,7 +56,7 @@ func (db *TweetDB) InsertTweet(tweet model.Tweet) (model.Tweet, error) {
 }
 
 func (db *TweetDB) DeleteTweet(tweetID int64) error {
-	err := deleteTweetWithID(db, tweetID)
+	err := db.deleteTweetWithID(tweetID)
 	if err != nil {
 		return errors.New("")
 	}
@@ -64,7 +64,7 @@ func (db *TweetDB) DeleteTweet(tweetID int64) error {
 	return nil
 }
 
-func getTweetUsingQuery(db *TweetDB, query string, args ...interface{}) (model.Tweet, error) {
+func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (model.Tweet, error) {
 	var tweet model.Tweet
 
 	row := db.QueryRow(query, args...)
@@ -81,7 +81,7 @@ func getTweetUsingQuery(db *TweetDB, query string, args ...interface{}) (model.T
 	return tweet, err
 }
 
-func insertTweetToDatabase(db *TweetDB, tweet model.Tweet) (int64, error) {
+func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
 	query, err := db.Prepare("INSERT INTO tweets (author_id, created_at, content) " +
 		"VALUES ($1, $2, $3) RETURNING id")
 	if err != nil {
@@ -101,7 +101,7 @@ func insertTweetToDatabase(db *TweetDB, tweet model.Tweet) (int64, error) {
 	return newID, nil
 }
 
-func deleteTweetWithID(db *TweetDB, tweetID int64) error {
+func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 	statement, err := db.Prepare("DELETE FROM tweets WHERE id=$1")
 	if err != nil {
 		log.WithField("query", statement).WithError(err).Error("deleteTweetWithID query prepare error.")
@@ -118,7 +118,7 @@ func deleteTweetWithID(db *TweetDB, tweetID int64) error {
 	return nil
 }
 
-func getTweets(db *TweetDB) ([]model.Tweet, error) {
+func (db *TweetDB) getTweets() ([]model.Tweet, error) {
 	rows, err := db.Query("SELECT * FROM tweets;")
 	if err != nil {
 		log.WithError(err).Error("GetTweets query error.")
@@ -143,7 +143,7 @@ func getTweets(db *TweetDB) ([]model.Tweet, error) {
 }
 
 // TODO: almost the same as getTweets()...
-func getTweetsOfUserWithID(db *TweetDB, userID int64) ([]model.Tweet, error) {
+func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
 	rows, err := db.Query("SELECT * FROM tweets WHERE id=$1;", userID)
 	if err != nil {
 		log.WithError(err).Error("GetTweets query error.")
