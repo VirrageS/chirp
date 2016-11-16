@@ -36,7 +36,7 @@ func createServer() *gin.Engine {
 	databaseConnection := database.NewDatabaseConnection()
 	database := database.NewDatabase(databaseConnection)
 
-	serviceConfiguration := config.GetServiceConfig()
+	serviceConfiguration := config.GetConfig()
 
 	service := service.NewService(database, serviceConfiguration)
 	api := api.NewAPI(service)
@@ -51,7 +51,7 @@ func setupRouter(api api.APIProvider) *gin.Engine {
 
 	contentTypeChecker := middleware.ContentTypeChecker()
 
-	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator(config.GetServiceConfig()))
+	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator(config.GetConfig()))
 	{
 		tweets := authorizedRoutes.Group("tweets")
 		tweets.GET("", api.GetTweets)

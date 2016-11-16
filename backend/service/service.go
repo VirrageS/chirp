@@ -34,11 +34,11 @@ type Service struct {
 	// logger?
 	// DB to API model converter?
 	// API to DB model converter?
-	configuration *config.ServiceConfig
+	configuration config.ServiceConfigProvider
 	db            database.DatabaseAccessor
 }
 
-func NewService(databaseAccessor database.DatabaseAccessor, configuration *config.ServiceConfig) ServiceProvider {
+func NewService(databaseAccessor database.DatabaseAccessor, configuration config.ServiceConfigProvider) ServiceProvider {
 	return &Service{
 		configuration: configuration,
 		db:            databaseAccessor,
@@ -220,7 +220,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 }
 
 func (service *Service) createTokenForUser(user *databaseModel.User) (string, *appErrors.AppError) {
-	validityDuration := time.Duration(service.configuration.TokenValidityPeriod)
+	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
 	expirationTime := time.Now().Add(validityDuration * time.Minute)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -228,7 +228,7 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (string, *a
 		"exp":    expirationTime.Unix(),
 	})
 
-	tokenString, err := token.SignedString(service.configuration.SecretKey)
+	tokenString, err := token.SignedString(service.configuration.GetSecretKey())
 	if err != nil {
 		log.WithError(err).Error("Failed to sign the token.")
 		// we should probably panic here, because the server will not be able to run if it can't auth users

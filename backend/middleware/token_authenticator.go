@@ -13,8 +13,8 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 )
 
-func TokenAuthenticator(configuration *config.ServiceConfig) gin.HandlerFunc {
-	secretKey := configuration.SecretKey
+func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc {
+	secretKey := configuration.GetSecretKey()
 
 	return func(context *gin.Context) {
 		fullTokenString := context.Request.Header.Get("Authorization")
