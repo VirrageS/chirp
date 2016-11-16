@@ -7,18 +7,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-var secretKey []byte
-var tokenValidityPeriod int
-
-func GetSecretKey() []byte {
-	return secretKey
+type ServiceConfig struct {
+	SecretKey           []byte
+	TokenValidityPeriod int
 }
 
-func GetTokenValidityPeriod() int {
-	return tokenValidityPeriod
+func GetServiceConfig() *ServiceConfig {
+	return readServiceConfig()
 }
 
-func init() {
+func readServiceConfig() *ServiceConfig {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("$GOPATH/src/github.com/VirrageS/chirp/backend")
 
@@ -37,6 +35,8 @@ func init() {
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
-	secretKey = []byte(configSecretKey)
-	tokenValidityPeriod = configValidityPeriod
+	return &ServiceConfig{
+		SecretKey:           []byte(configSecretKey),
+		TokenValidityPeriod: configValidityPeriod,
+	}
 }

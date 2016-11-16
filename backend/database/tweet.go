@@ -8,7 +8,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database/model"
 )
 
-type TweetDataAcessor interface {
+type TweetDataAccessor interface {
 	GetTweets() ([]model.Tweet, error)
 	GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error)
 	GetTweet(tweetID int64) (model.Tweet, error)

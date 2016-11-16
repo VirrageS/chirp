@@ -10,15 +10,20 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-type Database struct {
-	UserDB  UserDataAccessor
-	TweetDB TweetDataAcessor
+type DatabaseAccessor interface {
+	UserDataAccessor
+	TweetDataAccessor
 }
 
-func NewDatabase(databaseConnection *sql.DB) Database {
-	return Database{
-		UserDB:  NewUserDB(databaseConnection),
-		TweetDB: NewTweetDB(databaseConnection),
+type Database struct {
+	UserDataAccessor
+	TweetDataAccessor
+}
+
+func NewDatabase(databaseConnection *sql.DB) DatabaseAccessor {
+	return &Database{
+		NewUserDB(databaseConnection),
+		NewTweetDB(databaseConnection),
 	}
 }
 

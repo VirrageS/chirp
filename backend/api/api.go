@@ -24,6 +24,6 @@ type API struct {
 	Service service.ServiceProvider
 }
 
-func NewAPI(service service.ServiceProvider) *API {
+func NewAPI(service service.ServiceProvider) APIProvider {
 	return &API{service}
 }

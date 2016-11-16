@@ -15,6 +15,7 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/service"
@@ -32,24 +33,25 @@ func main() {
 
 // TODO: Move all setup to another package or file
 func createServer() *gin.Engine {
-	// setup Database
 	databaseConnection := database.NewDatabaseConnection()
 	database := database.NewDatabase(databaseConnection)
 
-	service := service.NewService(database)
+	serviceConfiguration := config.GetServiceConfig()
+
+	service := service.NewService(database, serviceConfiguration)
 	api := api.NewAPI(service)
 
 	return setupRouter(api)
 }
 
-func setupRouter(api *api.API) *gin.Engine {
+func setupRouter(api api.APIProvider) *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.New(*setupCORS()))
 	router.Use(middleware.ErrorHandler())
 
 	contentTypeChecker := middleware.ContentTypeChecker()
 
-	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator)
+	authorizedRoutes := router.Group("/", middleware.TokenAuthenticator(config.GetServiceConfig()))
 	{
 		tweets := authorizedRoutes.Group("tweets")
 		tweets.GET("", api.GetTweets)

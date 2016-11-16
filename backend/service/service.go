@@ -18,7 +18,6 @@ import (
 
 // TODO: Maybe split into 2 services: tweet and user service?
 type ServiceProvider interface {
-	// TODO: Add twitterDB interface
 	GetTweets() ([]*APIModel.Tweet, *appErrors.AppError)
 	GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *appErrors.AppError)
 	GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError)
@@ -33,27 +32,21 @@ type ServiceProvider interface {
 
 type Service struct {
 	// logger?
-	// config with secretKey and tokenValidityDuration?
 	// DB to API model converter?
 	// API to DB model converter?
-	UserDB  database.UserDataAccessor
-	TweetDB database.TweetDataAcessor
+	configuration *config.ServiceConfig
+	db            database.DatabaseAccessor
 }
 
-// Service constructor
-func NewService(dbAccess database.Database) *Service {
+func NewService(databaseAccessor database.DatabaseAccessor, configuration *config.ServiceConfig) ServiceProvider {
 	return &Service{
-		UserDB:  dbAccess.UserDB,
-		TweetDB: dbAccess.TweetDB,
+		configuration: configuration,
+		db:            databaseAccessor,
 	}
 }
 
-// TODO: Maybe replace with config object injected into Service?
-var secretKey = config.GetSecretKey()
-var tokenValidityDuration = time.Duration(config.GetTokenValidityPeriod())
-
 func (service *Service) GetTweets() ([]*APIModel.Tweet, *appErrors.AppError) {
-	databaseTweets, databaseError := service.TweetDB.GetTweets()
+	databaseTweets, databaseError := service.db.GetTweets()
 
 	if databaseError != nil {
 		return nil, appErrors.UnexpectedError
@@ -70,7 +63,7 @@ func (service *Service) GetTweets() ([]*APIModel.Tweet, *appErrors.AppError) {
 
 // Use GetTweets() with filtering parameters instead, when filtering will be supported
 func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *appErrors.AppError) {
-	databaseTweets, databaseError := service.TweetDB.GetTweetsOfUserWithID(userID)
+	databaseTweets, databaseError := service.db.GetTweetsOfUserWithID(userID)
 
 	if databaseError != nil {
 		return nil, appErrors.UnexpectedError
@@ -86,7 +79,7 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, 
 }
 
 func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError) {
-	databaseTweet, databaseError := service.TweetDB.GetTweet(tweetID)
+	databaseTweet, databaseError := service.db.GetTweet(tweetID)
 
 	if databaseError != nil {
 		// Later on we'll need to add type switch here to check the type of error, because several things
@@ -110,7 +103,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
 	databaseTweet := service.convertAPINewTweetToDatabaseTweet(newTweet)
 
-	addedTweet, databaseError := service.TweetDB.InsertTweet(*databaseTweet)
+	addedTweet, databaseError := service.db.InsertTweet(*databaseTweet)
 
 	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
@@ -127,7 +120,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 }
 
 func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
-	databaseTweet, err := service.TweetDB.GetTweet(tweetID)
+	databaseTweet, err := service.db.GetTweet(tweetID)
 
 	if err != nil {
 		return &appErrors.AppError{
@@ -142,7 +135,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
 		}
 	}
 
-	err = service.TweetDB.DeleteTweet(tweetID)
+	err = service.db.DeleteTweet(tweetID)
 	if err != nil {
 		return appErrors.UnexpectedError
 	}
@@ -151,7 +144,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
 }
 
 func (service *Service) GetUsers() ([]*APIModel.User, *appErrors.AppError) {
-	databaseUsers, databaseError := service.UserDB.GetUsers()
+	databaseUsers, databaseError := service.db.GetUsers()
 
 	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
@@ -164,7 +157,7 @@ func (service *Service) GetUsers() ([]*APIModel.User, *appErrors.AppError) {
 }
 
 func (service *Service) GetUser(userId int64) (*APIModel.User, *appErrors.AppError) {
-	databaseUser, databaseError := service.UserDB.GetUserByID(userId)
+	databaseUser, databaseError := service.db.GetUserByID(userId)
 
 	if databaseError != nil {
 		// Maybe later on we'll need to add type switch here to check the type of error, because several things
@@ -183,7 +176,7 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *appErrors.AppErr
 func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *appErrors.AppError) {
 	databaseUser := service.covertAPINewUserToDatabaseUser(newUserForm)
 
-	newUser, err := service.UserDB.InsertUser(*databaseUser)
+	newUser, err := service.db.InsertUser(*databaseUser)
 
 	if err != nil {
 		// again, one error only for now...
@@ -202,7 +195,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	email := loginForm.Email
 	password := loginForm.Password
 
-	databaseUser, databaseError := service.UserDB.GetUserByEmail(email)
+	databaseUser, databaseError := service.db.GetUserByEmail(email)
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
 		return nil, &appErrors.AppError{
@@ -227,14 +220,15 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 }
 
 func (service *Service) createTokenForUser(user *databaseModel.User) (string, *appErrors.AppError) {
-	expirationTime := time.Now().Add(tokenValidityDuration * time.Minute)
+	validityDuration := time.Duration(service.configuration.TokenValidityPeriod)
+	expirationTime := time.Now().Add(validityDuration * time.Minute)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": user.ID,
 		"exp":    expirationTime.Unix(),
 	})
 
-	tokenString, err := token.SignedString(secretKey)
+	tokenString, err := token.SignedString(service.configuration.SecretKey)
 	if err != nil {
 		log.WithError(err).Error("Failed to sign the token.")
 		// we should probably panic here, because the server will not be able to run if it can't auth users
@@ -252,7 +246,7 @@ func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Twee
 	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
-	authorFullData, err := service.UserDB.GetUserByID(userID)
+	authorFullData, err := service.db.GetUserByID(userID)
 
 	if err != nil {
 		// TODO: here we will also need to check the error type and have different handling for different erros
