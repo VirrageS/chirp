@@ -35,7 +35,7 @@ func (db *UserDB) GetUsers() ([]model.User, error) {
 func (db *UserDB) GetUserByID(userID int64) (model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
-		return model.User{}, errors.New("") // no users found error
+		return model.User{}, errors.New("") // no users found
 	}
 	if err != nil {
 		return model.User{}, errors.New("") // db error
@@ -61,7 +61,7 @@ func (db *UserDB) InsertUser(user model.User) (model.User, error) {
 
 	if exists {
 		// TODO: return a message that informs the user which one of username/email is already taken
-		return model.User{}, errors.New("") // user already exists error
+		return model.User{}, errors.New("") // user already exists
 	}
 
 	userID, err := db.insertUserToDatabase(user)
@@ -117,7 +117,7 @@ func (db *UserDB) insertUserToDatabase(user model.User) (int64, error) {
 func (db *UserDB) checkIfUserAlreadyExists(userToCheck model.User) (bool, error) {
 	_, err := db.getUserUsingQuery(
 		// can be done with an 'exists' query,
-		// but we will need to return back to user info about which field is already taken
+		// but we will need to return info about which field is already taken back to the user
 		// TODO: return a message indicating which field is already taken
 		"SELECT * from users WHERE email=$1 OR username=$2",
 		userToCheck.Email,

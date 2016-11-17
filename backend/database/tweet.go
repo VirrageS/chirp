@@ -64,6 +64,7 @@ func (db *TweetDB) DeleteTweet(tweetID int64) error {
 	return nil
 }
 
+// TODO: Maybe it should also fetch tweet's User and embed it inside the returned object
 func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (model.Tweet, error) {
 	var tweet model.Tweet
 

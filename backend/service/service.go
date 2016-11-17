@@ -8,7 +8,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 
-	"database/sql"
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
@@ -219,7 +218,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	return response, nil
 }
 
-func (service *Service) createTokenForUser(user *databaseModel.User) (string, *appErrors.AppError) {
+func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *appErrors.AppError) {
 	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
 	expirationTime := time.Now().Add(validityDuration * time.Minute)
 
@@ -230,14 +229,14 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (string, *a
 
 	tokenString, err := token.SignedString(service.configuration.GetSecretKey())
 	if err != nil {
-		log.WithError(err).Error("Failed to sign the token.")
-		// we should probably panic here, because the server will not be able to run if it can't auth users
-		return "", appErrors.UnexpectedError
+		log.WithError(err).Fatal("Failed to sign the token.")
+		return nil, appErrors.UnexpectedError
 	}
 
-	return tokenString, nil
+	return &tokenString, nil
 }
 
+// TODO: Maybe the converter should not access database and databaseModel.Tweet should contain whole user data
 func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Tweet) (*APIModel.Tweet, *appErrors.AppError) {
 	tweetID := tweet.ID
 	userID := tweet.AuthorID
@@ -355,10 +354,4 @@ func (service *Service) covertAPINewUserToDatabaseUser(user *APIModel.NewUserFor
 		Name:          name,
 		AvatarUrl:     toSqlNullString(""),
 	}
-}
-
-// converts string to database NullString
-// TODO: Maybe move to a new 'util' package
-func toSqlNullString(s string) sql.NullString {
-	return sql.NullString{String: s, Valid: s != ""}
 }

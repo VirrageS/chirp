@@ -13,6 +13,6 @@ type LoginForm struct {
 }
 
 type LoginResponse struct {
-	AuthToken string `json:"auth_token"`
-	User      *User  `json:"user"`
+	AuthToken *string `json:"auth_token"`
+	User      *User   `json:"user"`
 }
