@@ -167,7 +167,7 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *appErrors.AppErr
 		}
 	}
 
-	APIUser := service.convertDatabaseUserToAPIUser(&databaseUser)
+	APIUser := service.convertDatabaseUserToAPIUser(databaseUser)
 
 	return APIUser, nil
 }
@@ -175,7 +175,7 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *appErrors.AppErr
 func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *appErrors.AppError) {
 	databaseUser := service.covertAPINewUserToDatabaseUser(newUserForm)
 
-	newUser, err := service.db.InsertUser(*databaseUser)
+	newUser, err := service.db.InsertUser(databaseUser)
 
 	if err != nil {
 		// again, one error only for now...
@@ -185,7 +185,7 @@ func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIMod
 		}
 	}
 
-	apiUser := service.convertDatabaseUserToAPIUser(&newUser)
+	apiUser := service.convertDatabaseUserToAPIUser(newUser)
 
 	return apiUser, nil
 }
@@ -194,7 +194,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	email := loginForm.Email
 	password := loginForm.Password
 
-	databaseUser, databaseError := service.db.GetUserByEmail(email)
+	databaseUser, databaseError := service.db.GetUserByEmail(&email)
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
 		return nil, &appErrors.AppError{
@@ -203,17 +203,18 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 		}
 	}
 
-	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, time.Now())
+	loginTime := &(time.Now())
+	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, loginTime)
 	if updateError != nil {
 		return nil, appErrors.UnexpectedError
 	}
 
-	token, serviceError := service.createTokenForUser(&databaseUser)
+	token, serviceError := service.createTokenForUser(databaseUser)
 	if serviceError != nil {
 		return nil, serviceError
 	}
 
-	apiUser := service.convertDatabaseUserToAPIUser(&databaseUser)
+	apiUser := service.convertDatabaseUserToAPIUser(databaseUser)
 	response := &APIModel.LoginResponse{
 		AuthToken: token,
 		User:      apiUser,
@@ -260,7 +261,7 @@ func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Twee
 		return nil, appErrors.UnexpectedError
 	}
 
-	author := service.convertDatabaseUserToAPIUser(&authorFullData)
+	author := service.convertDatabaseUserToAPIUser(authorFullData)
 
 	APITweet := &APIModel.Tweet{
 		ID:        tweetID,
@@ -305,11 +306,11 @@ func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseT
 	return APITweets, nil
 }
 
-func (service *Service) convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []databaseModel.User) []*APIModel.User {
+func (service *Service) convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []*databaseModel.User) []*APIModel.User {
 	convertedUsers := make([]*APIModel.User, 0)
 
 	for _, databaseUser := range databaseUsers {
-		APIUser := service.convertDatabaseUserToAPIUser(&databaseUser)
+		APIUser := service.convertDatabaseUserToAPIUser(databaseUser)
 		convertedUsers = append(convertedUsers, APIUser)
 	}
 

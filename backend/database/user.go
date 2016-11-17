@@ -13,11 +13,11 @@ import (
 )
 
 type UserDataAccessor interface {
-	GetUsers() ([]model.User, error)
-	GetUserByID(userID int64) (model.User, error)
-	GetUserByEmail(email string) (model.User, error)
-	InsertUser(user model.User) (model.User, error)
-	UpdateUserLastLoginTime(userID int64, lastLoginTime time.Time) error
+	GetUsers() ([]*model.User, error)
+	GetUserByID(userID int64) (*model.User, error)
+	GetUserByEmail(email *string) (*model.User, error)
+	InsertUser(user *model.User) (*model.User, error)
+	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 }
 
 type UserDB struct {
@@ -30,45 +30,45 @@ func NewUserDB(databaseConnection *sql.DB) *UserDB {
 
 // Interface implementations
 
-func (db *UserDB) GetUsers() ([]model.User, error) {
+func (db *UserDB) GetUsers() ([]*model.User, error) {
 	return db.getUsers()
 }
 
-func (db *UserDB) GetUserByID(userID int64) (model.User, error) {
+func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
-		return model.User{}, errors.New("") // no users found
+		return nil, errors.New("") // no users found
 	}
 	if err != nil {
-		return model.User{}, errors.New("") // db error
+		return nil, errors.New("") // db error
 	}
 
 	return user, nil
 }
 
-func (db *UserDB) GetUserByEmail(email string) (model.User, error) {
+func (db *UserDB) GetUserByEmail(email *string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err != nil {
-		return model.User{}, errors.New("") // db error
+		return nil, errors.New("") // db error
 	}
 
 	return user, nil
 }
 
-func (db *UserDB) InsertUser(user model.User) (model.User, error) {
+func (db *UserDB) InsertUser(user *model.User) (*model.User, error) {
 	exists, err := db.checkIfUserAlreadyExists(user)
 	if err != nil {
-		return model.User{}, errors.New("") // db error
+		return nil, errors.New("") // db error
 	}
 
 	if exists {
 		// TODO: return a message that informs the user which one of username/email is already taken
-		return model.User{}, errors.New("") // user already exists
+		return nil, errors.New("") // user already exists
 	}
 
 	userID, err := db.insertUserToDatabase(user)
 	if err != nil {
-		return model.User{}, errors.New("") // db error
+		return nil, errors.New("") // db error
 	}
 
 	user.ID = userID
@@ -76,7 +76,7 @@ func (db *UserDB) InsertUser(user model.User) (model.User, error) {
 	return user, nil
 }
 
-func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime time.Time) error {
+func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
 	err := db.updateUserLastLoginTime(userID, lastLoginTime)
 	if err != nil {
 		return errors.New("") // unexpected error, internal server error
@@ -85,7 +85,7 @@ func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime time.Time)
 	return nil
 }
 
-func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (model.User, error) {
+func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (*model.User, error) {
 	var user model.User
 
 	row := db.QueryRow(query, args...)
@@ -101,10 +101,10 @@ func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (model.Us
 		}).Error("GetUserUsingQuery database error.")
 	}
 
-	return user, err
+	return &user, err
 }
 
-func (db *UserDB) insertUserToDatabase(user model.User) (int64, error) {
+func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
 	query, err := db.Prepare("INSERT INTO users (username, email, password, created_at, last_login, name)" +
 		"VALUES ($1, $2, $3, $4, $5, $6) RETURNING id")
 	if err != nil {
@@ -125,7 +125,7 @@ func (db *UserDB) insertUserToDatabase(user model.User) (int64, error) {
 }
 
 // TODO: find a better name and design for this function
-func (db *UserDB) checkIfUserAlreadyExists(userToCheck model.User) (bool, error) {
+func (db *UserDB) checkIfUserAlreadyExists(userToCheck *model.User) (bool, error) {
 	_, err := db.getUserUsingQuery(
 		// can be done with an 'exists' query,
 		// but we will need to return info about which field is already taken back to the user
@@ -147,14 +147,14 @@ func (db *UserDB) checkIfUserAlreadyExists(userToCheck model.User) (bool, error)
 }
 
 // TODO: add filtering parameters
-func (db *UserDB) getUsers() ([]model.User, error) {
+func (db *UserDB) getUsers() ([]*model.User, error) {
 	rows, err := db.Query("SELECT * FROM users;")
 	if err != nil {
 		log.WithError(err).Error("GetUsers query error.")
 		return nil, errors.New("")
 	}
 
-	var users []model.User
+	var users []*model.User
 
 	defer rows.Close()
 	for rows.Next() {
@@ -168,13 +168,13 @@ func (db *UserDB) getUsers() ([]model.User, error) {
 			return nil, errors.New("")
 		}
 
-		users = append(users, user)
+		users = append(users, &user)
 	}
 
 	return users, nil
 }
 
-func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime time.Time) error {
+func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
 	query, err := db.Prepare("UPDATE users SET last_login=$1 WHERE id=$2;")
 	if err != nil {
 		log.WithField("query", query).WithError(err).Error("updateUserLastLoginTime query prepare error.")
