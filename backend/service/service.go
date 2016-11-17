@@ -202,7 +202,11 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 			Err:  errors.New("Invalid email or password."),
 		}
 	}
-	// TODO: update users last login time
+
+	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, time.Now())
+	if updateError != nil {
+		return nil, appErrors.UnexpectedError
+	}
 
 	token, serviceError := service.createTokenForUser(&databaseUser)
 	if serviceError != nil {

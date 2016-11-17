@@ -5,6 +5,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -16,6 +17,7 @@ type UserDataAccessor interface {
 	GetUserByID(userID int64) (model.User, error)
 	GetUserByEmail(email string) (model.User, error)
 	InsertUser(user model.User) (model.User, error)
+	UpdateUserLastLoginTime(userID int64, lastLoginTime time.Time) error
 }
 
 type UserDB struct {
@@ -72,6 +74,15 @@ func (db *UserDB) InsertUser(user model.User) (model.User, error) {
 	user.ID = userID
 
 	return user, nil
+}
+
+func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime time.Time) error {
+	err := db.updateUserLastLoginTime(userID, lastLoginTime)
+	if err != nil {
+		return errors.New("") // unexpected error, internal server error
+	}
+
+	return nil
 }
 
 func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (model.User, error) {
@@ -161,4 +172,21 @@ func (db *UserDB) getUsers() ([]model.User, error) {
 	}
 
 	return users, nil
+}
+
+func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime time.Time) error {
+	query, err := db.Prepare("UPDATE users SET last_login=$1 WHERE id=$2;")
+	if err != nil {
+		log.WithField("query", query).WithError(err).Error("updateUserLastLoginTime query prepare error.")
+		return errors.New("")
+	}
+	defer query.Close()
+
+	_, err = query.Exec(lastLoginTime, userID)
+	if err != nil {
+		log.WithError(err).Error("updateUserLastLoginTime query execute error.")
+		return errors.New("")
+	}
+
+	return nil
 }
