@@ -12,21 +12,20 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
-	appErrors "github.com/VirrageS/chirp/backend/errors"
 )
 
 // TODO: Maybe split into 2 services: tweet and user service?
 type ServiceProvider interface {
-	GetTweets() ([]*APIModel.Tweet, *appErrors.AppError)
-	GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *appErrors.AppError)
-	GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError)
-	PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *appErrors.AppError)
-	DeleteTweet(userID, tweetID int64) *appErrors.AppError
+	GetTweets() ([]*APIModel.Tweet, *Error)
+	GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error)
+	GetTweet(tweetID int64) (*APIModel.Tweet, *Error)
+	PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *Error)
+	DeleteTweet(userID, tweetID int64) *Error
 
-	GetUsers() ([]*APIModel.User, *appErrors.AppError)
-	GetUser(userId int64) (*APIModel.User, *appErrors.AppError)
-	RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *appErrors.AppError)
-	LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *appErrors.AppError)
+	GetUsers() ([]*APIModel.User, *Error)
+	GetUser(userId int64) (*APIModel.User, *Error)
+	RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error)
+	LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *Error)
 }
 
 type Service struct {
@@ -44,11 +43,11 @@ func NewService(databaseAccessor database.DatabaseAccessor, configuration config
 	}
 }
 
-func (service *Service) GetTweets() ([]*APIModel.Tweet, *appErrors.AppError) {
+func (service *Service) GetTweets() ([]*APIModel.Tweet, *Error) {
 	databaseTweets, databaseError := service.db.GetTweets()
 
 	if databaseError != nil {
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	APITweets, serviceError := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
@@ -61,11 +60,11 @@ func (service *Service) GetTweets() ([]*APIModel.Tweet, *appErrors.AppError) {
 }
 
 // Use GetTweets() with filtering parameters instead, when filtering will be supported
-func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *appErrors.AppError) {
+func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error) {
 	databaseTweets, databaseError := service.db.GetTweetsOfUserWithID(userID)
 
 	if databaseError != nil {
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	APITweets, serviceError := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
@@ -77,13 +76,13 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, 
 	return APITweets, nil
 }
 
-func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.AppError) {
+func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
 	databaseTweet, databaseError := service.db.GetTweet(tweetID)
 
 	if databaseError != nil {
 		// Later on we'll need to add type switch here to check the type of error, because several things
 		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
-		return nil, &appErrors.AppError{
+		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),
 		}
@@ -98,7 +97,7 @@ func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *appErrors.App
 	return APITweet, nil
 }
 
-func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *appErrors.AppError) {
+func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *Error) {
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
 	databaseTweet := service.convertAPINewTweetToDatabaseTweet(newTweet)
 
@@ -106,7 +105,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 
 	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	APITweet, serviceError := service.convertDatabaseTweetToAPITweet(&addedTweet)
@@ -118,17 +117,17 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 	return APITweet, nil
 }
 
-func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
+func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
 	databaseTweet, err := service.db.GetTweet(tweetID)
 
 	if err != nil {
-		return &appErrors.AppError{
+		return &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("Tweet with given ID was not found."),
 		}
 	}
 	if databaseTweet.AuthorID != userID {
-		return &appErrors.AppError{
+		return &Error{
 			Code: http.StatusForbidden,
 			Err:  errors.New("User is not allowed to modify this resource."),
 		}
@@ -136,18 +135,18 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *appErrors.AppError {
 
 	err = service.db.DeleteTweet(tweetID)
 	if err != nil {
-		return appErrors.UnexpectedError
+		return UnexpectedError
 	}
 
 	return nil
 }
 
-func (service *Service) GetUsers() ([]*APIModel.User, *appErrors.AppError) {
+func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
 	databaseUsers, databaseError := service.db.GetUsers()
 
 	if databaseError != nil {
 		// for now its an unexpected error, but later on we'll probably need an error type switch here too
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	APIUsers := service.convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers)
@@ -155,13 +154,13 @@ func (service *Service) GetUsers() ([]*APIModel.User, *appErrors.AppError) {
 	return APIUsers, nil
 }
 
-func (service *Service) GetUser(userId int64) (*APIModel.User, *appErrors.AppError) {
+func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
 	databaseUser, databaseError := service.db.GetUserByID(userId)
 
 	if databaseError != nil {
 		// Maybe later on we'll need to add type switch here to check the type of error, because several things
 		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
-		return nil, &appErrors.AppError{
+		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),
 		}
@@ -172,14 +171,14 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *appErrors.AppErr
 	return APIUser, nil
 }
 
-func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *appErrors.AppError) {
+func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error) {
 	databaseUser := service.covertAPINewUserToDatabaseUser(newUserForm)
 
 	newUser, err := service.db.InsertUser(databaseUser)
 
 	if err != nil {
 		// again, one error only for now...
-		return nil, &appErrors.AppError{
+		return nil, &Error{
 			Code: http.StatusConflict,
 			Err:  errors.New("User with given username or email already exists."),
 		}
@@ -190,14 +189,14 @@ func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIMod
 	return apiUser, nil
 }
 
-func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *appErrors.AppError) {
+func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *Error) {
 	email := loginForm.Email
 	password := loginForm.Password
 
 	databaseUser, databaseError := service.db.GetUserByEmail(&email)
 	// TODO: hash the password before comparing
 	if databaseError != nil || databaseUser.Password != password {
-		return nil, &appErrors.AppError{
+		return nil, &Error{
 			Code: http.StatusUnauthorized,
 			Err:  errors.New("Invalid email or password."),
 		}
@@ -206,7 +205,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	loginTime := time.Now()
 	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, &loginTime)
 	if updateError != nil {
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	token, serviceError := service.createTokenForUser(databaseUser)
@@ -223,7 +222,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	return response, nil
 }
 
-func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *appErrors.AppError) {
+func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *Error) {
 	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
 	expirationTime := time.Now().Add(validityDuration * time.Minute)
 
@@ -235,14 +234,14 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *
 	tokenString, err := token.SignedString(service.configuration.GetSecretKey())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to sign the token.")
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	return &tokenString, nil
 }
 
 // TODO: Maybe the converter should not access database and databaseModel.Tweet should contain whole user data
-func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Tweet) (*APIModel.Tweet, *appErrors.AppError) {
+func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Tweet) (*APIModel.Tweet, *Error) {
 	tweetID := tweet.ID
 	userID := tweet.AuthorID
 	likes := tweet.Likes
@@ -258,7 +257,7 @@ func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Twee
 			"tweetID": tweetID,
 			"userID":  userID,
 		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
-		return nil, appErrors.UnexpectedError
+		return nil, UnexpectedError
 	}
 
 	author := service.convertDatabaseUserToAPIUser(authorFullData)
@@ -290,14 +289,14 @@ func (service *Service) convertAPINewTweetToDatabaseTweet(tweet *APIModel.NewTwe
 	}
 }
 
-func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]*APIModel.Tweet, *appErrors.AppError) {
+func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]*APIModel.Tweet, *Error) {
 	APITweets := make([]*APIModel.Tweet, 0)
 
 	for _, databaseTweet := range databaseTweets {
 		APITweet, err := service.convertDatabaseTweetToAPITweet(&databaseTweet)
 
 		if err != nil {
-			return nil, appErrors.UnexpectedError
+			return nil, UnexpectedError
 		}
 
 		APITweets = append(APITweets, APITweet)
