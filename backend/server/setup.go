@@ -16,7 +16,6 @@ import (
 
 func init() {
 	logrus.SetOutput(os.Stderr)
-
 }
 
 // Handles all dependencies and creates a new server.

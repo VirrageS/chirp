@@ -79,11 +79,7 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (model.
 
 	err := row.Scan(&tweet.ID, &tweet.AuthorID, &tweet.CreatedAt, &tweet.Content)
 	if err != nil && err != sql.ErrNoRows {
-		log.WithFields(log.Fields{
-			"error": err,
-			"query": query,
-			"args":  args,
-		}).Error("GetTweetUsingQuery database error.")
+		log.WithField("query", query).WithError(err).Error("getTweetUsingQuery database error.")
 	}
 
 	return tweet, err
@@ -93,13 +89,13 @@ func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
 	query, err := db.Prepare("INSERT INTO tweets (author_id, created_at, content) " +
 		"VALUES ($1, $2, $3) RETURNING id")
 	if err != nil {
-		log.WithField("query", query).WithError(err).Error("insertTweetToDatabase query prepare error.")
+		log.WithError(err).Error("insertTweetToDatabase query prepare error.")
 		return 0, err
 	}
 	defer query.Close()
 
 	var newID int64
-	// for Postgres we need to use query with RETURNING id to get the ID of the inserted tweet
+
 	err = query.QueryRow(tweet.AuthorID, tweet.CreatedAt, tweet.Content).Scan(&newID)
 	if err != nil {
 		log.WithError(err).Error("insertTweetToDatabase query execute error.")
@@ -112,7 +108,7 @@ func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
 func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 	statement, err := db.Prepare("DELETE FROM tweets WHERE id=$1")
 	if err != nil {
-		log.WithField("query", statement).WithError(err).Error("deleteTweetWithID query prepare error.")
+		log.WithError(err).Error("deleteTweetWithID query prepare error.")
 		return err
 	}
 	defer statement.Close()
@@ -129,7 +125,7 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 func (db *TweetDB) getTweets() ([]model.Tweet, error) {
 	rows, err := db.Query("SELECT * FROM tweets;")
 	if err != nil {
-		log.WithError(err).Error("GetTweets query error.")
+		log.WithError(err).Error("getTweets query error.")
 	}
 
 	var tweets []model.Tweet
@@ -158,7 +154,7 @@ func (db *TweetDB) getTweets() ([]model.Tweet, error) {
 func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
 	rows, err := db.Query("SELECT * FROM tweets WHERE id=$1;", userID)
 	if err != nil {
-		log.WithError(err).Error("GetTweets query error.")
+		log.WithError(err).Error("getTweetsOfUserWithID query error.")
 	}
 
 	var tweets []model.Tweet
@@ -167,13 +163,16 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
 	for rows.Next() {
 		var tweet model.Tweet
 		err := rows.Scan(&tweet.ID, &tweet.AuthorID, &tweet.CreatedAt, &tweet.Content)
-		// TODO: move error outside of the loop
 		if err != nil {
-			log.WithError(err).Error("GetTweets row scan error.")
+			log.WithError(err).Error("getTweetsOfUserWithID row scan error.")
 			return nil, err
 		}
 
 		tweets = append(tweets, tweet)
+	}
+	if err = rows.Err(); err != nil {
+		log.WithError(err).Error("getTweetsOfUserWithID rows iteration error.")
+		return nil, err
 	}
 
 	return tweets, nil
