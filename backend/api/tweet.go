@@ -9,16 +9,15 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api/model"
-	"github.com/VirrageS/chirp/backend/services"
 )
 
-func GetTweets(context *gin.Context) {
+func (api *API) GetTweets(context *gin.Context) {
 	// TODO: support filtering
 	//expected_user_id := context.Query("author")
 	//expected_user_name := context.Query("author")
 	// ...
 
-	tweets, err := services.GetTweets()
+	tweets, err := api.Service.GetTweets()
 	if err != nil {
 		context.AbortWithError(err.Code, err.Err)
 		return
@@ -27,7 +26,7 @@ func GetTweets(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, tweets)
 }
 
-func GetTweet(context *gin.Context) {
+func (api *API) GetTweet(context *gin.Context) {
 	parameterID := context.Param("id")
 
 	tweetID, err := strconv.ParseInt(parameterID, 10, 64)
@@ -36,7 +35,7 @@ func GetTweet(context *gin.Context) {
 		return
 	}
 
-	responseTweet, err2 := services.GetTweet(tweetID)
+	responseTweet, err2 := api.Service.GetTweet(tweetID)
 	if err2 != nil {
 		context.AbortWithError(err2.Code, err2.Err)
 		return
@@ -45,7 +44,7 @@ func GetTweet(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, responseTweet)
 }
 
-func PostTweet(context *gin.Context) {
+func (api *API) PostTweet(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	tweetAuthorID := (context.MustGet("userID").(int64))
 	var newTweetContent model.NewTweetContent
@@ -59,7 +58,7 @@ func PostTweet(context *gin.Context) {
 		Content:  newTweetContent.Content,
 	}
 
-	responseTweet, err2 := services.PostTweet(&requestTweet)
+	responseTweet, err2 := api.Service.PostTweet(&requestTweet)
 	if err2 != nil {
 		context.AbortWithError(err2.Code, err2.Err)
 		return
@@ -69,7 +68,7 @@ func PostTweet(context *gin.Context) {
 	context.IndentedJSON(http.StatusCreated, responseTweet)
 }
 
-func DeleteTweet(context *gin.Context) {
+func (api *API) DeleteTweet(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
 	authenticatingUserID := (context.MustGet("userID").(int64))
 	tweetIDString := context.Param("id")
@@ -80,7 +79,7 @@ func DeleteTweet(context *gin.Context) {
 		return
 	}
 
-	serviceError := services.DeleteTweet(authenticatingUserID, tweetID)
+	serviceError := api.Service.DeleteTweet(authenticatingUserID, tweetID)
 
 	if serviceError != nil {
 		context.AbortWithError(serviceError.Code, serviceError.Err)
@@ -90,11 +89,11 @@ func DeleteTweet(context *gin.Context) {
 	context.Status(http.StatusNoContent)
 }
 
-func HomeFeed(context *gin.Context) {
+func (api *API) HomeFeed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	tweetAuthorID := (context.MustGet("userID").(int64))
 
-	tweets, err := services.GetTweetsOfUserWithID(tweetAuthorID)
+	tweets, err := api.Service.GetTweetsOfUserWithID(tweetAuthorID)
 	if err != nil {
 		context.AbortWithError(err.Code, err.Err)
 		return

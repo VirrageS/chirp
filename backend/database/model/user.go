@@ -1,15 +1,21 @@
 package model
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type User struct {
-	ID        int64
-	Username  string
-	Password  string
-	Email     string
-	CreatedAt time.Time
-	LastLogin time.Time
-	Active    bool
-	Name      string
-	AvatarUrl string
+	ID            int64
+	TwitterToken  sql.NullString
+	FacebookToken sql.NullString
+	GoogleToken   sql.NullString
+	Username      string
+	Password      string
+	Email         string
+	CreatedAt     time.Time
+	LastLogin     time.Time
+	Active        bool
+	Name          string
+	AvatarUrl     sql.NullString
 }

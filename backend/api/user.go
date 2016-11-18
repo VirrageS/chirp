@@ -6,12 +6,10 @@ import (
 	"strconv"
 
 	"gopkg.in/gin-gonic/gin.v1"
-
-	"github.com/VirrageS/chirp/backend/services"
 )
 
-func GetUsers(context *gin.Context) {
-	users, err := services.GetUsers()
+func (api *API) GetUsers(context *gin.Context) {
+	users, err := api.Service.GetUsers()
 	if err != nil {
 		context.AbortWithError(err.Code, err.Err)
 		return
@@ -20,7 +18,7 @@ func GetUsers(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, users)
 }
 
-func GetUser(context *gin.Context) {
+func (api *API) GetUser(context *gin.Context) {
 	parameterID := context.Param("id")
 
 	userID, err := strconv.ParseInt(parameterID, 10, 64)
@@ -29,7 +27,7 @@ func GetUser(context *gin.Context) {
 		return
 	}
 
-	responseUser, err2 := services.GetUser(userID)
+	responseUser, err2 := api.Service.GetUser(userID)
 	if err2 != nil {
 		context.AbortWithError(err2.Code, err2.Err)
 		return
