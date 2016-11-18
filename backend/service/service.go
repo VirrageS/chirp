@@ -203,8 +203,8 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 		}
 	}
 
-	loginTime := &(time.Now())
-	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, loginTime)
+	loginTime := time.Now()
+	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, &loginTime)
 	if updateError != nil {
 		return nil, appErrors.UnexpectedError
 	}
