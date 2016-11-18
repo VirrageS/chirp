@@ -46,7 +46,7 @@ func NewService(databaseAccessor database.DatabaseAccessor, configuration config
 func (service *Service) GetTweets() ([]*APIModel.Tweet, *Error) {
 	databaseTweets, databaseError := service.db.GetTweets()
 
-	if databaseError != nil {
+	if databaseError == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
@@ -63,7 +63,7 @@ func (service *Service) GetTweets() ([]*APIModel.Tweet, *Error) {
 func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error) {
 	databaseTweets, databaseError := service.db.GetTweetsOfUserWithID(userID)
 
-	if databaseError != nil {
+	if databaseError == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
@@ -79,13 +79,14 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, 
 func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
 	databaseTweet, databaseError := service.db.GetTweet(tweetID)
 
-	if databaseError != nil {
-		// Later on we'll need to add type switch here to check the type of error, because several things
-		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
+	if databaseError == database.NoRowsError {
 		return nil, &Error{
 			Code: http.StatusNotFound,
-			Err:  errors.New("User with given ID was not found."),
+			Err:  errors.New("Tweet with given ID was not found."),
 		}
+	}
+	if databaseError == database.DatabaseError {
+		return nil, UnexpectedError
 	}
 
 	APITweet, serviceError := service.convertDatabaseTweetToAPITweet(&databaseTweet)
@@ -103,8 +104,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 
 	addedTweet, databaseError := service.db.InsertTweet(*databaseTweet)
 
-	if databaseError != nil {
-		// for now its an unexpected error, but later on we'll probably need an error type switch here too
+	if databaseError == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
@@ -120,12 +120,16 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
 	databaseTweet, err := service.db.GetTweet(tweetID)
 
-	if err != nil {
+	if err == database.NoRowsError {
 		return &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("Tweet with given ID was not found."),
 		}
 	}
+	if err == database.DatabaseError {
+		return UnexpectedError
+	}
+
 	if databaseTweet.AuthorID != userID {
 		return &Error{
 			Code: http.StatusForbidden,
@@ -134,7 +138,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
 	}
 
 	err = service.db.DeleteTweet(tweetID)
-	if err != nil {
+	if err == database.DatabaseError {
 		return UnexpectedError
 	}
 
@@ -144,8 +148,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
 func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
 	databaseUsers, databaseError := service.db.GetUsers()
 
-	if databaseError != nil {
-		// for now its an unexpected error, but later on we'll probably need an error type switch here too
+	if databaseError == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
@@ -157,13 +160,14 @@ func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
 func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
 	databaseUser, databaseError := service.db.GetUserByID(userId)
 
-	if databaseError != nil {
-		// Maybe later on we'll need to add type switch here to check the type of error, because several things
-		// can go wrong when fetching data from database: not found, SQL error, db connection error etc
+	if databaseError == database.NoRowsError {
 		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),
 		}
+	}
+	if databaseError == database.DatabaseError {
+		return nil, UnexpectedError
 	}
 
 	APIUser := service.convertDatabaseUserToAPIUser(databaseUser)
@@ -176,12 +180,14 @@ func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIMod
 
 	newUser, err := service.db.InsertUser(databaseUser)
 
-	if err != nil {
-		// again, one error only for now...
+	if err == database.UserAlreadyExistsError {
 		return nil, &Error{
 			Code: http.StatusConflict,
 			Err:  errors.New("User with given username or email already exists."),
 		}
+	}
+	if err == database.DatabaseError {
+		return nil, UnexpectedError
 	}
 
 	apiUser := service.convertDatabaseUserToAPIUser(newUser)
@@ -194,8 +200,18 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	password := loginForm.Password
 
 	databaseUser, databaseError := service.db.GetUserByEmail(&email)
+	if databaseError == database.NoRowsError {
+		return nil, &Error{
+			Code: http.StatusNotFound,
+			Err:  errors.New("User with given ID was not found."),
+		}
+	}
+	if databaseError == database.DatabaseError {
+		return nil, UnexpectedError
+	}
+
 	// TODO: hash the password before comparing
-	if databaseError != nil || databaseUser.Password != password {
+	if databaseUser.Password != password {
 		return nil, &Error{
 			Code: http.StatusUnauthorized,
 			Err:  errors.New("Invalid email or password."),
@@ -204,7 +220,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 
 	loginTime := time.Now()
 	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, &loginTime)
-	if updateError != nil {
+	if updateError == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 

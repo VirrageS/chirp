@@ -4,7 +4,6 @@ package database
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -28,19 +27,22 @@ func NewUserDB(databaseConnection *sql.DB) *UserDB {
 	return &UserDB{databaseConnection}
 }
 
-// Interface implementations
-
 func (db *UserDB) GetUsers() ([]*model.User, error) {
-	return db.getUsers()
+	users, err := db.getUsers()
+	if err != nil {
+		return nil, DatabaseError
+	}
+
+	return users, nil
 }
 
 func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("") // no users found
+		return nil, NoRowsError
 	}
 	if err != nil {
-		return nil, errors.New("") // db error
+		return nil, DatabaseError
 	}
 
 	return user, nil
@@ -48,8 +50,11 @@ func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
 
 func (db *UserDB) GetUserByEmail(email *string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
+	if err == sql.ErrNoRows {
+		return nil, NoRowsError
+	}
 	if err != nil {
-		return nil, errors.New("") // db error
+		return nil, DatabaseError
 	}
 
 	return user, nil
@@ -58,17 +63,16 @@ func (db *UserDB) GetUserByEmail(email *string) (*model.User, error) {
 func (db *UserDB) InsertUser(user *model.User) (*model.User, error) {
 	exists, err := db.checkIfUserAlreadyExists(user)
 	if err != nil {
-		return nil, errors.New("") // db error
+		return nil, DatabaseError
 	}
 
 	if exists {
-		// TODO: return a message that informs the user which one of username/email is already taken
-		return nil, errors.New("") // user already exists
+		return nil, UserAlreadyExistsError
 	}
 
 	userID, err := db.insertUserToDatabase(user)
 	if err != nil {
-		return nil, errors.New("") // db error
+		return nil, DatabaseError
 	}
 
 	user.ID = userID
@@ -79,7 +83,7 @@ func (db *UserDB) InsertUser(user *model.User) (*model.User, error) {
 func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
 	err := db.updateUserLastLoginTime(userID, lastLoginTime)
 	if err != nil {
-		return errors.New("") // unexpected error, internal server error
+		return DatabaseError
 	}
 
 	return nil
@@ -109,7 +113,7 @@ func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
 		"VALUES ($1, $2, $3, $4, $5, $6) RETURNING id")
 	if err != nil {
 		log.WithField("query", query).WithError(err).Error("insertUserToDatabase query prepare error.")
-		return 0, errors.New("")
+		return 0, err
 	}
 	defer query.Close()
 
@@ -118,7 +122,7 @@ func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
 	err = query.QueryRow(user.Username, user.Email, user.Password, user.CreatedAt, user.LastLogin, user.Name).Scan(&newID)
 	if err != nil {
 		log.WithError(err).Error("insertUserToDatabase query execute error.")
-		return 0, errors.New("")
+		return 0, err
 	}
 
 	return newID, nil
@@ -140,7 +144,7 @@ func (db *UserDB) checkIfUserAlreadyExists(userToCheck *model.User) (bool, error
 		log.WithFields(log.Fields{
 			"error": err,
 		}).Error("userAlreadyExists database error.")
-		return false, errors.New("")
+		return false, err
 	}
 
 	return true, nil
@@ -151,7 +155,7 @@ func (db *UserDB) getUsers() ([]*model.User, error) {
 	rows, err := db.Query("SELECT * FROM users;")
 	if err != nil {
 		log.WithError(err).Error("GetUsers query error.")
-		return nil, errors.New("")
+		return nil, err
 	}
 
 	var users []*model.User
@@ -164,11 +168,15 @@ func (db *UserDB) getUsers() ([]*model.User, error) {
 			&user.Name, &user.AvatarUrl)
 		// TODO: move error outside of the loop
 		if err != nil {
-			log.WithError(err).Error("GetUsers row scan error.")
-			return nil, errors.New("")
+			log.WithError(err).Error("getUsers row scan error.")
+			return nil, err
 		}
 
 		users = append(users, &user)
+	}
+	if err = rows.Err(); err != nil {
+		log.WithError(err).Error("getUsers rows iteration error.")
+		return nil, err
 	}
 
 	return users, nil
@@ -178,14 +186,14 @@ func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	query, err := db.Prepare("UPDATE users SET last_login=$1 WHERE id=$2;")
 	if err != nil {
 		log.WithField("query", query).WithError(err).Error("updateUserLastLoginTime query prepare error.")
-		return errors.New("")
+		return err
 	}
 	defer query.Close()
 
 	_, err = query.Exec(lastLoginTime, userID)
 	if err != nil {
 		log.WithError(err).Error("updateUserLastLoginTime query execute error.")
-		return errors.New("")
+		return err
 	}
 
 	return nil
