@@ -79,7 +79,7 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, 
 func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
 	databaseTweet, databaseError := service.db.GetTweet(tweetID)
 
-	if databaseError == database.NoRowsError {
+	if databaseError == database.NoResults {
 		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("Tweet with given ID was not found."),
@@ -120,7 +120,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
 	databaseTweet, err := service.db.GetTweet(tweetID)
 
-	if err == database.NoRowsError {
+	if err == database.NoResults {
 		return &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("Tweet with given ID was not found."),
@@ -160,7 +160,7 @@ func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
 func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
 	databaseUser, databaseError := service.db.GetUserByID(userId)
 
-	if databaseError == database.NoRowsError {
+	if databaseError == database.NoResults {
 		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),
@@ -200,7 +200,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	password := loginForm.Password
 
 	databaseUser, databaseError := service.db.GetUserByEmail(&email)
-	if databaseError == database.NoRowsError {
+	if databaseError == database.NoResults {
 		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("User with given ID was not found."),

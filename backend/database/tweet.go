@@ -43,7 +43,7 @@ func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error) {
 func (db *TweetDB) GetTweet(tweetID int64) (model.Tweet, error) {
 	tweet, err := db.getTweetUsingQuery("SELECT * FROM tweets WHERE id=$1;", tweetID)
 	if err == sql.ErrNoRows {
-		return model.Tweet{}, NoRowsError
+		return model.Tweet{}, NoResults
 	}
 	if err != nil {
 		return model.Tweet{}, DatabaseError

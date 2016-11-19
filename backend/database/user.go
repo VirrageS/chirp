@@ -40,7 +40,7 @@ func (db *UserDB) GetUsers() ([]*model.User, error) {
 func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, NoResults
 	}
 	if err != nil {
 		return nil, DatabaseError
@@ -52,7 +52,7 @@ func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
 func (db *UserDB) GetUserByEmail(email *string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
-		return nil, NoRowsError
+		return nil, NoResults
 	}
 	if err != nil {
 		return nil, DatabaseError
