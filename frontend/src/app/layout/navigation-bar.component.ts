@@ -8,7 +8,7 @@ import { Store } from '../store';
   selector: 'navigation-bar',
   styleUrls: ['./navigation-bar.component.scss'],
   template: `
-    <div class="navigation-bar shadow-1">
+    <div class="navigation-bar">
       <div class="menu">
         <a routerLink="/home" routerLinkActive="menu__link--active" class="menu__link">Home</a>
         <a routerLink="/me" *ngIf="_authenticated()" routerLinkActive="menu__link--active" class="menu__link">Me</a>

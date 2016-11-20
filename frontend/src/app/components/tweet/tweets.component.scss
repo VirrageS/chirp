@@ -1,4 +1,8 @@
+@import '../../../../public/scss/main.scss';
+
 .tweets {
+  @include box-shadow(1);
+
   max-width: 800px;
   margin: 0 auto;
 
