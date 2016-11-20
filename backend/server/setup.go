@@ -20,7 +20,7 @@ func init() {
 
 // Handles all dependencies and creates a new server.
 func CreateNew() *gin.Engine {
-	dbConnection := database.NewDatabaseConnection()
+	dbConnection := database.NewConnection()
 	serverConfig := config.GetConfig()
 	CORSConfig := setupCORS()
 
