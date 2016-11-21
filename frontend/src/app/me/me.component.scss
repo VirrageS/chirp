@@ -1,8 +1,11 @@
+@import '../../../public/scss/main.scss';
+
 .me {
   width: 800px;
   margin: 0 auto;
 
   &__switch {
+    @include box-shadow(1);
     margin-bottom: 40px;
   }
 
@@ -34,7 +37,7 @@
   color: #000000;
 
   &--active {
-    border-bottom: 5px solid rgb(42, 139, 200); //rgb(251, 104, 78);
+    border-bottom: 5px solid rgb(24, 166, 255); //rgb(251, 104, 78);
   }
 
   &__name {

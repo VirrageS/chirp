@@ -3,6 +3,9 @@ import { Component, Input } from '@angular/core';
 import { Tweet, TweetService } from '../../shared';
 
 
+import '../../../../public/scss/abstract.scss';
+
+
 @Component({
   selector: 'tweet',
   templateUrl: './tweet.component.html',
@@ -14,21 +17,33 @@ export class TweetComponent {
   constructor(private _tweetService: TweetService) {
   }
 
-  private _like() {
-    this._tweetService.like(this.tweet.id)
+  private _follow() {
+    this.tweet.author.following = true
+  }
+
+  private _toggleLike() {
+    this.tweet.liked = !this.tweet.liked
+
+    let toggleFunc = this._tweetService.like(this.tweet.id)
+    if (this.tweet.liked) {
+      toggleFunc = this._tweetService.unlike(this.tweet.id)
+    }
+
+    toggleFunc
       .subscribe(
         result => {
-          this.tweet = result
+          // this.tweet = result
         },
         error => {}
       )
   }
 
-  private _unlike() {
-    this._tweetService.unlike(this.tweet.id)
+  private _retweet() {
+    this.tweet.retweeted = true
+    this._tweetService.retweet(this.tweet.id)
       .subscribe(
         result => {
-          this.tweet = result
+          // this.tweet = result
         },
         error => {}
       )

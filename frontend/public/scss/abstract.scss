@@ -1,0 +1,17 @@
+$BLACK-COLOR: #000000;
+$WHITE-COLOR: #ffffff;
+
+
+$TEXT-PRIMARY-COLOR: rgba(0, 0, 0, .87);
+$TEXT-SECONDARY-COLOR: rgba(0, 0, 0, .54);
+$TEXT-HINT-COLOR: rgba(0, 0, 0, .38);
+$TEXT-DIVIDER-COLOR: rgba(0, 0, 0, .10);
+
+$WINDOW-WIDTH: 1200px;
+
+
+$BREAKPOINTS: (
+  'small': 320px,
+  'medium': 768px,
+  'large': 1024px,
+) !default;

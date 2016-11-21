@@ -1,4 +1,8 @@
+@import '../../../../public/scss/main.scss';
+
 .create-tweet {
+  @include box-shadow(1);
+
   display: block;
   padding: 20px 50px 30px 50px;
 

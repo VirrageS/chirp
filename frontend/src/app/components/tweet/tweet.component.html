@@ -5,15 +5,24 @@
       <div class="user__name">{{ tweet.author.name }}</div>
       <div class="user__username">@{{ tweet.author.username }}</div>
     </div>
+    <button *ngIf="!tweet.author.following" class="btn btn-success btn-sm btn-follow" (click)=_follow()>
+      <i class="fa fa-plus" aria-hidden="true"></i>
+      <span class="btn-text">follow</span>
+    </button>
+    <div class="interval">2m</div>
   </div>
   <div class="tweet__content">
     {{ tweet.content }}
   </div>
   <div class="tweet__controllers">
-    <div *ngIf="!tweet.liked" class="button" (click)=_like()>Like ({{ tweet.likes }})</div>
-    <div *ngIf="tweet.liked" class="button" (click)=_unlike()>Unlike ({{ tweet.likes }})</div>
+    <button class="btn btn-primary btn-sm" (click)=_toggleLike()>
+      <i class="fa fa-thumbs-{{ !tweet.liked ? 'up' : 'down' }}" aria-hidden="true"></i>
+      <span class="btn-text">{{ !tweet.liked ? 'like' : 'unlike' }}</span>
+    </button>
 
-    <div *ngIf="!tweet.retweeted" class="button" (click)=_retweet()>Retweet ({{ tweet.retweets }})</div>
-    <div *ngIf="tweet.retweeted" class="button" (click)=_unretweet()>Unretweet ({{ tweet.retweets }})</div>
+    <button *ngIf="!tweet.retweeted" class="btn btn-primary btn-sm" (click)=_retweet()>
+      <i class="fa fa-retweet" aria-hidden="true"></i>
+      <span class="btn-text">retweet</span>
+    </button>
   </div>
 </div>

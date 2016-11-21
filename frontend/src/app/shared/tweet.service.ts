@@ -28,4 +28,8 @@ export class TweetService {
   unlike(tweet_id: number) {
     return this._apiService.post(this.tweet_path + "/" + tweet_id + "/unlike", {})
   }
+
+  retweet(tweet_id: number) {
+    return this._apiService.post(this.tweet_path + "/" + tweet_id + "/retweet", {})
+  }
 }
