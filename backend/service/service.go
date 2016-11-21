@@ -12,22 +12,28 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
+	"github.com/VirrageS/chirp/backend/service/converters"
 )
 
 // Struct that implements APIProvider
 type Service struct {
 	// logger?
 	// DB to API model converter?
-	// API to DB model converter?
 	configuration config.ServiceConfigProvider
 	db            database.DatabaseAccessor
+
+	userConverter converters.UserModelConverter
 }
 
-// Constructs a Service that uses given DatabaseAccessor with configuration provided by given ServiceConfigProvider
-func NewService(databaseAccessor database.DatabaseAccessor, configuration config.ServiceConfigProvider) ServiceProvider {
+// Constructs a Service that uses provided objects
+func NewService(databaseAccessor database.DatabaseAccessor,
+	configuration config.ServiceConfigProvider,
+	userConverter converters.UserModelConverter) ServiceProvider {
+
 	return &Service{
 		configuration: configuration,
 		db:            databaseAccessor,
+		userConverter: userConverter,
 	}
 }
 
@@ -140,7 +146,7 @@ func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APIUsers := service.convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers)
+	APIUsers := service.userConverter.ConvertArrayDatabaseToAPI(databaseUsers)
 
 	return APIUsers, nil
 }
@@ -158,13 +164,13 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APIUser := service.convertDatabaseUserToAPIUser(databaseUser)
+	APIUser := service.userConverter.ConvertDatabaseToAPI(databaseUser)
 
 	return APIUser, nil
 }
 
 func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error) {
-	databaseUser := service.covertAPINewUserToDatabaseUser(newUserForm)
+	databaseUser := service.userConverter.ConvertAPItoDatabase(newUserForm)
 
 	newUser, err := service.db.InsertUser(databaseUser)
 
@@ -178,7 +184,7 @@ func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIMod
 		return nil, UnexpectedError
 	}
 
-	apiUser := service.convertDatabaseUserToAPIUser(newUser)
+	apiUser := service.userConverter.ConvertDatabaseToAPI(newUser)
 
 	return apiUser, nil
 }
@@ -217,7 +223,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 		return nil, serviceError
 	}
 
-	apiUser := service.convertDatabaseUserToAPIUser(databaseUser)
+	apiUser := service.userConverter.ConvertDatabaseToAPI(databaseUser)
 	response := &APIModel.LoginResponse{
 		AuthToken: token,
 		User:      apiUser,
@@ -264,7 +270,7 @@ func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Twee
 		return nil, UnexpectedError
 	}
 
-	author := service.convertDatabaseUserToAPIUser(authorFullData)
+	author := service.userConverter.ConvertDatabaseToAPI(authorFullData)
 
 	APITweet := &APIModel.Tweet{
 		ID:        tweetID,
@@ -307,59 +313,4 @@ func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseT
 	}
 
 	return APITweets, nil
-}
-
-func (service *Service) convertArrayOfDatabaseUsersToArrayOfAPIUsers(databaseUsers []*databaseModel.User) []*APIModel.User {
-	convertedUsers := make([]*APIModel.User, 0)
-
-	for _, databaseUser := range databaseUsers {
-		APIUser := service.convertDatabaseUserToAPIUser(databaseUser)
-		convertedUsers = append(convertedUsers, APIUser)
-	}
-
-	return convertedUsers
-}
-
-func (service *Service) convertDatabaseUserToAPIUser(user *databaseModel.User) *APIModel.User {
-	id := user.ID
-	username := user.Username
-	email := user.Email
-	createdAt := user.CreatedAt
-	lastLogin := user.LastLogin
-	name := user.Name
-	avatarUrl := user.AvatarUrl.String
-
-	return &APIModel.User{
-		ID:        id,
-		Username:  username,
-		Email:     email,
-		CreatedAt: createdAt,
-		LastLogin: lastLogin,
-		Name:      name,
-		AvatarUrl: avatarUrl,
-		Following: false,
-	}
-}
-
-func (service *Service) covertAPINewUserToDatabaseUser(user *APIModel.NewUserForm) *databaseModel.User {
-	username := user.Username
-	password := user.Password
-	email := user.Email
-	name := user.Name
-	creationTime := time.Now()
-
-	return &databaseModel.User{
-		ID:            0,
-		TwitterToken:  toSqlNullString(""),
-		FacebookToken: toSqlNullString(""),
-		GoogleToken:   toSqlNullString(""),
-		Username:      username,
-		Password:      password,
-		Email:         email,
-		CreatedAt:     creationTime,
-		LastLogin:     creationTime,
-		Active:        true,
-		Name:          name,
-		AvatarUrl:     toSqlNullString(""),
-	}
 }
