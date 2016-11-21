@@ -1,29 +1,14 @@
 package api
 
-import (
-	"github.com/VirrageS/chirp/backend/service"
-	"gopkg.in/gin-gonic/gin.v1"
-)
+import "github.com/VirrageS/chirp/backend/service"
 
-type APIProvider interface {
-	RegisterUser(context *gin.Context)
-	LoginUser(context *gin.Context)
-
-	GetTweets(context *gin.Context)
-	GetTweet(context *gin.Context)
-	PostTweet(context *gin.Context)
-	DeleteTweet(context *gin.Context)
-	HomeFeed(context *gin.Context)
-
-	GetUsers(context *gin.Context)
-	GetUser(context *gin.Context)
-}
-
+// Struct that implements APIProvider
 type API struct {
 	// logger?
 	Service service.ServiceProvider
 }
 
+// Constructs an API object that uses given ServiceProvider.
 func NewAPI(service service.ServiceProvider) APIProvider {
 	return &API{service}
 }

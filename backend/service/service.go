@@ -14,20 +14,7 @@ import (
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 )
 
-// TODO: Maybe split into 2 services: tweet and user service?
-type ServiceProvider interface {
-	GetTweets() ([]*APIModel.Tweet, *Error)
-	GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error)
-	GetTweet(tweetID int64) (*APIModel.Tweet, *Error)
-	PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *Error)
-	DeleteTweet(userID, tweetID int64) *Error
-
-	GetUsers() ([]*APIModel.User, *Error)
-	GetUser(userId int64) (*APIModel.User, *Error)
-	RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error)
-	LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *Error)
-}
-
+// Struct that implements APIProvider
 type Service struct {
 	// logger?
 	// DB to API model converter?
@@ -36,6 +23,7 @@ type Service struct {
 	db            database.DatabaseAccessor
 }
 
+// Constructs a Service that uses given DatabaseAccessor with configuration provided by given ServiceConfigProvider
 func NewService(databaseAccessor database.DatabaseAccessor, configuration config.ServiceConfigProvider) ServiceProvider {
 	return &Service{
 		configuration: configuration,

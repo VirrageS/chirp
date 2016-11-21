@@ -12,18 +12,12 @@ import (
 	"github.com/lib/pq"
 )
 
-type UserDataAccessor interface {
-	GetUsers() ([]*model.User, error)
-	GetUserByID(userID int64) (*model.User, error)
-	GetUserByEmail(email *string) (*model.User, error)
-	InsertUser(user *model.User) (*model.User, error)
-	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
-}
-
+// Struct that implements UserDataAccessor using sql (postgres) database
 type UserDB struct {
 	*sql.DB
 }
 
+// Constructs UserDB that uses a given sql.DB connection
 func NewUserDB(databaseConnection *sql.DB) *UserDB {
 	return &UserDB{databaseConnection}
 }

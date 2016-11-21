@@ -6,18 +6,12 @@ import (
 	"github.com/VirrageS/chirp/backend/database/model"
 )
 
-type TweetDataAccessor interface {
-	GetTweets() ([]model.Tweet, error)
-	GetTweetsOfUserWithID(userID int64) ([]model.Tweet, error)
-	GetTweet(tweetID int64) (model.Tweet, error)
-	InsertTweet(tweet model.Tweet) (model.Tweet, error)
-	DeleteTweet(tweetID int64) error
-}
-
+// Struct that implements TweetDataAccessor using sql (postgres) database
 type TweetDB struct {
 	*sql.DB
 }
 
+// Constructs TweetDB that uses a given sql.DB connection
 func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
 	return &TweetDB{databaseConnection}
 }
