@@ -146,7 +146,7 @@ func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APIUsers := service.userConverter.ConvertArrayDatabaseToAPI(databaseUsers)
+	APIUsers := service.userConverter.ConvertArrayDatabasePublicUserToAPI(databaseUsers)
 
 	return APIUsers, nil
 }
@@ -164,7 +164,7 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APIUser := service.userConverter.ConvertDatabaseToAPI(databaseUser)
+	APIUser := service.userConverter.ConvertDatabasePublicUserToAPI(databaseUser)
 
 	return APIUser, nil
 }
@@ -232,6 +232,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	return response, nil
 }
 
+//TODO: Maybe move out to another package and inject tokenCreator object/closure that can create tokens
 func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *Error) {
 	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
 	expirationTime := time.Now().Add(validityDuration * time.Minute)
@@ -270,7 +271,7 @@ func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Twee
 		return nil, UnexpectedError
 	}
 
-	author := service.userConverter.ConvertDatabaseToAPI(authorFullData)
+	author := service.userConverter.ConvertDatabasePublicUserToAPI(authorFullData)
 
 	APITweet := &APIModel.Tweet{
 		ID:        tweetID,

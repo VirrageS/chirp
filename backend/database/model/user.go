@@ -19,3 +19,11 @@ type User struct {
 	Name          string
 	AvatarUrl     sql.NullString
 }
+
+type PublicUser struct {
+	ID        int64
+	Username  string
+	LastLogin time.Time
+	Name      string
+	AvatarUrl sql.NullString
+}
