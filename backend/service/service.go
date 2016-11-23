@@ -76,7 +76,7 @@ func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(&databaseTweet)
+	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(databaseTweet)
 
 	return APITweet, nil
 }
@@ -90,7 +90,7 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 		return nil, UnexpectedError
 	}
 
-	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(&addedTweet)
+	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(addedTweet)
 
 	return APITweet, nil
 }
@@ -178,7 +178,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 	email := loginForm.Email
 	password := loginForm.Password
 
-	databaseUser, databaseError := service.db.GetUserByEmail(&email)
+	databaseUser, databaseError := service.db.GetUserByEmail(email)
 	if databaseError == database.NoResults {
 		return nil, &Error{
 			Code: http.StatusNotFound,
@@ -218,7 +218,7 @@ func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.Logi
 }
 
 //TODO: Maybe move out to another package and inject tokenCreator object/closure that can create tokens
-func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *Error) {
+func (service *Service) createTokenForUser(user *databaseModel.User) (string, *Error) {
 	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
 	expirationTime := time.Now().Add(validityDuration * time.Minute)
 
@@ -230,8 +230,8 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *
 	tokenString, err := token.SignedString(service.configuration.GetSecretKey())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to sign the token.")
-		return nil, UnexpectedError
+		return "", UnexpectedError
 	}
 
-	return &tokenString, nil
+	return tokenString, nil
 }

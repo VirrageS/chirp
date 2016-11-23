@@ -16,7 +16,7 @@ func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
 	return &TweetDB{databaseConnection}
 }
 
-func (db *TweetDB) GetTweets() ([]model.TweetWithAuthor, error) {
+func (db *TweetDB) GetTweets() ([]*model.TweetWithAuthor, error) {
 	tweets, err := db.getTweets()
 	if err != nil {
 		return nil, DatabaseError
@@ -25,7 +25,7 @@ func (db *TweetDB) GetTweets() ([]model.TweetWithAuthor, error) {
 	return tweets, nil
 }
 
-func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]model.TweetWithAuthor, error) {
+func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor, error) {
 	tweets, err := db.getTweetsOfUserWithID(userID)
 	if err != nil {
 		return nil, DatabaseError
@@ -34,25 +34,25 @@ func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]model.TweetWithAuthor,
 	return tweets, nil
 }
 
-func (db *TweetDB) GetTweet(tweetID int64) (model.TweetWithAuthor, error) {
+func (db *TweetDB) GetTweet(tweetID int64) (*model.TweetWithAuthor, error) {
 	tweet, err := db.getTweetUsingQuery(
 		"SELECT tweets.id, tweets.created_at, tweets.content, "+
 			"users.id, users.username, users.last_login, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err == sql.ErrNoRows {
-		return model.TweetWithAuthor{}, NoResults
+		return nil, NoResults
 	}
 	if err != nil {
-		return model.TweetWithAuthor{}, DatabaseError
+		return nil, DatabaseError
 	}
 
 	return tweet, nil
 }
 
-func (db *TweetDB) InsertTweet(tweet model.Tweet) (model.TweetWithAuthor, error) {
+func (db *TweetDB) InsertTweet(tweet model.Tweet) (*model.TweetWithAuthor, error) {
 	tweetID, err := db.insertTweetToDatabase(tweet)
 	if err != nil {
-		return model.TweetWithAuthor{}, DatabaseError
+		return nil, DatabaseError
 	}
 
 	// TODO: this is probably super ugly, fix it
@@ -61,7 +61,7 @@ func (db *TweetDB) InsertTweet(tweet model.Tweet) (model.TweetWithAuthor, error)
 			"users.id, users.username, users.last_login, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err != nil {
-		return model.TweetWithAuthor{}, DatabaseError
+		return nil, DatabaseError
 	}
 
 	return newTweet, nil
@@ -77,7 +77,7 @@ func (db *TweetDB) DeleteTweet(tweetID int64) error {
 }
 
 // TODO: Maybe it should also fetch tweet's User and embed it inside the returned object
-func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (model.TweetWithAuthor, error) {
+func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model.TweetWithAuthor, error) {
 	row := db.QueryRow(query, args...)
 
 	var tweet model.TweetWithAuthor
@@ -87,10 +87,11 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (model.
 		&author.ID, &author.Username, &author.LastLogin, &author.Name, &author.AvatarUrl)
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getTweetUsingQuery database error.")
+		return nil, err
 	}
 	tweet.Author = &author
 
-	return tweet, err
+	return &tweet, err
 }
 
 func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
@@ -130,7 +131,7 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 	return nil
 }
 
-func (db *TweetDB) getTweets() ([]model.TweetWithAuthor, error) {
+func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 	rows, err := db.Query(
 		"SELECT tweets.id, tweets.created_at, tweets.content, " +
 			"users.id, users.username, users.last_login, users.name, users.avatar_url " +
@@ -139,7 +140,7 @@ func (db *TweetDB) getTweets() ([]model.TweetWithAuthor, error) {
 		log.WithError(err).Error("getTweets query error.")
 	}
 
-	var tweets []model.TweetWithAuthor
+	var tweets []*model.TweetWithAuthor
 
 	defer rows.Close()
 	for rows.Next() {
@@ -154,7 +155,7 @@ func (db *TweetDB) getTweets() ([]model.TweetWithAuthor, error) {
 		}
 		tweet.Author = &author
 
-		tweets = append(tweets, tweet)
+		tweets = append(tweets, &tweet)
 	}
 	if err = rows.Err(); err != nil {
 		log.WithError(err).Error("getTweets rows iteration error.")
@@ -165,7 +166,7 @@ func (db *TweetDB) getTweets() ([]model.TweetWithAuthor, error) {
 }
 
 // TODO: almost the same as getTweets()...
-func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]model.TweetWithAuthor, error) {
+func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor, error) {
 	rows, err := db.Query("SELECT tweets.id, tweets.created_at, tweets.content, "+
 		"users.id, users.username, users.last_login, users.name, users.avatar_url "+
 		"FROM tweets JOIN users on tweets.author_id=users.id AND users.id=$1;", userID)
@@ -173,7 +174,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]model.TweetWithAuthor,
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
 	}
 
-	var tweets []model.TweetWithAuthor
+	var tweets []*model.TweetWithAuthor
 
 	defer rows.Close()
 	for rows.Next() {
@@ -188,7 +189,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]model.TweetWithAuthor,
 		}
 		tweet.Author = &author
 
-		tweets = append(tweets, tweet)
+		tweets = append(tweets, &tweet)
 	}
 	if err = rows.Err(); err != nil {
 		log.WithError(err).Error("getTweetsOfUserWithID rows iteration error.")

@@ -10,7 +10,7 @@ import (
 type TweetModelConverter interface {
 	ConvertDatabaseTweetToAPITweet(tweet *databaseModel.TweetWithAuthor) *APIModel.Tweet
 	ConvertAPINewTweetToDatabaseTweet(tweet *APIModel.NewTweet) *databaseModel.Tweet
-	ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.TweetWithAuthor) []*APIModel.Tweet
+	ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []*databaseModel.TweetWithAuthor) []*APIModel.Tweet
 }
 
 type TweetConverter struct {
@@ -58,11 +58,11 @@ func (converter *TweetConverter) ConvertAPINewTweetToDatabaseTweet(tweet *APIMod
 	}
 }
 
-func (converter *TweetConverter) ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.TweetWithAuthor) []*APIModel.Tweet {
+func (converter *TweetConverter) ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []*databaseModel.TweetWithAuthor) []*APIModel.Tweet {
 	APITweets := make([]*APIModel.Tweet, 0)
 
 	for _, databaseTweet := range databaseTweets {
-		APITweet := converter.ConvertDatabaseTweetToAPITweet(&databaseTweet)
+		APITweet := converter.ConvertDatabaseTweetToAPITweet(databaseTweet)
 		APITweets = append(APITweets, APITweet)
 	}
 

@@ -44,7 +44,7 @@ func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
 	return user, nil
 }
 
-func (db *UserDB) GetUserByEmail(email *string) (*model.User, error) {
+func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
 		return nil, NoResults
