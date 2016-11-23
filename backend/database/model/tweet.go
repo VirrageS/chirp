@@ -11,3 +11,12 @@ type Tweet struct {
 	CreatedAt time.Time
 	Content   string
 }
+
+type TweetWithAuthor struct {
+	ID        int64
+	Author    *PublicUser
+	Likes     int64
+	Retweets  int64
+	CreatedAt time.Time
+	Content   string
+}

@@ -38,56 +38,42 @@ func NewService(databaseAccessor database.DatabaseAccessor,
 }
 
 func (service *Service) GetTweets() ([]*APIModel.Tweet, *Error) {
-	databaseTweets, databaseError := service.db.GetTweets()
-
-	if databaseError == database.DatabaseError {
+	databaseTweets, err := service.db.GetTweets()
+	if err == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
-	APITweets, serviceError := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
-
-	if serviceError != nil {
-		return nil, serviceError
-	}
+	APITweets := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
 	return APITweets, nil
 }
 
 // Use GetTweets() with filtering parameters instead, when filtering will be supported
 func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error) {
-	databaseTweets, databaseError := service.db.GetTweetsOfUserWithID(userID)
-
-	if databaseError == database.DatabaseError {
+	databaseTweets, err := service.db.GetTweetsOfUserWithID(userID)
+	if err == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
-	APITweets, serviceError := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
-
-	if serviceError != nil {
-		return nil, serviceError
-	}
+	APITweets := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
 	return APITweets, nil
 }
 
 func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
-	databaseTweet, databaseError := service.db.GetTweet(tweetID)
+	databaseTweet, err := service.db.GetTweet(tweetID)
 
-	if databaseError == database.NoResults {
+	if err == database.NoResults {
 		return nil, &Error{
 			Code: http.StatusNotFound,
 			Err:  errors.New("Tweet with given ID was not found."),
 		}
 	}
-	if databaseError == database.DatabaseError {
+	if err == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
-	APITweet, serviceError := service.convertDatabaseTweetToAPITweet(&databaseTweet)
-
-	if serviceError != nil {
-		return nil, serviceError
-	}
+	APITweet := service.convertDatabaseTweetToAPITweet(&databaseTweet)
 
 	return APITweet, nil
 }
@@ -96,22 +82,18 @@ func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet,
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
 	databaseTweet := service.convertAPINewTweetToDatabaseTweet(newTweet)
 
-	addedTweet, databaseError := service.db.InsertTweet(*databaseTweet)
-
-	if databaseError == database.DatabaseError {
+	addedTweet, err := service.db.InsertTweet(*databaseTweet)
+	if err == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
-	APITweet, serviceError := service.convertDatabaseTweetToAPITweet(&addedTweet)
-
-	if serviceError != nil {
-		return nil, serviceError
-	}
+	APITweet := service.convertDatabaseTweetToAPITweet(&addedTweet)
 
 	return APITweet, nil
 }
 
 func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
+	// TODO: Maybe fetch Tweet not TweetWithAuthor
 	databaseTweet, err := service.db.GetTweet(tweetID)
 
 	if err == database.NoResults {
@@ -124,7 +106,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
 		return UnexpectedError
 	}
 
-	if databaseTweet.AuthorID != userID {
+	if databaseTweet.Author.ID != userID {
 		return &Error{
 			Code: http.StatusForbidden,
 			Err:  errors.New("User is not allowed to modify this resource."),
@@ -251,31 +233,19 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *
 	return &tokenString, nil
 }
 
-// TODO: Maybe the converter should not access database and databaseModel.Tweet should contain whole user data
-func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Tweet) (*APIModel.Tweet, *Error) {
+func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.TweetWithAuthor) *APIModel.Tweet {
 	tweetID := tweet.ID
-	userID := tweet.AuthorID
+	author := tweet.Author
 	likes := tweet.Likes
 	retweets := tweet.Retweets
 	createdAt := tweet.CreatedAt
 	content := tweet.Content
 
-	authorFullData, err := service.db.GetUserByID(userID)
-
-	if err != nil {
-		// TODO: here we will also need to check the error type and have different handling for different erros
-		log.WithFields(log.Fields{
-			"tweetID": tweetID,
-			"userID":  userID,
-		}).Error("Failed to convert database tweet to API tweet. User was not found in database.")
-		return nil, UnexpectedError
-	}
-
-	author := service.userConverter.ConvertDatabasePublicUserToAPI(authorFullData)
+	APIauthor := service.userConverter.ConvertDatabasePublicUserToAPI(author)
 
 	APITweet := &APIModel.Tweet{
 		ID:        tweetID,
-		Author:    author,
+		Author:    APIauthor,
 		Likes:     likes,
 		Retweets:  retweets,
 		CreatedAt: createdAt,
@@ -283,7 +253,7 @@ func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.Twee
 		Liked:     false,
 		Retweeted: false,
 	}
-	return APITweet, nil
+	return APITweet
 }
 
 func (service *Service) convertAPINewTweetToDatabaseTweet(tweet *APIModel.NewTweet) *databaseModel.Tweet {
@@ -300,18 +270,13 @@ func (service *Service) convertAPINewTweetToDatabaseTweet(tweet *APIModel.NewTwe
 	}
 }
 
-func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.Tweet) ([]*APIModel.Tweet, *Error) {
+func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.TweetWithAuthor) []*APIModel.Tweet {
 	APITweets := make([]*APIModel.Tweet, 0)
 
 	for _, databaseTweet := range databaseTweets {
-		APITweet, err := service.convertDatabaseTweetToAPITweet(&databaseTweet)
-
-		if err != nil {
-			return nil, UnexpectedError
-		}
-
+		APITweet := service.convertDatabaseTweetToAPITweet(&databaseTweet)
 		APITweets = append(APITweets, APITweet)
 	}
 
-	return APITweets, nil
+	return APITweets
 }
