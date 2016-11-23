@@ -958,13 +958,6 @@ definitions:
       username:
         type: string
         description: Username of the user.
-      email:
-        type: string
-        description: Email of the user.
-      created_at:
-        type: string
-        format: date-time
-        description: Creation time of the user.
       last_login:
         type: string
         format: date-time
