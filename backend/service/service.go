@@ -22,18 +22,21 @@ type Service struct {
 	configuration config.ServiceConfigProvider
 	db            database.DatabaseAccessor
 
-	userConverter converters.UserModelConverter
+	userConverter  converters.UserModelConverter
+	tweetConverter converters.TweetModelConverter
 }
 
 // Constructs a Service that uses provided objects
 func NewService(databaseAccessor database.DatabaseAccessor,
 	configuration config.ServiceConfigProvider,
-	userConverter converters.UserModelConverter) ServiceProvider {
+	userConverter converters.UserModelConverter,
+	tweetConverter converters.TweetModelConverter) ServiceProvider {
 
 	return &Service{
-		configuration: configuration,
-		db:            databaseAccessor,
-		userConverter: userConverter,
+		configuration:  configuration,
+		db:             databaseAccessor,
+		userConverter:  userConverter,
+		tweetConverter: tweetConverter,
 	}
 }
 
@@ -43,7 +46,7 @@ func (service *Service) GetTweets() ([]*APIModel.Tweet, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APITweets := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+	APITweets := service.tweetConverter.ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
 	return APITweets, nil
 }
@@ -55,7 +58,7 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, 
 		return nil, UnexpectedError
 	}
 
-	APITweets := service.convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
+	APITweets := service.tweetConverter.ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
 
 	return APITweets, nil
 }
@@ -73,21 +76,21 @@ func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
 		return nil, UnexpectedError
 	}
 
-	APITweet := service.convertDatabaseTweetToAPITweet(&databaseTweet)
+	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(&databaseTweet)
 
 	return APITweet, nil
 }
 
 func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *Error) {
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
-	databaseTweet := service.convertAPINewTweetToDatabaseTweet(newTweet)
+	databaseTweet := service.tweetConverter.ConvertAPINewTweetToDatabaseTweet(newTweet)
 
 	addedTweet, err := service.db.InsertTweet(*databaseTweet)
 	if err == database.DatabaseError {
 		return nil, UnexpectedError
 	}
 
-	APITweet := service.convertDatabaseTweetToAPITweet(&addedTweet)
+	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(&addedTweet)
 
 	return APITweet, nil
 }
@@ -231,52 +234,4 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (*string, *
 	}
 
 	return &tokenString, nil
-}
-
-func (service *Service) convertDatabaseTweetToAPITweet(tweet *databaseModel.TweetWithAuthor) *APIModel.Tweet {
-	tweetID := tweet.ID
-	author := tweet.Author
-	likes := tweet.Likes
-	retweets := tweet.Retweets
-	createdAt := tweet.CreatedAt
-	content := tweet.Content
-
-	APIauthor := service.userConverter.ConvertDatabasePublicUserToAPI(author)
-
-	APITweet := &APIModel.Tweet{
-		ID:        tweetID,
-		Author:    APIauthor,
-		Likes:     likes,
-		Retweets:  retweets,
-		CreatedAt: createdAt,
-		Content:   content,
-		Liked:     false,
-		Retweeted: false,
-	}
-	return APITweet
-}
-
-func (service *Service) convertAPINewTweetToDatabaseTweet(tweet *APIModel.NewTweet) *databaseModel.Tweet {
-	authorId := tweet.AuthorID
-	content := tweet.Content
-
-	return &databaseModel.Tweet{
-		ID:        0,
-		AuthorID:  authorId,
-		Likes:     0,
-		Retweets:  0,
-		CreatedAt: time.Now(),
-		Content:   content,
-	}
-}
-
-func (service *Service) convertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets []databaseModel.TweetWithAuthor) []*APIModel.Tweet {
-	APITweets := make([]*APIModel.Tweet, 0)
-
-	for _, databaseTweet := range databaseTweets {
-		APITweet := service.convertDatabaseTweetToAPITweet(&databaseTweet)
-		APITweets = append(APITweets, APITweet)
-	}
-
-	return APITweets
 }

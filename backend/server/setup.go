@@ -27,12 +27,13 @@ func CreateNew() *gin.Engine {
 	// service dependencies
 	serverConfig := config.GetConfig()
 	userConverter := converters.NewUserConverter()
+	tweetConverter := converters.NewTweetConverter(userConverter)
 
 	// api dependencies
 	CORSConfig := setupCORS()
 
 	db := database.NewDatabase(dbConnection)
-	services := service.NewService(db, serverConfig, userConverter)
+	services := service.NewService(db, serverConfig, userConverter, tweetConverter)
 	APIs := api.NewAPI(services)
 
 	return setupRouter(APIs, serverConfig, CORSConfig)
