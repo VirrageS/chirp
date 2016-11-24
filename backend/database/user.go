@@ -22,8 +22,8 @@ func NewUserDB(databaseConnection *sql.DB) *UserDB {
 	return &UserDB{databaseConnection}
 }
 
-func (db *UserDB) GetUsers() ([]*model.User, error) {
-	users, err := db.getUsers()
+func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
+	users, err := db.getPublicUsers()
 	if err != nil {
 		return nil, DatabaseError
 	}
@@ -31,8 +31,8 @@ func (db *UserDB) GetUsers() ([]*model.User, error) {
 	return users, nil
 }
 
-func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
-	user, err := db.getUserUsingQuery("SELECT * from users WHERE id=$1", userID)
+func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
+	user, err := db.getPublicUserUsingQuery("SELECT id, username, name, avatar_url from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
 		return nil, NoResults
 	}
@@ -43,7 +43,7 @@ func (db *UserDB) GetUserByID(userID int64) (*model.User, error) {
 	return user, nil
 }
 
-func (db *UserDB) GetUserByEmail(email *string) (*model.User, error) {
+func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
 		return nil, NoResults
@@ -79,6 +79,34 @@ func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	return nil
 }
 
+func (db *UserDB) getPublicUsers() ([]*model.PublicUser, error) {
+	rows, err := db.Query("SELECT id, username, last_login, name, avatar_url FROM users;")
+	if err != nil {
+		log.WithError(err).Error("getPublicUsers query error.")
+		return nil, err
+	}
+
+	var users []*model.PublicUser
+
+	defer rows.Close()
+	for rows.Next() {
+		var user model.PublicUser
+		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
+		if err != nil {
+			log.WithError(err).Error("getPublicUsers row scan error.")
+			return nil, err
+		}
+
+		users = append(users, &user)
+	}
+	if err = rows.Err(); err != nil {
+		log.WithError(err).Error("getPublicUsers rows iteration error.")
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (*model.User, error) {
 	var user model.User
 
@@ -88,7 +116,22 @@ func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (*model.U
 		&user.Name, &user.AvatarUrl)
 
 	if err != nil && err != sql.ErrNoRows {
-		log.WithField("query", query).WithError(err).Error("GetUserUsingQuery database error.")
+		log.WithField("query", query).WithError(err).Error("getUserUsingQuery database error.")
+		return nil, err
+	}
+
+	return &user, err
+}
+
+func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*model.PublicUser, error) {
+	var user model.PublicUser
+
+	row := db.QueryRow(query, args...)
+	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
+
+	if err != nil && err != sql.ErrNoRows {
+		log.WithField("query", query).WithError(err).Error("getPublicUserUsingQuery database error.")
+		return nil, err
 	}
 
 	return &user, err
@@ -113,37 +156,6 @@ func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
 	}
 
 	return newID, nil
-}
-
-// TODO: add filtering parameters
-func (db *UserDB) getUsers() ([]*model.User, error) {
-	rows, err := db.Query("SELECT * FROM users;")
-	if err != nil {
-		log.WithError(err).Error("GetUsers query error.")
-		return nil, err
-	}
-
-	var users []*model.User
-
-	defer rows.Close()
-	for rows.Next() {
-		var user model.User
-		err = rows.Scan(&user.ID, &user.TwitterToken, &user.FacebookToken, &user.GoogleToken, &user.Username,
-			&user.Email, &user.Password, &user.CreatedAt, &user.LastLogin, &user.Active,
-			&user.Name, &user.AvatarUrl)
-		if err != nil {
-			log.WithError(err).Error("getUsers row scan error.")
-			return nil, err
-		}
-
-		users = append(users, &user)
-	}
-	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("getUsers rows iteration error.")
-		return nil, err
-	}
-
-	return users, nil
 }
 
 func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {

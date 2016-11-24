@@ -1,4 +1,4 @@
-package service
+package converters
 
 import "database/sql"
 

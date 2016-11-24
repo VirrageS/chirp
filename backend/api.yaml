@@ -958,20 +958,6 @@ definitions:
       username:
         type: string
         description: Username of the user.
-      email:
-        type: string
-        description: Email of the user.
-      created_at:
-        type: string
-        format: date-time
-        description: Creation time of the user.
-      last_login:
-        type: string
-        format: date-time
-        description: Last login time of the user.
-      active:
-        type: boolean
-        description: Tells if user is active or not.
       name:
         type: string
         description: First name of the user.
