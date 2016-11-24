@@ -37,7 +37,7 @@ func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor
 func (db *TweetDB) GetTweet(tweetID int64) (*model.TweetWithAuthor, error) {
 	tweet, err := db.getTweetUsingQuery(
 		"SELECT tweets.id, tweets.created_at, tweets.content, "+
-			"users.id, users.username, users.last_login, users.name, users.avatar_url "+
+			"users.id, users.username, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err == sql.ErrNoRows {
 		return nil, NoResults
@@ -58,7 +58,7 @@ func (db *TweetDB) InsertTweet(tweet model.Tweet) (*model.TweetWithAuthor, error
 	// TODO: this is probably super ugly, fix it
 	newTweet, err := db.getTweetUsingQuery(
 		"SELECT tweets.id, tweets.created_at, tweets.content, "+
-			"users.id, users.username, users.last_login, users.name, users.avatar_url "+
+			"users.id, users.username, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err != nil {
 		return nil, DatabaseError
@@ -84,7 +84,7 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 	var author model.PublicUser
 
 	err := row.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-		&author.ID, &author.Username, &author.LastLogin, &author.Name, &author.AvatarUrl)
+		&author.ID, &author.Username, &author.Name, &author.AvatarUrl)
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getTweetUsingQuery database error.")
 		return nil, err
@@ -134,7 +134,7 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 	rows, err := db.Query(
 		"SELECT tweets.id, tweets.created_at, tweets.content, " +
-			"users.id, users.username, users.last_login, users.name, users.avatar_url " +
+			"users.id, users.username, users.name, users.avatar_url " +
 			"FROM tweets JOIN users on tweets.author_id=users.id;")
 	if err != nil {
 		log.WithError(err).Error("getTweets query error.")
@@ -149,7 +149,7 @@ func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-			&author.ID, &author.Username, &author.LastLogin, &author.Name, &author.AvatarUrl)
+			&author.ID, &author.Username, &author.Name, &author.AvatarUrl)
 		if err != nil {
 			log.WithError(err).Error("getTweets row scan error.")
 			return nil, err
@@ -169,7 +169,7 @@ func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 // TODO: almost the same as getTweets()...
 func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor, error) {
 	rows, err := db.Query("SELECT tweets.id, tweets.created_at, tweets.content, "+
-		"users.id, users.username, users.last_login, users.name, users.avatar_url "+
+		"users.id, users.username, users.name, users.avatar_url "+
 		"FROM tweets JOIN users on tweets.author_id=users.id AND users.id=$1;", userID)
 	if err != nil {
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
@@ -184,7 +184,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-			&author.ID, &author.Username, &author.LastLogin, &author.Name, &author.AvatarUrl)
+			&author.ID, &author.Username, &author.Name, &author.AvatarUrl)
 		if err != nil {
 			log.WithError(err).Error("getTweetsOfUserWithID row scan error.")
 			return nil, err

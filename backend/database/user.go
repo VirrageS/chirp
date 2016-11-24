@@ -32,8 +32,7 @@ func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
 }
 
 func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
-	user, err := db.getPublicUserUsingQuery("SELECT id, username, last_login, name, avatar_url from users "+
-		"WHERE id=$1", userID)
+	user, err := db.getPublicUserUsingQuery("SELECT id, username, name, avatar_url from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
 		return nil, NoResults
 	}
@@ -92,7 +91,7 @@ func (db *UserDB) getPublicUsers() ([]*model.PublicUser, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var user model.PublicUser
-		err = rows.Scan(&user.ID, &user.Username, &user.LastLogin, &user.Name, &user.AvatarUrl)
+		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
 		if err != nil {
 			log.WithError(err).Error("getPublicUsers row scan error.")
 			return nil, err
@@ -128,7 +127,7 @@ func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*m
 	var user model.PublicUser
 
 	row := db.QueryRow(query, args...)
-	err := row.Scan(&user.ID, &user.Username, &user.LastLogin, &user.Name, &user.AvatarUrl)
+	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getPublicUserUsingQuery database error.")

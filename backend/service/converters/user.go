@@ -27,14 +27,12 @@ func NewUserConverter() *UserConverter {
 func (converter *UserConverter) ConvertDatabaseToAPI(user *databaseModel.User) *APIModel.User {
 	id := user.ID
 	username := user.Username
-	lastLogin := user.LastLogin
 	name := user.Name
 	avatarUrl := user.AvatarUrl.String
 
 	return &APIModel.User{
 		ID:        id,
 		Username:  username,
-		LastLogin: lastLogin,
 		Name:      name,
 		AvatarUrl: avatarUrl,
 		Following: false,
@@ -67,14 +65,12 @@ func (converter *UserConverter) ConvertAPItoDatabase(user *APIModel.NewUserForm)
 func (converter *UserConverter) ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User {
 	id := user.ID
 	username := user.Username
-	lastLogin := user.LastLogin
 	name := user.Name
 	avatarUrl := user.AvatarUrl.String
 
 	return &APIModel.User{
 		ID:        id,
 		Username:  username,
-		LastLogin: lastLogin,
 		Name:      name,
 		AvatarUrl: avatarUrl,
 		Following: false,

@@ -23,7 +23,6 @@ type User struct {
 type PublicUser struct {
 	ID        int64
 	Username  string
-	LastLogin time.Time
 	Name      string
 	AvatarUrl sql.NullString
 }
