@@ -118,6 +118,7 @@ func (db *UserDB) getUserUsingQuery(query string, args ...interface{}) (*model.U
 
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getUserUsingQuery database error.")
+		return nil, err
 	}
 
 	return &user, err
@@ -131,6 +132,7 @@ func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*m
 
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getPublicUserUsingQuery database error.")
+		return nil, err
 	}
 
 	return &user, err

@@ -138,6 +138,7 @@ func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 			"FROM tweets JOIN users on tweets.author_id=users.id;")
 	if err != nil {
 		log.WithError(err).Error("getTweets query error.")
+		return nil, err
 	}
 
 	var tweets []*model.TweetWithAuthor
@@ -172,6 +173,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor
 		"FROM tweets JOIN users on tweets.author_id=users.id AND users.id=$1;", userID)
 	if err != nil {
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
+		return nil, err
 	}
 
 	var tweets []*model.TweetWithAuthor
