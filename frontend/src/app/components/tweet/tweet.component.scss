@@ -1,10 +1,11 @@
-$name-color: #000000;
-$username-color: rgba(0, 0, 0, .52);
+@import '../../../../public/scss/main.scss';
 
 .tweet {
   display: flex;
   flex-direction: column;
-  padding: 10px 20px;
+  padding: 25px 30px;
+
+  border-bottom: 2px solid $TEXT-DIVIDER-COLOR;
 
   &__header {
     display: flex;
@@ -12,7 +13,7 @@ $username-color: rgba(0, 0, 0, .52);
   }
 
   &__content {
-    margin: 20px 0px;
+    margin: 25px 0px;
 
     font-size: 1.3em;
   }
@@ -21,23 +22,44 @@ $username-color: rgba(0, 0, 0, .52);
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    align-items: center;
   }
 }
 
 .user {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
 
   &__name {
     font-size: 1.05em;
     font-weight: 700;
 
-    color: $name-color;
+    color: $TEXT-PRIMARY-COLOR;
   }
 
   &__username {
-    font-size: 0.9em;
+    padding-left: 8px;
 
-    color: $username-color;
+    font-size: 0.85em;
+
+    color: $TEXT-SECONDARY-COLOR;
   }
+}
+
+.interval {
+  margin-left: auto;
+
+  font-weight: 200;
+  font-size: 0.95em;
+
+  color: $TEXT-SECONDARY-COLOR;
+}
+
+.btn-follow {
+  margin-left: 15px;
+}
+
+.btn-text {
+  margin-left: 2px;
 }

@@ -1,7 +1,10 @@
+@import '../../../public/scss/main.scss';
+
 $menu-color: rgba(0, 0, 0, .65);
 $active-link-color: rgb(251, 104, 78);
 
 .navigation-bar {
+  @include box-shadow(1);
   display: flex;
   flex-direction: row;
   justify-content: space-between;

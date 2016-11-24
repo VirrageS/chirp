@@ -1,0 +1,23 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,100,300,500,600,700,900);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,200,100,300,500,600,700);
+
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  min-height: 100%;
+  height: 100%;
+  background-color: #efefef;
+}
+
+html, body {
+  font-family: 'Open Sans', 'Roboto', sans-serif;
+}
+
+main {
+  max-width: $WINDOW-WIDTH;
+  margin: 0 auto;
+  padding: 0px 20px;
+  padding-bottom: 200px;
+}
