@@ -44,6 +44,7 @@ func (converter *TweetConverter) ConvertDatabaseTweetToAPITweet(tweet *databaseM
 	return APITweet
 }
 
+// TODO: this should NOT set createdAt time, it should be provided with an object with this field set instead
 func (converter *TweetConverter) ConvertAPINewTweetToDatabaseTweet(tweet *APIModel.NewTweet) *databaseModel.Tweet {
 	authorId := tweet.AuthorID
 	content := tweet.Content

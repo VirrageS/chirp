@@ -1,18 +1,18 @@
 package converters
 
 import (
-	"testing"
-
 	"database/sql"
+	"testing"
+	"time"
+
 	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
-	"time"
 )
 
-// subject
-var converter = NewUserConverter()
-
 func TestConvertDatabaseToAPI(t *testing.T) {
+	// subject
+	var converter = NewUserConverter()
+
 	testCases := []struct {
 		DBUser  *databaseModel.User
 		APIUser *APIModel.User
@@ -75,6 +75,9 @@ func TestConvertDatabaseToAPI(t *testing.T) {
 }
 
 func TestConvertDatabasePublicUserToAPI(t *testing.T) {
+	// subject
+	var converter = NewUserConverter()
+
 	testCases := []struct {
 		DBUser  *databaseModel.PublicUser
 		APIUser *APIModel.User
@@ -112,10 +115,10 @@ func TestConvertDatabasePublicUserToAPI(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualApiUser := converter.ConvertDatabasePublicUserToAPI(testCase.DBUser)
+		actualAPIUser := converter.ConvertDatabasePublicUserToAPI(testCase.DBUser)
 
-		if *actualApiUser != *testCase.APIUser {
-			t.Errorf("Got: %v, but expected: %v", actualApiUser, testCase.APIUser)
+		if *actualAPIUser != *testCase.APIUser {
+			t.Errorf("Got: %v, but expected: %v", actualAPIUser, testCase.APIUser)
 		}
 	}
 }
