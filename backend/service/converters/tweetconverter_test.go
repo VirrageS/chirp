@@ -2,6 +2,7 @@ package converters
 
 import (
 	"database/sql"
+	"reflect"
 	"testing"
 	"time"
 
@@ -81,15 +82,63 @@ func TestConvertDatabaseTweetToAPITweet(t *testing.T) {
 		actualAPITweet := converter.ConvertDatabaseTweetToAPITweet(testCase.DBTweet)
 		expectedAPITweet := testCase.APITweet
 
-		if actualAPITweet.ID != expectedAPITweet.ID ||
-			*actualAPITweet.Author != *expectedAPITweet.Author ||
-			actualAPITweet.Likes != expectedAPITweet.Likes ||
-			actualAPITweet.Retweets != expectedAPITweet.Retweets ||
-			actualAPITweet.CreatedAt != expectedAPITweet.CreatedAt ||
-			actualAPITweet.Content != expectedAPITweet.Content ||
-			actualAPITweet.Liked != expectedAPITweet.Liked ||
-			actualAPITweet.Retweeted != expectedAPITweet.Retweeted {
+		if !reflect.DeepEqual(actualAPITweet, expectedAPITweet) {
 			t.Errorf("Got: %v, but expected: %v", actualAPITweet, expectedAPITweet)
+		}
+	}
+}
+
+func TestConvertArrayOfDatabaseTweetsToArrayOfAPITweets(t *testing.T) {
+	// subject
+	var converter = NewTweetConverter(&TestUserConverter{})
+
+	tweetCreationTime := time.Now()
+
+	testCases := []struct {
+		DBTweets  []*databaseModel.TweetWithAuthor
+		APITweets []*APIModel.Tweet
+	}{
+		{ // positive case
+			DBTweets: []*databaseModel.TweetWithAuthor{
+				{
+					ID: 1,
+					Author: &databaseModel.PublicUser{
+						ID:        1,
+						Username:  "username",
+						Name:      "name",
+						AvatarUrl: sql.NullString{String: "url", Valid: true},
+					},
+					Likes:     2,
+					Retweets:  3,
+					CreatedAt: tweetCreationTime,
+					Content:   "tweet",
+				},
+			},
+			APITweets: []*APIModel.Tweet{
+				{
+					ID:        1,
+					Author:    expectedAPIUSer,
+					Likes:     2,
+					Retweets:  3,
+					CreatedAt: tweetCreationTime,
+					Content:   "tweet",
+					Liked:     false,
+					Retweeted: false,
+				},
+			},
+		},
+		{ // nil case
+			DBTweets:  nil,
+			APITweets: make([]*APIModel.Tweet, 0),
+		},
+	}
+
+	for _, testCase := range testCases {
+		actualAPITweetSlice := converter.ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(testCase.DBTweets)
+		expectedAPITweetSlice := testCase.APITweets
+
+		if !reflect.DeepEqual(actualAPITweetSlice, expectedAPITweetSlice) {
+			t.Errorf("Got: %v, but expected: %v", actualAPITweetSlice, expectedAPITweetSlice)
 		}
 	}
 }
