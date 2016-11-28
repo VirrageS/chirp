@@ -124,6 +124,60 @@ func TestConvertDatabasePublicUserToAPI(t *testing.T) {
 	}
 }
 
+func TestConvertAPIToDatabase(t *testing.T) {
+	// subject
+	var converter = NewUserConverter()
+	now := time.Now()
+
+	testCases := []struct {
+		APIUser *APIModel.NewUserForm
+		DBUser  *databaseModel.User
+	}{
+		{ // positive scenario
+			APIUser: &APIModel.NewUserForm{
+				Username: "username",
+				Password: "password",
+				Email:    "user@email.com",
+				Name:     "name",
+			},
+			DBUser: &databaseModel.User{
+				ID:            0,
+				TwitterToken:  sql.NullString{String: "", Valid: false},
+				FacebookToken: sql.NullString{String: "", Valid: false},
+				GoogleToken:   sql.NullString{String: "", Valid: false},
+				Username:      "username",
+				Password:      "password",
+				Email:         "user@email.com",
+				CreatedAt:     now,
+				LastLogin:     now,
+				Active:        true,
+				Name:          "name",
+				AvatarUrl:     sql.NullString{String: "url", Valid: true},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		APIUser := testCase.APIUser
+		actualDBUser := converter.ConvertAPIToDatabase(APIUser)
+
+		nullString := sql.NullString{String: "", Valid: false}
+		// TODO: fix comparison when converter is fixed
+		if actualDBUser.ID != 0 ||
+			actualDBUser.TwitterToken != nullString ||
+			actualDBUser.FacebookToken != nullString ||
+			actualDBUser.GoogleToken != nullString ||
+			actualDBUser.Username != APIUser.Username ||
+			actualDBUser.Password != APIUser.Password ||
+			actualDBUser.Email != APIUser.Email ||
+			actualDBUser.Name != APIUser.Name ||
+			actualDBUser.Active != true ||
+			actualDBUser.AvatarUrl != nullString {
+			t.Errorf("Got: %v, but expected: %v", actualDBUser, testCase.DBUser)
+		}
+	}
+}
+
 func TestConvertArrayOfDatabaseUser(t *testing.T) {
 	// subject
 	var converter = NewUserConverter()

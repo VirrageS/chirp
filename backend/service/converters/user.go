@@ -45,6 +45,27 @@ func (converter *UserConverter) ConvertDatabaseToAPI(user *databaseModel.User) *
 	}
 }
 
+func (converter *UserConverter) ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User {
+	id := user.ID
+	username := user.Username
+	name := user.Name
+	var avatarURL string
+
+	if user.AvatarUrl.Valid {
+		avatarURL = user.AvatarUrl.String
+	} else {
+		avatarURL = ""
+	}
+
+	return &APIModel.User{
+		ID:        id,
+		Username:  username,
+		Name:      name,
+		AvatarUrl: avatarURL,
+		Following: false,
+	}
+}
+
 //TODO: This should not use time.Now(), but should get an object that stores the time
 func (converter *UserConverter) ConvertAPIToDatabase(user *APIModel.NewUserForm) *databaseModel.User {
 	username := user.Username
@@ -66,27 +87,6 @@ func (converter *UserConverter) ConvertAPIToDatabase(user *APIModel.NewUserForm)
 		Active:        true,
 		Name:          name,
 		AvatarUrl:     toSqlNullString(""),
-	}
-}
-
-func (converter *UserConverter) ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User {
-	id := user.ID
-	username := user.Username
-	name := user.Name
-	var avatarURL string
-
-	if user.AvatarUrl.Valid {
-		avatarURL = user.AvatarUrl.String
-	} else {
-		avatarURL = ""
-	}
-
-	return &APIModel.User{
-		ID:        id,
-		Username:  username,
-		Name:      name,
-		AvatarUrl: avatarURL,
-		Following: false,
 	}
 }
 
