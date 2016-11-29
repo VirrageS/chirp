@@ -152,28 +152,27 @@ func TestConvertAPIToDatabase(t *testing.T) {
 				LastLogin:     now,
 				Active:        true,
 				Name:          "name",
-				AvatarUrl:     sql.NullString{String: "url", Valid: true},
+				AvatarUrl:     sql.NullString{String: "", Valid: false},
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
-		APIUser := testCase.APIUser
-		actualDBUser := converter.ConvertAPIToDatabase(APIUser)
+		actualDBUser := converter.ConvertAPIToDatabase(testCase.APIUser)
+		DBUser := testCase.DBUser
 
-		nullString := sql.NullString{String: "", Valid: false}
 		// TODO: fix comparison when converter is fixed
 		if actualDBUser.ID != 0 ||
-			actualDBUser.TwitterToken != nullString ||
-			actualDBUser.FacebookToken != nullString ||
-			actualDBUser.GoogleToken != nullString ||
-			actualDBUser.Username != APIUser.Username ||
-			actualDBUser.Password != APIUser.Password ||
-			actualDBUser.Email != APIUser.Email ||
-			actualDBUser.Name != APIUser.Name ||
-			actualDBUser.Active != true ||
-			actualDBUser.AvatarUrl != nullString {
-			t.Errorf("Got: %v, but expected: %v", actualDBUser, testCase.DBUser)
+			actualDBUser.TwitterToken != DBUser.TwitterToken ||
+			actualDBUser.FacebookToken != DBUser.FacebookToken ||
+			actualDBUser.GoogleToken != DBUser.GoogleToken ||
+			actualDBUser.Username != DBUser.Username ||
+			actualDBUser.Password != DBUser.Password ||
+			actualDBUser.Email != DBUser.Email ||
+			actualDBUser.Name != DBUser.Name ||
+			actualDBUser.Active != DBUser.Active ||
+			actualDBUser.AvatarUrl != DBUser.AvatarUrl {
+			t.Errorf("Got: %v\nbut expected:\n%v", actualDBUser, testCase.DBUser)
 		}
 	}
 }

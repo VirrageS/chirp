@@ -10,14 +10,6 @@ import (
 	databaseModel "github.com/VirrageS/chirp/backend/database/model"
 )
 
-var expectedAPIUSer = &APIModel.User{
-	ID:        1,
-	Username:  "username",
-	Name:      "name",
-	AvatarUrl: "url",
-	Following: false,
-}
-
 // mock user converter
 type TestUserConverter struct{}
 
@@ -39,6 +31,14 @@ func (c *TestUserConverter) ConvertDatabaseToAPI(user *databaseModel.User) *APIM
 
 func (c *TestUserConverter) ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User {
 	return expectedAPIUSer
+}
+
+var expectedAPIUSer = &APIModel.User{
+	ID:        1,
+	Username:  "username",
+	Name:      "name",
+	AvatarUrl: "url",
+	Following: false,
 }
 
 func TestConvertDatabaseTweetToAPITweet(t *testing.T) {
@@ -86,6 +86,48 @@ func TestConvertDatabaseTweetToAPITweet(t *testing.T) {
 			t.Errorf("Got: %v, but expected: %v", actualAPITweet, expectedAPITweet)
 		}
 	}
+}
+
+func TestConvertAPINewTweetToDatabaseTweet(t *testing.T) {
+	// subject
+	var converter = NewTweetConverter(&TestUserConverter{})
+
+	testCases := []struct {
+		APINewTweet *APIModel.NewTweet
+		DBTweet     *databaseModel.Tweet
+	}{
+		{
+			APINewTweet: &APIModel.NewTweet{
+				AuthorID: 1,
+				Content:  "tweet",
+			},
+			DBTweet: &databaseModel.Tweet{
+				ID:        0,
+				AuthorID:  1,
+				Likes:     0,
+				Retweets:  0,
+				CreatedAt: time.Now(),
+				Content:   "tweet",
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		actualDBTweet := converter.ConvertAPINewTweetToDatabaseTweet(testCase.APINewTweet)
+		DBTweet := testCase.DBTweet
+
+		// TODO: fix comparison when converter is fixed
+		if actualDBTweet.ID != DBTweet.ID ||
+			actualDBTweet.AuthorID != DBTweet.AuthorID ||
+			actualDBTweet.Likes != DBTweet.Likes ||
+			actualDBTweet.Retweets != DBTweet.Retweets ||
+			actualDBTweet.Content != DBTweet.Content {
+
+			t.Errorf("Got: %v, but expected: %v", actualDBTweet, DBTweet)
+		}
+
+	}
+
 }
 
 func TestConvertArrayOfDatabaseTweetsToArrayOfAPITweets(t *testing.T) {
