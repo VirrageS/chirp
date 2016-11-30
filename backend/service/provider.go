@@ -1,17 +1,17 @@
 package service
 
-import APIModel "github.com/VirrageS/chirp/backend/api/model"
+import model "github.com/VirrageS/chirp/backend/model"
 
 // TODO: Maybe split into 2 services: tweet and user service?
 type ServiceProvider interface {
-	GetTweets() ([]*APIModel.Tweet, *Error)
-	GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error)
-	GetTweet(tweetID int64) (*APIModel.Tweet, *Error)
-	PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *Error)
+	GetTweets() ([]*model.Tweet, *Error)
+	GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, *Error)
+	GetTweet(tweetID int64) (*model.Tweet, *Error)
+	PostTweet(newTweet *model.NewTweet) (*model.Tweet, *Error)
 	DeleteTweet(userID, tweetID int64) *Error
 
-	GetUsers() ([]*APIModel.User, *Error)
-	GetUser(userId int64) (*APIModel.User, *Error)
-	RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error)
-	LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *Error)
+	GetUsers() ([]*model.PublicUser, *Error)
+	GetUser(userId int64) (*model.PublicUser, *Error)
+	RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, *Error)
+	LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, *Error)
 }

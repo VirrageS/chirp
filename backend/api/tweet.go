@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/api/model"
+	"github.com/VirrageS/chirp/backend/model"
 )
 
 func (api *API) GetTweets(context *gin.Context) {

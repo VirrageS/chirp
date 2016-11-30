@@ -8,7 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/VirrageS/chirp/backend/database/model"
+	"github.com/VirrageS/chirp/backend/model"
 	"github.com/lib/pq"
 )
 
@@ -55,8 +55,25 @@ func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 	return user, nil
 }
 
-func (db *UserDB) InsertUser(user *model.User) (*model.User, error) {
-	userID, err := db.insertUserToDatabase(user)
+func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
+	// TODO: FIX ME PLEASE
+	newUser := &model.User{
+		ID:            0,
+		TwitterToken:  toSqlNullString(""),
+		FacebookToken: toSqlNullString(""),
+		GoogleToken:   toSqlNullString(""),
+		Username:      newUserForm.Username,
+		Password:      newUserForm.Password,
+		Email:         newUserForm.Email,
+		CreatedAt:     time.Now(),
+		LastLogin:     time.Now(),
+		Active:        true,
+		Name:          newUserForm.Name,
+		AvatarUrl:     toSqlNullString(""),
+		Following:     false, // TODO: NOT ME HERE PLEASE
+	}
+
+	userID, err := db.insertUserToDatabase(newUser)
 
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == UniqueConstraintViolationCode {
@@ -65,9 +82,16 @@ func (db *UserDB) InsertUser(user *model.User) (*model.User, error) {
 		return nil, DatabaseError
 	}
 
-	user.ID = userID
+	// TODO: FIX ME PLEASE TOO!
+	newPublicUser := &model.PublicUser{
+		ID:        userID,
+		Username:  newUser.Username,
+		Name:      newUser.Name,
+		AvatarUrl: "",
+		Following: false,
+	}
 
-	return user, nil
+	return newPublicUser, nil
 }
 
 func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
@@ -173,4 +197,8 @@ func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	}
 
 	return nil
+}
+
+func toSqlNullString(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
 }
