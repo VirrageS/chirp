@@ -155,7 +155,7 @@ func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
 }
 
 func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error) {
-	databaseUser := service.userConverter.ConvertAPItoDatabase(newUserForm)
+	databaseUser := service.userConverter.ConvertAPIToDatabase(newUserForm)
 
 	newUser, err := service.db.InsertUser(databaseUser)
 

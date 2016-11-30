@@ -11,7 +11,7 @@ import (
 )
 
 type UserModelConverter interface {
-	ConvertAPItoDatabase(user *APIModel.NewUserForm) *databaseModel.User
+	ConvertAPIToDatabase(user *APIModel.NewUserForm) *databaseModel.User
 	ConvertDatabaseToAPI(user *databaseModel.User) *APIModel.User
 	ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User
 	ConvertArrayDatabaseToAPI(databaseUsers []*databaseModel.User) []*APIModel.User
@@ -28,18 +28,46 @@ func (converter *UserConverter) ConvertDatabaseToAPI(user *databaseModel.User) *
 	id := user.ID
 	username := user.Username
 	name := user.Name
-	avatarUrl := user.AvatarUrl.String
+	var avatarURL string
+
+	if user.AvatarUrl.Valid {
+		avatarURL = user.AvatarUrl.String
+	} else {
+		avatarURL = ""
+	}
 
 	return &APIModel.User{
 		ID:        id,
 		Username:  username,
 		Name:      name,
-		AvatarUrl: avatarUrl,
+		AvatarUrl: avatarURL,
 		Following: false,
 	}
 }
 
-func (converter *UserConverter) ConvertAPItoDatabase(user *APIModel.NewUserForm) *databaseModel.User {
+func (converter *UserConverter) ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User {
+	id := user.ID
+	username := user.Username
+	name := user.Name
+	var avatarURL string
+
+	if user.AvatarUrl.Valid {
+		avatarURL = user.AvatarUrl.String
+	} else {
+		avatarURL = ""
+	}
+
+	return &APIModel.User{
+		ID:        id,
+		Username:  username,
+		Name:      name,
+		AvatarUrl: avatarURL,
+		Following: false,
+	}
+}
+
+//TODO: This should not use time.Now(), but should get an object that stores the time
+func (converter *UserConverter) ConvertAPIToDatabase(user *APIModel.NewUserForm) *databaseModel.User {
 	username := user.Username
 	password := user.Password
 	email := user.Email
@@ -59,21 +87,6 @@ func (converter *UserConverter) ConvertAPItoDatabase(user *APIModel.NewUserForm)
 		Active:        true,
 		Name:          name,
 		AvatarUrl:     toSqlNullString(""),
-	}
-}
-
-func (converter *UserConverter) ConvertDatabasePublicUserToAPI(user *databaseModel.PublicUser) *APIModel.User {
-	id := user.ID
-	username := user.Username
-	name := user.Name
-	avatarUrl := user.AvatarUrl.String
-
-	return &APIModel.User{
-		ID:        id,
-		Username:  username,
-		Name:      name,
-		AvatarUrl: avatarUrl,
-		Following: false,
 	}
 }
 
