@@ -11,7 +11,8 @@ import (
 func (api *API) GetUsers(context *gin.Context) {
 	users, err := api.Service.GetUsers()
 	if err != nil {
-		context.AbortWithError(err.Code, err.Err)
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 
@@ -27,9 +28,10 @@ func (api *API) GetUser(context *gin.Context) {
 		return
 	}
 
-	responseUser, err2 := api.Service.GetUser(userID)
-	if err2 != nil {
-		context.AbortWithError(err2.Code, err2.Err)
+	responseUser, err := api.Service.GetUser(userID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 

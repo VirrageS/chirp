@@ -9,8 +9,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/lib/pq"
 )
+
+const UniqueConstraintViolationCode = "23505"
 
 // Struct that implements UserDataAccessor using sql (postgres) database
 type UserDB struct {
@@ -25,7 +28,7 @@ func NewUserDB(databaseConnection *sql.DB) *UserDB {
 func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
 	users, err := db.getPublicUsers()
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return users, nil
@@ -34,10 +37,10 @@ func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
 func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
 	user, err := db.getPublicUserUsingQuery("SELECT id, username, name, avatar_url from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
-		return nil, NoResults
+		return nil, errors.NoResultsError
 	}
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return user, nil
@@ -46,10 +49,10 @@ func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
 func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
-		return nil, NoResults
+		return nil, errors.NoResultsError
 	}
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return user, nil
@@ -60,9 +63,9 @@ func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser,
 
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == UniqueConstraintViolationCode {
-			return nil, UserAlreadyExistsError
+			return nil, errors.UserAlreadyExistsError
 		}
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	// TODO: how bad is this? This is ugly, but saves a database query
@@ -80,7 +83,7 @@ func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser,
 func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
 	err := db.updateUserLastLoginTime(userID, lastLoginTime)
 	if err != nil {
-		return DatabaseError
+		return errors.UnexpectedError
 	}
 
 	return nil

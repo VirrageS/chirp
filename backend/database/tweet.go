@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
 // Struct that implements TweetDataAccessor using sql (postgres) database
@@ -21,7 +22,7 @@ func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
 func (db *TweetDB) GetTweets() ([]*model.Tweet, error) {
 	tweets, err := db.getTweets()
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return tweets, nil
@@ -30,7 +31,7 @@ func (db *TweetDB) GetTweets() ([]*model.Tweet, error) {
 func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 	tweets, err := db.getTweetsOfUserWithID(userID)
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return tweets, nil
@@ -42,10 +43,10 @@ func (db *TweetDB) GetTweet(tweetID int64) (*model.Tweet, error) {
 			"users.id, users.username, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err == sql.ErrNoRows {
-		return nil, NoResults
+		return nil, errors.NoResultsError
 	}
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return tweet, nil
@@ -54,7 +55,7 @@ func (db *TweetDB) GetTweet(tweetID int64) (*model.Tweet, error) {
 func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 	tweetID, err := db.insertTweetToDatabase(tweet)
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	// TODO: this is probably super ugly. Maybe fetch user only?
@@ -64,7 +65,7 @@ func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 			"users.id, users.username, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return newTweet, nil
@@ -73,7 +74,7 @@ func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 func (db *TweetDB) DeleteTweet(tweetID int64) error {
 	err := db.deleteTweetWithID(tweetID)
 	if err != nil {
-		return DatabaseError
+		return errors.UnexpectedError
 	}
 
 	return nil

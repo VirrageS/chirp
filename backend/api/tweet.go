@@ -12,14 +12,10 @@ import (
 )
 
 func (api *API) GetTweets(context *gin.Context) {
-	// TODO: support filtering
-	//expected_user_id := context.Query("author")
-	//expected_user_name := context.Query("author")
-	// ...
-
 	tweets, err := api.Service.GetTweets()
 	if err != nil {
-		context.AbortWithError(err.Code, err.Err)
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 
@@ -35,9 +31,10 @@ func (api *API) GetTweet(context *gin.Context) {
 		return
 	}
 
-	responseTweet, err2 := api.Service.GetTweet(tweetID)
-	if err2 != nil {
-		context.AbortWithError(err2.Code, err2.Err)
+	responseTweet, err := api.Service.GetTweet(tweetID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 
@@ -49,15 +46,16 @@ func (api *API) PostTweet(context *gin.Context) {
 	tweetAuthorID := (context.MustGet("userID").(int64))
 	var newTweet model.NewTweet
 
-	if bindError := context.BindJSON(&newTweet); bindError != nil {
+	if err := context.BindJSON(&newTweet); err != nil {
 		context.AbortWithError(http.StatusBadRequest, errors.New("Field content is required."))
 	}
 
 	newTweet.AuthorID = tweetAuthorID
 
-	responseTweet, err2 := api.Service.PostTweet(&newTweet)
-	if err2 != nil {
-		context.AbortWithError(err2.Code, err2.Err)
+	responseTweet, err := api.Service.PostTweet(&newTweet)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 
@@ -70,16 +68,17 @@ func (api *API) DeleteTweet(context *gin.Context) {
 	authenticatingUserID := (context.MustGet("userID").(int64))
 	tweetIDString := context.Param("id")
 
-	tweetID, parseError := strconv.ParseInt(tweetIDString, 10, 64)
-	if parseError != nil {
+	tweetID, err := strconv.ParseInt(tweetIDString, 10, 64)
+	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
 		return
 	}
 
-	serviceError := api.Service.DeleteTweet(authenticatingUserID, tweetID)
+	err = api.Service.DeleteTweet(authenticatingUserID, tweetID)
 
-	if serviceError != nil {
-		context.AbortWithError(serviceError.Code, serviceError.Err)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 
@@ -92,7 +91,8 @@ func (api *API) HomeFeed(context *gin.Context) {
 
 	tweets, err := api.Service.GetTweetsOfUserWithID(tweetAuthorID)
 	if err != nil {
-		context.AbortWithError(err.Code, err.Err)
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
 		return
 	}
 
