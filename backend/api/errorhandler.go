@@ -21,6 +21,6 @@ func getStatusCodeFromError(err error) int {
 		return code
 	}
 
-	log.WithError(err).Error("Api recieved an unexpected error type.")
+	log.WithError(err).Error("Api received an unexpected error type.")
 	return http.StatusInternalServerError
 }

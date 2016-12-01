@@ -71,7 +71,7 @@ func (service *Service) DeleteTweet(userID, tweetID int64) error {
 	databaseTweet, err := service.db.GetTweet(tweetID)
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if databaseTweet.Author.ID != userID {

@@ -13,8 +13,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const UniqueConstraintViolationCode = "23505"
-
 // Struct that implements UserDataAccessor using sql (postgres) database
 type UserDB struct {
 	*sql.DB
