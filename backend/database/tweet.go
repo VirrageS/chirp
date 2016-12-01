@@ -2,8 +2,11 @@ package database
 
 import (
 	"database/sql"
+
 	log "github.com/Sirupsen/logrus"
-	"github.com/VirrageS/chirp/backend/database/model"
+
+	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
 // Struct that implements TweetDataAccessor using sql (postgres) database
@@ -16,52 +19,53 @@ func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
 	return &TweetDB{databaseConnection}
 }
 
-func (db *TweetDB) GetTweets() ([]*model.TweetWithAuthor, error) {
+func (db *TweetDB) GetTweets() ([]*model.Tweet, error) {
 	tweets, err := db.getTweets()
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return tweets, nil
 }
 
-func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor, error) {
+func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 	tweets, err := db.getTweetsOfUserWithID(userID)
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return tweets, nil
 }
 
-func (db *TweetDB) GetTweet(tweetID int64) (*model.TweetWithAuthor, error) {
+func (db *TweetDB) GetTweet(tweetID int64) (*model.Tweet, error) {
 	tweet, err := db.getTweetUsingQuery(
 		"SELECT tweets.id, tweets.created_at, tweets.content, "+
 			"users.id, users.username, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err == sql.ErrNoRows {
-		return nil, NoResults
+		return nil, errors.NoResultsError
 	}
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return tweet, nil
 }
 
-func (db *TweetDB) InsertTweet(tweet model.Tweet) (*model.TweetWithAuthor, error) {
+func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 	tweetID, err := db.insertTweetToDatabase(tweet)
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
-	// TODO: this is probably super ugly, fix it
+	// TODO: this is probably super ugly. Maybe fetch user only?
+	// Probably could just fetch user from cache
 	newTweet, err := db.getTweetUsingQuery(
 		"SELECT tweets.id, tweets.created_at, tweets.content, "+
 			"users.id, users.username, users.name, users.avatar_url "+
 			"FROM tweets JOIN users on tweets.author_id=users.id AND tweets.id=$1;", tweetID)
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return newTweet, nil
@@ -70,17 +74,17 @@ func (db *TweetDB) InsertTweet(tweet model.Tweet) (*model.TweetWithAuthor, error
 func (db *TweetDB) DeleteTweet(tweetID int64) error {
 	err := db.deleteTweetWithID(tweetID)
 	if err != nil {
-		return DatabaseError
+		return errors.UnexpectedError
 	}
 
 	return nil
 }
 
 // TODO: Maybe it should also fetch tweet's User and embed it inside the returned object
-func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model.TweetWithAuthor, error) {
+func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model.Tweet, error) {
 	row := db.QueryRow(query, args...)
 
-	var tweet model.TweetWithAuthor
+	var tweet model.Tweet
 	var author model.PublicUser
 
 	err := row.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
@@ -94,9 +98,10 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 	return &tweet, err
 }
 
-func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
-	query, err := db.Prepare("INSERT INTO tweets (author_id, created_at, content) " +
-		"VALUES ($1, $2, $3) RETURNING id")
+// TODO: maybe return whole Tweet struct instead of just ID
+func (db *TweetDB) insertTweetToDatabase(tweet *model.NewTweet) (int64, error) {
+	query, err := db.Prepare("INSERT INTO tweets (author_id, content) " +
+		"VALUES ($1, $2) RETURNING id")
 	if err != nil {
 		log.WithError(err).Error("insertTweetToDatabase query prepare error.")
 		return 0, err
@@ -105,7 +110,7 @@ func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
 
 	var newID int64
 
-	err = query.QueryRow(tweet.AuthorID, tweet.CreatedAt, tweet.Content).Scan(&newID)
+	err = query.QueryRow(tweet.AuthorID, tweet.Content).Scan(&newID)
 	if err != nil {
 		log.WithError(err).Error("insertTweetToDatabase query execute error.")
 		return 0, err
@@ -131,7 +136,7 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 	return nil
 }
 
-func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
+func (db *TweetDB) getTweets() ([]*model.Tweet, error) {
 	rows, err := db.Query(
 		"SELECT tweets.id, tweets.created_at, tweets.content, " +
 			"users.id, users.username, users.name, users.avatar_url " +
@@ -141,11 +146,11 @@ func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 		return nil, err
 	}
 
-	var tweets []*model.TweetWithAuthor
+	var tweets []*model.Tweet
 
 	defer rows.Close()
 	for rows.Next() {
-		var tweet model.TweetWithAuthor
+		var tweet model.Tweet
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
@@ -167,7 +172,7 @@ func (db *TweetDB) getTweets() ([]*model.TweetWithAuthor, error) {
 }
 
 // TODO: almost the same as getTweets()...
-func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor, error) {
+func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 	rows, err := db.Query("SELECT tweets.id, tweets.created_at, tweets.content, "+
 		"users.id, users.username, users.name, users.avatar_url "+
 		"FROM tweets JOIN users on tweets.author_id=users.id AND users.id=$1;", userID)
@@ -176,11 +181,11 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.TweetWithAuthor
 		return nil, err
 	}
 
-	var tweets []*model.TweetWithAuthor
+	var tweets []*model.Tweet
 
 	defer rows.Close()
 	for rows.Next() {
-		var tweet model.TweetWithAuthor
+		var tweet model.Tweet
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,

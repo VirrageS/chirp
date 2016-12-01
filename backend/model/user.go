@@ -18,11 +18,13 @@ type User struct {
 	Active        bool
 	Name          string
 	AvatarUrl     sql.NullString
+	Following     bool
 }
 
 type PublicUser struct {
-	ID        int64
-	Username  string
-	Name      string
-	AvatarUrl sql.NullString
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	AvatarUrl string `json:"avatar_url"`
+	Following bool   `json:"following"`
 }

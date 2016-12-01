@@ -7,9 +7,7 @@ package main
 	    	     https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/)
 */
 
-import (
-	"github.com/VirrageS/chirp/backend/server"
-)
+import "github.com/VirrageS/chirp/backend/server"
 
 func main() {
 	server := server.CreateNew()

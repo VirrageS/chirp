@@ -8,7 +8,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/VirrageS/chirp/backend/database/model"
+	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/lib/pq"
 )
 
@@ -25,7 +26,7 @@ func NewUserDB(databaseConnection *sql.DB) *UserDB {
 func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
 	users, err := db.getPublicUsers()
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return users, nil
@@ -34,10 +35,10 @@ func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
 func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
 	user, err := db.getPublicUserUsingQuery("SELECT id, username, name, avatar_url from users WHERE id=$1", userID)
 	if err == sql.ErrNoRows {
-		return nil, NoResults
+		return nil, errors.NoResultsError
 	}
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return user, nil
@@ -46,34 +47,41 @@ func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
 func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
-		return nil, NoResults
+		return nil, errors.NoResultsError
 	}
 	if err != nil {
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
 	return user, nil
 }
 
-func (db *UserDB) InsertUser(user *model.User) (*model.User, error) {
-	userID, err := db.insertUserToDatabase(user)
+func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
+	userID, err := db.insertUserToDatabase(newUserForm)
 
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == UniqueConstraintViolationCode {
-			return nil, UserAlreadyExistsError
+			return nil, errors.UserAlreadyExistsError
 		}
-		return nil, DatabaseError
+		return nil, errors.UnexpectedError
 	}
 
-	user.ID = userID
+	// TODO: how bad is this? This is ugly, but saves a database query
+	newPublicUser := &model.PublicUser{
+		ID:        userID,
+		Username:  newUserForm.Username,
+		Name:      newUserForm.Name,
+		AvatarUrl: "",
+		Following: false,
+	}
 
-	return user, nil
+	return newPublicUser, nil
 }
 
 func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
 	err := db.updateUserLastLoginTime(userID, lastLoginTime)
 	if err != nil {
-		return DatabaseError
+		return errors.UnexpectedError
 	}
 
 	return nil
@@ -137,9 +145,9 @@ func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*m
 	return &user, err
 }
 
-func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
-	query, err := db.Prepare("INSERT INTO users (username, email, password, created_at, last_login, name)" +
-		"VALUES ($1, $2, $3, $4, $5, $6) RETURNING id")
+func (db *UserDB) insertUserToDatabase(user *model.NewUserForm) (int64, error) {
+	query, err := db.Prepare("INSERT INTO users (username, email, password, name)" +
+		"VALUES ($1, $2, $3, $4) RETURNING id")
 	if err != nil {
 		log.WithError(err).Error("insertUserToDatabase query prepare error.")
 		return 0, err
@@ -148,7 +156,7 @@ func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
 
 	var newID int64
 	// for Postgres we need to use query with RETURNING id to get the ID of the inserted user
-	err = query.QueryRow(user.Username, user.Email, user.Password, user.CreatedAt, user.LastLogin, user.Name).Scan(&newID)
+	err = query.QueryRow(user.Username, user.Email, user.Password, user.Name).Scan(&newID)
 
 	if err != nil {
 		log.WithError(err).Error("insertUserToDatabase query execute error.")
@@ -173,4 +181,8 @@ func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	}
 
 	return nil
+}
+
+func toSqlNullString(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
 }

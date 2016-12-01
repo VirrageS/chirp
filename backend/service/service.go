@@ -1,224 +1,156 @@
 package service
 
 import (
-	"errors"
-	"net/http"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
 
-	APIModel "github.com/VirrageS/chirp/backend/api/model"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
-	databaseModel "github.com/VirrageS/chirp/backend/database/model"
-	"github.com/VirrageS/chirp/backend/service/converters"
+	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
 // Struct that implements APIProvider
 type Service struct {
 	// logger?
-	// DB to API model converter?
 	configuration config.ServiceConfigProvider
 	db            database.DatabaseAccessor
-
-	userConverter  converters.UserModelConverter
-	tweetConverter converters.TweetModelConverter
 }
 
 // Constructs a Service that uses provided objects
-func NewService(databaseAccessor database.DatabaseAccessor,
-	configuration config.ServiceConfigProvider,
-	userConverter converters.UserModelConverter,
-	tweetConverter converters.TweetModelConverter) ServiceProvider {
-
+func NewService(databaseAccessor database.DatabaseAccessor, configuration config.ServiceConfigProvider) ServiceProvider {
 	return &Service{
-		configuration:  configuration,
-		db:             databaseAccessor,
-		userConverter:  userConverter,
-		tweetConverter: tweetConverter,
+		configuration: configuration,
+		db:            databaseAccessor,
 	}
 }
 
-func (service *Service) GetTweets() ([]*APIModel.Tweet, *Error) {
-	databaseTweets, err := service.db.GetTweets()
-	if err == database.DatabaseError {
-		return nil, UnexpectedError
+func (service *Service) GetTweets() ([]*model.Tweet, error) {
+	tweets, err := service.db.GetTweets()
+	if err != nil {
+		return nil, err
 	}
 
-	APITweets := service.tweetConverter.ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
-
-	return APITweets, nil
+	return tweets, nil
 }
 
 // Use GetTweets() with filtering parameters instead, when filtering will be supported
-func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*APIModel.Tweet, *Error) {
-	databaseTweets, err := service.db.GetTweetsOfUserWithID(userID)
-	if err == database.DatabaseError {
-		return nil, UnexpectedError
+func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
+	tweets, err := service.db.GetTweetsOfUserWithID(userID)
+	if err != nil {
+		return nil, err
 	}
 
-	APITweets := service.tweetConverter.ConvertArrayOfDatabaseTweetsToArrayOfAPITweets(databaseTweets)
-
-	return APITweets, nil
+	return tweets, nil
 }
 
-func (service *Service) GetTweet(tweetID int64) (*APIModel.Tweet, *Error) {
-	databaseTweet, err := service.db.GetTweet(tweetID)
+func (service *Service) GetTweet(tweetID int64) (*model.Tweet, error) {
+	tweet, err := service.db.GetTweet(tweetID)
 
-	if err == database.NoResults {
-		return nil, &Error{
-			Code: http.StatusNotFound,
-			Err:  errors.New("Tweet with given ID was not found."),
-		}
-	}
-	if err == database.DatabaseError {
-		return nil, UnexpectedError
+	if err != nil {
+		return nil, err
 	}
 
-	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(databaseTweet)
-
-	return APITweet, nil
+	return tweet, nil
 }
 
-func (service *Service) PostTweet(newTweet *APIModel.NewTweet) (*APIModel.Tweet, *Error) {
+func (service *Service) PostTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
-	databaseTweet := service.tweetConverter.ConvertAPINewTweetToDatabaseTweet(newTweet)
-
-	addedTweet, err := service.db.InsertTweet(*databaseTweet)
-	if err == database.DatabaseError {
-		return nil, UnexpectedError
+	newTweet, err := service.db.InsertTweet(tweet)
+	if err != nil {
+		return nil, err
 	}
 
-	APITweet := service.tweetConverter.ConvertDatabaseTweetToAPITweet(addedTweet)
-
-	return APITweet, nil
+	return newTweet, nil
 }
 
-func (service *Service) DeleteTweet(userID, tweetID int64) *Error {
+func (service *Service) DeleteTweet(userID, tweetID int64) error {
 	// TODO: Maybe fetch Tweet not TweetWithAuthor
 	databaseTweet, err := service.db.GetTweet(tweetID)
 
-	if err == database.NoResults {
-		return &Error{
-			Code: http.StatusNotFound,
-			Err:  errors.New("Tweet with given ID was not found."),
-		}
-	}
-	if err == database.DatabaseError {
-		return UnexpectedError
+	if err != nil {
+		return err
 	}
 
 	if databaseTweet.Author.ID != userID {
-		return &Error{
-			Code: http.StatusForbidden,
-			Err:  errors.New("User is not allowed to modify this resource."),
-		}
+		return errors.ForbiddenError
 	}
 
 	err = service.db.DeleteTweet(tweetID)
-	if err == database.DatabaseError {
-		return UnexpectedError
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (service *Service) GetUsers() ([]*APIModel.User, *Error) {
-	databaseUsers, databaseError := service.db.GetUsers()
+func (service *Service) GetUsers() ([]*model.PublicUser, error) {
+	users, err := service.db.GetUsers()
 
-	if databaseError == database.DatabaseError {
-		return nil, UnexpectedError
+	if err != nil {
+		return nil, err
 	}
 
-	APIUsers := service.userConverter.ConvertArrayDatabasePublicUserToAPI(databaseUsers)
-
-	return APIUsers, nil
+	return users, nil
 }
 
-func (service *Service) GetUser(userId int64) (*APIModel.User, *Error) {
-	databaseUser, databaseError := service.db.GetUserByID(userId)
+func (service *Service) GetUser(userId int64) (*model.PublicUser, error) {
+	user, err := service.db.GetUserByID(userId)
 
-	if databaseError == database.NoResults {
-		return nil, &Error{
-			Code: http.StatusNotFound,
-			Err:  errors.New("User with given ID was not found."),
-		}
-	}
-	if databaseError == database.DatabaseError {
-		return nil, UnexpectedError
+	if err != nil {
+		return nil, err
 	}
 
-	APIUser := service.userConverter.ConvertDatabasePublicUserToAPI(databaseUser)
-
-	return APIUser, nil
+	return user, nil
 }
 
-func (service *Service) RegisterUser(newUserForm *APIModel.NewUserForm) (*APIModel.User, *Error) {
-	databaseUser := service.userConverter.ConvertAPIToDatabase(newUserForm)
+func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
+	newUser, err := service.db.InsertUser(newUserForm)
 
-	newUser, err := service.db.InsertUser(databaseUser)
-
-	if err == database.UserAlreadyExistsError {
-		return nil, &Error{
-			Code: http.StatusConflict,
-			Err:  errors.New("User with given username or email already exists."),
-		}
-	}
-	if err == database.DatabaseError {
-		return nil, UnexpectedError
+	if err != nil {
+		return nil, err
 	}
 
-	apiUser := service.userConverter.ConvertDatabaseToAPI(newUser)
-
-	return apiUser, nil
+	return newUser, nil
 }
 
-func (service *Service) LoginUser(loginForm *APIModel.LoginForm) (*APIModel.LoginResponse, *Error) {
+func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
 	email := loginForm.Email
 	password := loginForm.Password
 
-	databaseUser, databaseError := service.db.GetUserByEmail(email)
-	if databaseError == database.NoResults {
-		return nil, &Error{
-			Code: http.StatusNotFound,
-			Err:  errors.New("User with given ID was not found."),
-		}
-	}
-	if databaseError == database.DatabaseError {
-		return nil, UnexpectedError
+	user, databaseError := service.db.GetUserByEmail(email)
+	if databaseError != nil {
+		return nil, databaseError
 	}
 
 	// TODO: hash the password before comparing
-	if databaseUser.Password != password {
-		return nil, &Error{
-			Code: http.StatusUnauthorized,
-			Err:  errors.New("Invalid email or password."),
-		}
+	if user.Password != password {
+		return nil, errors.InvalidCredentialsError
 	}
 
 	loginTime := time.Now()
-	updateError := service.db.UpdateUserLastLoginTime(databaseUser.ID, &loginTime)
-	if updateError == database.DatabaseError {
-		return nil, UnexpectedError
+	updateError := service.db.UpdateUserLastLoginTime(user.ID, &loginTime)
+	if updateError != nil {
+		return nil, updateError
 	}
 
-	token, serviceError := service.createTokenForUser(databaseUser)
+	token, serviceError := service.createTokenForUser(user)
 	if serviceError != nil {
 		return nil, serviceError
 	}
 
-	apiUser := service.userConverter.ConvertDatabaseToAPI(databaseUser)
-	response := &APIModel.LoginResponse{
+	response := &model.LoginResponse{
 		AuthToken: token,
-		User:      apiUser,
+		User:      user,
 	}
 
 	return response, nil
 }
 
 //TODO: Maybe move out to another package and inject tokenCreator object/closure that can create tokens
-func (service *Service) createTokenForUser(user *databaseModel.User) (string, *Error) {
+func (service *Service) createTokenForUser(user *model.User) (string, error) {
 	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
 	expirationTime := time.Now().Add(validityDuration * time.Minute)
 
@@ -230,7 +162,7 @@ func (service *Service) createTokenForUser(user *databaseModel.User) (string, *E
 	tokenString, err := token.SignedString(service.configuration.GetSecretKey())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to sign the token.")
-		return "", UnexpectedError
+		return "", errors.UnexpectedError
 	}
 
 	return tokenString, nil

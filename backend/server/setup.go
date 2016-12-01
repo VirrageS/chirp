@@ -12,7 +12,6 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/service"
-	"github.com/VirrageS/chirp/backend/service/converters"
 )
 
 func init() {
@@ -26,14 +25,12 @@ func CreateNew() *gin.Engine {
 
 	// service dependencies
 	serverConfig := config.GetConfig()
-	userConverter := converters.NewUserConverter()
-	tweetConverter := converters.NewTweetConverter(userConverter)
 
 	// api dependencies
 	CORSConfig := setupCORS()
 
 	db := database.NewDatabase(dbConnection)
-	services := service.NewService(db, serverConfig, userConverter, tweetConverter)
+	services := service.NewService(db, serverConfig)
 	APIs := api.NewAPI(services)
 
 	return setupRouter(APIs, serverConfig, CORSConfig)
