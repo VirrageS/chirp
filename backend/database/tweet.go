@@ -2,9 +2,10 @@ package database
 
 import (
 	"database/sql"
+
 	log "github.com/Sirupsen/logrus"
+
 	"github.com/VirrageS/chirp/backend/model"
-	"time"
 )
 
 // Struct that implements TweetDataAccessor using sql (postgres) database
@@ -51,26 +52,13 @@ func (db *TweetDB) GetTweet(tweetID int64) (*model.Tweet, error) {
 }
 
 func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
-	// TODO: temporary, fix me
-	dbModelTweet := model.Tweet{
-		ID: 0,
-		Author: &model.PublicUser{
-			ID: tweet.AuthorID,
-		},
-		Likes:     0,
-		Retweets:  0,
-		CreatedAt: time.Now(), // NO, PLEASE
-		Content:   tweet.Content,
-		Liked:     false,
-		Retweeted: false,
-	}
-
-	tweetID, err := db.insertTweetToDatabase(dbModelTweet)
+	tweetID, err := db.insertTweetToDatabase(tweet)
 	if err != nil {
 		return nil, DatabaseError
 	}
 
-	// TODO: this is probably super ugly, fix it
+	// TODO: this is probably super ugly. Maybe fetch user only?
+	// Probably could just fetch user from cache
 	newTweet, err := db.getTweetUsingQuery(
 		"SELECT tweets.id, tweets.created_at, tweets.content, "+
 			"users.id, users.username, users.name, users.avatar_url "+
@@ -109,9 +97,10 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 	return &tweet, err
 }
 
-func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
-	query, err := db.Prepare("INSERT INTO tweets (author_id, created_at, content) " +
-		"VALUES ($1, $2, $3) RETURNING id")
+// TODO: maybe return whole Tweet struct instead of just ID
+func (db *TweetDB) insertTweetToDatabase(tweet *model.NewTweet) (int64, error) {
+	query, err := db.Prepare("INSERT INTO tweets (author_id, content) " +
+		"VALUES ($1, $2) RETURNING id")
 	if err != nil {
 		log.WithError(err).Error("insertTweetToDatabase query prepare error.")
 		return 0, err
@@ -120,7 +109,7 @@ func (db *TweetDB) insertTweetToDatabase(tweet model.Tweet) (int64, error) {
 
 	var newID int64
 
-	err = query.QueryRow(tweet.Author.ID, tweet.CreatedAt, tweet.Content).Scan(&newID)
+	err = query.QueryRow(tweet.AuthorID, tweet.Content).Scan(&newID)
 	if err != nil {
 		log.WithError(err).Error("insertTweetToDatabase query execute error.")
 		return 0, err

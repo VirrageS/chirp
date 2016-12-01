@@ -56,24 +56,7 @@ func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 }
 
 func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
-	// TODO: FIX ME PLEASE
-	newUser := &model.User{
-		ID:            0,
-		TwitterToken:  toSqlNullString(""),
-		FacebookToken: toSqlNullString(""),
-		GoogleToken:   toSqlNullString(""),
-		Username:      newUserForm.Username,
-		Password:      newUserForm.Password,
-		Email:         newUserForm.Email,
-		CreatedAt:     time.Now(),
-		LastLogin:     time.Now(),
-		Active:        true,
-		Name:          newUserForm.Name,
-		AvatarUrl:     toSqlNullString(""),
-		Following:     false, // TODO: NOT ME HERE PLEASE
-	}
-
-	userID, err := db.insertUserToDatabase(newUser)
+	userID, err := db.insertUserToDatabase(newUserForm)
 
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == UniqueConstraintViolationCode {
@@ -82,11 +65,11 @@ func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser,
 		return nil, DatabaseError
 	}
 
-	// TODO: FIX ME PLEASE TOO!
+	// TODO: how bad is this? This is ugly, but saves a database query
 	newPublicUser := &model.PublicUser{
 		ID:        userID,
-		Username:  newUser.Username,
-		Name:      newUser.Name,
+		Username:  newUserForm.Username,
+		Name:      newUserForm.Name,
 		AvatarUrl: "",
 		Following: false,
 	}
@@ -161,9 +144,9 @@ func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*m
 	return &user, err
 }
 
-func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
-	query, err := db.Prepare("INSERT INTO users (username, email, password, created_at, last_login, name)" +
-		"VALUES ($1, $2, $3, $4, $5, $6) RETURNING id")
+func (db *UserDB) insertUserToDatabase(user *model.NewUserForm) (int64, error) {
+	query, err := db.Prepare("INSERT INTO users (username, email, password, name)" +
+		"VALUES ($1, $2, $3, $4) RETURNING id")
 	if err != nil {
 		log.WithError(err).Error("insertUserToDatabase query prepare error.")
 		return 0, err
@@ -172,7 +155,7 @@ func (db *UserDB) insertUserToDatabase(user *model.User) (int64, error) {
 
 	var newID int64
 	// for Postgres we need to use query with RETURNING id to get the ID of the inserted user
-	err = query.QueryRow(user.Username, user.Email, user.Password, user.CreatedAt, user.LastLogin, user.Name).Scan(&newID)
+	err = query.QueryRow(user.Username, user.Email, user.Password, user.Name).Scan(&newID)
 
 	if err != nil {
 		log.WithError(err).Error("insertUserToDatabase query execute error.")

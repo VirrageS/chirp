@@ -1,8 +1,6 @@
 package middleware
 
-import (
-	"gopkg.in/gin-gonic/gin.v1"
-)
+import "gopkg.in/gin-gonic/gin.v1"
 
 func ErrorHandler() gin.HandlerFunc {
 	return func(context *gin.Context) {

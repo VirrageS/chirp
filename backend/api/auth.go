@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/VirrageS/chirp/backend/model"
 	"gopkg.in/gin-gonic/gin.v1"
+
+	"github.com/VirrageS/chirp/backend/model"
 )
 
 func (api *API) RegisterUser(context *gin.Context) {

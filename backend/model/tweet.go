@@ -18,6 +18,6 @@ type NewTweetContent struct {
 }
 
 type NewTweet struct {
-	AuthorID int64
-	Content  string
+	AuthorID int64  `json:"-"`
+	Content  string `json:"content" binding:"required"`
 }

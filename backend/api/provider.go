@@ -1,8 +1,6 @@
 package api
 
-import (
-	"gopkg.in/gin-gonic/gin.v1"
-)
+import "gopkg.in/gin-gonic/gin.v1"
 
 type APIProvider interface {
 	RegisterUser(context *gin.Context)

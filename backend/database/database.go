@@ -3,9 +3,8 @@ package database
 import (
 	"database/sql"
 
-	_ "github.com/lib/pq"
-
 	log "github.com/Sirupsen/logrus"
+	_ "github.com/lib/pq"
 )
 
 // Struct that implements DatabaseAccessor

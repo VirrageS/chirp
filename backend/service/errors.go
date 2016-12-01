@@ -1,8 +1,6 @@
 package service
 
-import (
-	"errors"
-)
+import "errors"
 
 type Error struct {
 	Code int
