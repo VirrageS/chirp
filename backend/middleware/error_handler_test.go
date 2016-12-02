@@ -32,7 +32,7 @@ func TestErrorOccurred(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var resp errorResponse
-	json.NewDecoder(w.Result().Body).Decode(&resp)
+	json.NewDecoder(w.Body).Decode(&resp)
 
 	assert.Equal(t, 400, w.Code)
 	assert.Equal(t, errorResponse{[]string{"An error occured."}}, resp)
@@ -53,7 +53,7 @@ func TestNoErrorOccurred(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var resp normalResponse
-	json.NewDecoder(w.Result().Body).Decode(&resp)
+	json.NewDecoder(w.Body).Decode(&resp)
 
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, normalResponse{"Response"}, resp)
