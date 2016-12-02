@@ -29,7 +29,7 @@ func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc 
 		})
 
 		if err != nil {
-			log.WithError(err).Error("Failed to parse the token.")
+			log.WithError(err).WithField("token", tokenString).Error("Failed to parse the token.")
 			context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 			return
 		}
