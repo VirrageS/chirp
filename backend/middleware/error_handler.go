@@ -8,8 +8,8 @@ func ErrorHandler() gin.HandlerFunc {
 
 		var errorMessages []string
 
-		for _, error := range context.Errors {
-			errorMessages = append(errorMessages, error.Error())
+		for _, err := range context.Errors {
+			errorMessages = append(errorMessages, err.Error())
 		}
 
 		if len(errorMessages) > 0 {
