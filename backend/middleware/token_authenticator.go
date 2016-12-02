@@ -11,6 +11,7 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/config"
+	"time"
 )
 
 func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc {
@@ -40,6 +41,13 @@ func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc 
 				context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
 				return
 			}
+
+			// check if token contains expiry date
+			if unexpired := claims.VerifyExpiresAt(time.Now().Unix(), true); !unexpired {
+				context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
+				return
+			}
+
 			context.Set("userID", int64(userID))
 		} else {
 			context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
