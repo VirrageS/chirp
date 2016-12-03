@@ -20,6 +20,8 @@ type normalResponse struct {
 }
 
 func TestErrorOccurred(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	router := gin.New()
 	router.Use(ErrorHandler())
 	router.GET("/test", func(c *gin.Context) {
@@ -39,6 +41,8 @@ func TestErrorOccurred(t *testing.T) {
 }
 
 func TestNoErrorOccurred(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	router := gin.New()
 	router.Use(ErrorHandler())
 	router.GET("/test", func(c *gin.Context) {

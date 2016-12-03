@@ -10,6 +10,8 @@ import (
 )
 
 func TestSendJSONContentType(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	called := false
 
 	router := gin.New()
@@ -30,6 +32,8 @@ func TestSendJSONContentType(t *testing.T) {
 }
 
 func TestSendUnsupportedContentType(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	called := false
 
 	router := gin.New()

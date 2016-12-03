@@ -21,7 +21,11 @@ func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc 
 		fullTokenString := context.Request.Header.Get("Authorization")
 		tokenString := strings.TrimPrefix(fullTokenString, "Bearer ")
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// set up a parser that doesn't validate expiration time
+		parser := jwt.Parser{}
+		parser.SkipClaimsValidation = true
+
+		token, err := parser.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -38,19 +42,19 @@ func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc 
 			claimUserID, isSetID := claims["userID"]
 			userID, ok := claimUserID.(float64)
 			if !ok || !isSetID {
-				context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
+				context.AbortWithError(http.StatusUnauthorized, errors.New("Token does not contain required data."))
 				return
 			}
 
 			// check if token contains expiry date
 			if unexpired := claims.VerifyExpiresAt(time.Now().Unix(), true); !unexpired {
-				context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
+				context.AbortWithError(http.StatusUnauthorized, errors.New("Token has expired."))
 				return
 			}
 
 			context.Set("userID", int64(userID))
 		} else {
-			context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid authentication token."))
+			context.AbortWithError(http.StatusUnauthorized, errors.New("Malformed authentication token."))
 			return
 		}
 
