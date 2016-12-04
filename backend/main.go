@@ -7,9 +7,15 @@ package main
 	    	     https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/)
 */
 
-import "github.com/VirrageS/chirp/backend/server"
+import (
+	"github.com/VirrageS/chirp/backend/database"
+	"github.com/VirrageS/chirp/backend/server"
+)
 
 func main() {
-	server := server.CreateNew()
-	server.Run(":8080")
+	// TODO: create a config here and pass to New()?
+	db := database.NewConnection(database.DefaultPostgresPort)
+
+	s := server.New(db)
+	s.Run(":8080")
 }

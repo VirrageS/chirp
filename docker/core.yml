@@ -21,3 +21,11 @@ services:
       - "27017:27017"
     volumes:
       - /var/lib/mongodb
+
+  postgres_test:
+    restart: always
+    build: ../postgres
+    ports:
+      - "5555:5432"
+    volumes:
+      - /var/lib/postgresql

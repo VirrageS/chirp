@@ -2,6 +2,7 @@ package server
 
 import (
 	"os"
+	"database/sql"
 
 	"github.com/Sirupsen/logrus"
 	"gopkg.in/gin-contrib/cors.v1"
@@ -19,10 +20,8 @@ func init() {
 }
 
 // Handles all dependencies and creates a new server.
-func CreateNew() *gin.Engine {
-	// db dependencies
-	dbConnection := database.NewConnection()
-
+// Takes a DB connection parameter in order to support test database.
+func New(dbConnection *sql.DB) *gin.Engine {
 	// service dependencies
 	serverConfig := config.GetConfig()
 
