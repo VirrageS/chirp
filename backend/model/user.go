@@ -13,8 +13,8 @@ type User struct {
 	Username      string
 	Password      string
 	Email         string
-	CreatedAt     time.Time
-	LastLogin     time.Time
+	CreatedAt     *time.Time
+	LastLogin     *time.Time
 	Active        bool
 	Name          string
 	AvatarUrl     sql.NullString

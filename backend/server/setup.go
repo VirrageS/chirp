@@ -1,8 +1,8 @@
 package server
 
 import (
-	"os"
 	"database/sql"
+	"os"
 
 	"github.com/Sirupsen/logrus"
 	"gopkg.in/gin-contrib/cors.v1"
