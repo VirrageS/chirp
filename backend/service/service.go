@@ -116,6 +116,7 @@ func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.Pub
 	return newUser, nil
 }
 
+// TODO: fix this - maybe service should fetch only 'auth' data and then get fetch user data and return it
 func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
 	email := loginForm.Email
 	password := loginForm.Password
@@ -143,7 +144,13 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 
 	response := &model.LoginResponse{
 		AuthToken: token,
-		User:      user,
+		User: &model.PublicUser{
+			ID:        user.ID,
+			Username:  user.Username,
+			Name:      user.Name,
+			AvatarUrl: user.AvatarUrl.String,
+			Following: user.Following,
+		},
 	}
 
 	return response, nil
