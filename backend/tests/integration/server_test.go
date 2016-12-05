@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 
 	"gopkg.in/gin-gonic/gin.v1"
@@ -28,7 +29,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestCreateUser(t *testing.T) {
+func TestCreateNewUser(t *testing.T) {
 	newUser := &model.NewUserForm{
 		Username: "user",
 		Password: "password",
@@ -36,8 +37,8 @@ func TestCreateUser(t *testing.T) {
 		Name:     "name",
 	}
 	data, _ := json.Marshal(newUser)
-
 	buf := bytes.NewBuffer(data)
+
 	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -57,7 +58,74 @@ func TestCreateUser(t *testing.T) {
 	assert.Equal(t, actualUser.Following, false)
 }
 
+func TestCreateUserWithUsernameThatAlreadyExists(t *testing.T) {
+	user := &model.NewUserForm{
+		Username: "user10",
+		Password: "password10",
+		Email:    "email10@email.com",
+		Name:     "name10",
+	}
+	_, err := createUser(user, s, baseURL)
+	assert.Nil(t, err)
+
+	newUser := &model.NewUserForm{
+		Username: "user10",
+		Password: "password11",
+		Email:    "email11@email.com",
+		Name:     "name11",
+	}
+
+	// try to create the same user again
+	data, _ := json.Marshal(newUser)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	// TODO: add ID check once database is cleaned after every run
+	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.NotEmpty(t, w.Body)
+}
+
+func TestCreateUserWithEmailThatAlreadyExists(t *testing.T) {
+	user := &model.NewUserForm{
+		Username: "user20",
+		Password: "password20",
+		Email:    "email20@email.com",
+		Name:     "name20",
+	}
+	_, err := createUser(user, s, baseURL)
+	assert.Nil(t, err)
+
+	newUser := &model.NewUserForm{
+		Username: "user21",
+		Password: "password21",
+		Email:    "email20@email.com",
+		Name:     "name21",
+	}
+
+	// try to create the same user again
+	data, _ := json.Marshal(newUser)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	// TODO: add ID check once database is cleaned after every run
+	assert.Equal(t, http.StatusConflict, w.Code)
+	assert.NotEmpty(t, w.Body)
+}
+
 func TestLoginUser(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
 	newUser := &model.NewUserForm{
 		Username: "user1",
 		Password: "password1",
@@ -72,8 +140,8 @@ func TestLoginUser(t *testing.T) {
 		Password: "password1",
 	}
 	data, _ := json.Marshal(loginData)
-
 	buf := bytes.NewBuffer(data)
+
 	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -87,10 +155,176 @@ func TestLoginUser(t *testing.T) {
 
 	actualUser := loginResponse.User
 
+	expectedUser := &model.PublicUser{
+		ID:        userID,
+		Username:  newUser.Username,
+		Name:      newUser.Name,
+		AvatarUrl: "",
+		Following: false,
+	}
+
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, actualUser.ID, userID)
-	assert.Equal(t, actualUser.Username, newUser.Username)
-	assert.Equal(t, actualUser.Name, newUser.Name)
-	assert.Equal(t, actualUser.AvatarUrl, "")
-	assert.Equal(t, actualUser.Following, false)
+	assert.Equal(t, expectedUser, actualUser)
+}
+
+func TestLoginUserWithInvalidPassword(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
+	newUser := &model.NewUserForm{
+		Username: "user40",
+		Password: "password40",
+		Email:    "email40@email.com",
+		Name:     "name40",
+	}
+	_, err := createUser(newUser, s, baseURL)
+	assert.Nil(t, err)
+
+	loginData := &model.LoginForm{
+		Email:    "email40@email.com",
+		Password: "invalidpassword",
+	}
+	data, _ := json.Marshal(loginData)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotEmpty(t, w.Body)
+}
+
+func TestLoginUserWithInvalidEmail(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
+	newUser := &model.NewUserForm{
+		Username: "user50",
+		Password: "password50",
+		Email:    "email50@email.com",
+		Name:     "name50",
+	}
+	_, err := createUser(newUser, s, baseURL)
+	assert.Nil(t, err)
+
+	loginData := &model.LoginForm{
+		Email:    "invalid@email.com",
+		Password: "password50",
+	}
+	data, _ := json.Marshal(loginData)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.NotEmpty(t, w.Body)
+}
+
+func TestCreateTweetResponse(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
+	newUser := &model.NewUserForm{
+		Username: "user2",
+		Password: "password2",
+		Email:    "email2@email.com",
+		Name:     "name2",
+	}
+	userID, err := createUser(newUser, s, baseURL)
+	assert.Nil(t, err)
+
+	loginData := &model.LoginForm{
+		Email:    "email2@email.com",
+		Password: "password2",
+	}
+	authToken, err := loginUser(loginData, s, baseURL)
+	assert.Nil(t, err)
+
+	newTweet := &model.NewTweet{
+		Content: "new tweet",
+	}
+	data, _ := json.Marshal(newTweet)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualTweet model.Tweet
+	err = json.Unmarshal(w.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	expectedUser := &model.PublicUser{
+		ID:        userID,
+		Username:  newUser.Username,
+		Name:      newUser.Name,
+		AvatarUrl: "",
+		Following: false,
+	}
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, int64(0), actualTweet.Likes)
+	assert.Equal(t, int64(0), actualTweet.Retweets)
+	assert.Equal(t, "new tweet", actualTweet.Content)
+	assert.Equal(t, false, actualTweet.Liked)
+	assert.Equal(t, false, actualTweet.Retweeted)
+	assert.Equal(t, expectedUser, actualTweet.Author)
+}
+
+func TestGetTweetAfterCreatingTweet(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
+	newUser := &model.NewUserForm{
+		Username: "user3",
+		Password: "password3",
+		Email:    "email3@email.com",
+		Name:     "name3",
+	}
+	_, err := createUser(newUser, s, baseURL)
+	assert.Nil(t, err)
+
+	loginData := &model.LoginForm{
+		Email:    "email3@email.com",
+		Password: "password3",
+	}
+	authToken, err := loginUser(loginData, s, baseURL)
+	assert.Nil(t, err)
+
+	newTweet := &model.NewTweet{
+		Content: "new tweet",
+	}
+	data, _ := json.Marshal(newTweet)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+
+	var createdTweet model.Tweet
+	err = json.Unmarshal(w.Body.Bytes(), &createdTweet)
+	assert.Nil(t, err)
+
+	tweetID := createdTweet.ID
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), buf)
+	reqGET.Header.Add("Authorization", "Bearer "+authToken)
+
+	w2 := httptest.NewRecorder()
+	s.ServeHTTP(w2, reqGET)
+
+	var actualTweet model.Tweet
+	err = json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, createdTweet, actualTweet)
 }

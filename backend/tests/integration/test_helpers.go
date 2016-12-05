@@ -41,3 +41,27 @@ func createUser(user *model.NewUserForm, s *gin.Engine, url string) (int64, erro
 
 	return actualUser.ID, nil
 }
+
+func loginUser(loginData *model.LoginForm, s *gin.Engine, url string) (string, error) {
+	data, _ := json.Marshal(loginData)
+
+	buf := bytes.NewBuffer(data)
+	req, _ := http.NewRequest("POST", url+"/login", buf)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		return "", errors.New("")
+	}
+
+	var loginResponse model.LoginResponse
+	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return loginResponse.AuthToken, nil
+}

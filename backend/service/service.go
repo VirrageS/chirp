@@ -122,7 +122,9 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	password := loginForm.Password
 
 	user, databaseError := service.db.GetUserByEmail(email)
-	if databaseError != nil {
+	if databaseError == errors.NoResultsError {
+		return nil, errors.InvalidCredentialsError // return 401 when user with given email is not found
+	} else if databaseError != nil {
 		return nil, databaseError
 	}
 
