@@ -50,7 +50,6 @@ func TestCreateNewUser(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
 	assert.Nil(t, err)
 
-	// TODO: add ID check once database is cleaned after every run
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, actualUser.Username, newUser.Username)
 	assert.Equal(t, actualUser.Name, newUser.Name)
@@ -327,4 +326,127 @@ func TestGetTweetAfterCreatingTweet(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w2.Code)
 	assert.Equal(t, createdTweet, actualTweet)
+}
+
+func TestGetTweetsAfterCreatingTweets(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
+	newUser := &model.NewUserForm{
+		Username: "user33",
+		Password: "password33",
+		Email:    "email33@email.com",
+		Name:     "name33",
+	}
+	_, err := createUser(newUser, s, baseURL)
+	assert.Nil(t, err)
+
+	loginData := &model.LoginForm{
+		Email:    "email33@email.com",
+		Password: "password33",
+	}
+	authToken, err := loginUser(loginData, s, baseURL)
+	assert.Nil(t, err)
+
+	// create frist tweet
+	newTweet1 := &model.NewTweet{
+		Content: "new tweet1",
+	}
+	data, _ := json.Marshal(newTweet1)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+
+	var createdTweet1 model.Tweet
+	err = json.Unmarshal(w.Body.Bytes(), &createdTweet1)
+	assert.Nil(t, err)
+
+	// create another tweet
+	newTweet2 := &model.NewTweet{
+		Content: "new tweet1",
+	}
+	data, _ = json.Marshal(newTweet2)
+	buf = bytes.NewBuffer(data)
+
+	req2, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
+	req2.Header.Add("Content-Type", "application/json")
+	req2.Header.Add("Authorization", "Bearer "+authToken)
+
+	w2 := httptest.NewRecorder()
+	s.ServeHTTP(w2, req2)
+
+	var createdTweet2 model.Tweet
+	err = json.Unmarshal(w2.Body.Bytes(), &createdTweet2)
+	assert.Nil(t, err)
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets", buf)
+	reqGET.Header.Add("Authorization", "Bearer "+authToken)
+
+	w3 := httptest.NewRecorder()
+	s.ServeHTTP(w3, reqGET)
+
+	var actualTweets []model.Tweet
+	err = json.Unmarshal(w3.Body.Bytes(), &actualTweets)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w3.Code)
+	assert.Contains(t, actualTweets, createdTweet1)
+	assert.Contains(t, actualTweets, createdTweet2)
+}
+
+func TestDeleteTweetAfterCreatingTweet(t *testing.T) {
+	// TODO: maybe prepare test user at the beginning of tests?
+	newUser := &model.NewUserForm{
+		Username: "user35",
+		Password: "password35",
+		Email:    "email35@email.com",
+		Name:     "name35",
+	}
+	_, err := createUser(newUser, s, baseURL)
+	assert.Nil(t, err)
+
+	loginData := &model.LoginForm{
+		Email:    "email35@email.com",
+		Password: "password35",
+	}
+	authToken, err := loginUser(loginData, s, baseURL)
+	assert.Nil(t, err)
+
+	newTweet := &model.NewTweet{
+		Content: "new tweet",
+	}
+	data, _ := json.Marshal(newTweet)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+
+	var createdTweet model.Tweet
+	err = json.Unmarshal(w.Body.Bytes(), &createdTweet)
+	assert.Nil(t, err)
+
+	tweetID := createdTweet.ID
+
+	reqDELETE, _ := http.NewRequest("DELETE", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), buf)
+	reqDELETE.Header.Add("Authorization", "Bearer "+authToken)
+
+	w2 := httptest.NewRecorder()
+	s.ServeHTTP(w2, reqDELETE)
+
+	assert.Equal(t, http.StatusNoContent, w2.Code)
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), buf)
+	reqGET.Header.Add("Authorization", "Bearer "+authToken)
+
+	w3 := httptest.NewRecorder()
+	s.ServeHTTP(w3, reqGET)
+
+	assert.Equal(t, http.StatusNotFound, w3.Code)
 }
