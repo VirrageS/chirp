@@ -41,7 +41,9 @@ CREATE TABLE tweets (
   id          SERIAL PRIMARY KEY,
   author_id   INTEGER REFERENCES users (id) ON DELETE CASCADE,
   created_at  TIMESTAMP NOT NULL DEFAULT now(),
-  content     VARCHAR(150) NOT NULL
+  content     VARCHAR(150) NOT NULL,
+  likes       INTEGER NOT NULL DEFAULT 0,
+  retweets    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX tweets_idx ON tweets (id);
@@ -66,17 +68,3 @@ CREATE TABLE tweets_tags (
 CREATE INDEX tweets_tags_tweets_idx ON tweets_tags (tweet_id);
 CREATE INDEX tweets_tags_tags_idx ON tweets_tags (tag_id);
 CREATE INDEX tweets_tags_idx ON tweets_tags (tweet_id, tag_id);
-
-
-
--- FIXTURES --
-
--- users --
-INSERT INTO users (username, email, password, name, created_at, last_login)
-VALUES ('admin', 'admin@admin.com', 'admin', 'admin', now(), now());
-INSERT INTO users (username, email, password, name, created_at, last_login)
-VALUES ('corpsegrinder', 'corpsegrinder@cannibalcorpse.com', 'fuckthealliance', 'George Fisher', now(), now());
-
--- tweets --
-INSERT INTO tweets (author_id, created_at, content)
-VALUES (1, now(), 'tweet');

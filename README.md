@@ -77,12 +77,11 @@ Then, depending on the services we want to start we have to type:
 ### Production
 
     $ docker-compose -f docker/production.yml build && docker-compose -f docker/production.yml up
-    
+
 ### Testing
 
     $ docker-compose -f docker/test.yml build && docker-compose -f docker/test.yml up
-    
-    To clean up volumes of test database run:
-    
+
+To clean up volumes of test database run:
+
     $ docker-compose -f docker/test.yml down -v
-    

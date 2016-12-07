@@ -1,3 +1,5 @@
 FROM postgres:latest
 
-COPY schema.sql /docker-entrypoint-initdb.d/
+COPY schema.sql /
+COPY fixtures.sql /
+COPY init.sh /docker-entrypoint-initdb.d/
