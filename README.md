@@ -84,5 +84,5 @@ Then, depending on the services we want to start we have to type:
     
     To clean up volumes of test database run:
     
-    $ docker-compose -f test.yml down -v
+    $ docker-compose -f docker/test.yml down -v
     

@@ -3,7 +3,6 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,41 +12,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
-	"github.com/VirrageS/chirp/backend/server"
 )
 
-const baseURL = "http://localhost:8080"
-
+var baseURL string
 var s *gin.Engine
 
 var testUser model.User
 var otherTestUser model.User
 
 func TestMain(m *testing.M) {
-	db := database.NewConnection("5432")
-
-	gin.SetMode(gin.TestMode)
-	db.Exec("TRUNCATE users, tweets CASCADE;") // Ugly, but lets keep it for convenience for now
-
-	err := db.QueryRow("INSERT INTO users (username, email, password, name)"+
-		"VALUES ($1, $2, $3, $4) RETURNING id, username, email, password, name",
-		"user", "user@email.com", "password", "name").
-		Scan(&testUser.ID, &testUser.Username, &testUser.Email, &testUser.Password, &testUser.Name)
-	if err != nil {
-		panic(fmt.Sprintf("Error inserting test user into database = %v", err))
-	}
-
-	err = db.QueryRow("INSERT INTO users (username, email, password, name)"+
-		"VALUES ($1, $2, $3, $4) RETURNING id, username, email, password, name",
-		"otheruser", "otheruser@email.com", "otherpassword", "othername").
-		Scan(&otherTestUser.ID, &otherTestUser.Username, &otherTestUser.Email, &otherTestUser.Password, &otherTestUser.Name)
-	if err != nil {
-		panic(fmt.Sprintf("Error inserting other test user into database = %v", err))
-	}
-
-	s = server.New(db)
+	setup(&testUser, &otherTestUser, &s, baseURL)
 	os.Exit(m.Run())
 }
 

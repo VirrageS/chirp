@@ -3,50 +3,44 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"testing"
 
 	"gopkg.in/gin-gonic/gin.v1"
 
+	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
-	"strconv"
-	"testing"
+	"github.com/VirrageS/chirp/backend/server"
 )
 
-func createUser(email string, password string, s *gin.Engine, url string) (int64, error) {
-	loginForm := model.LoginForm{
-		Email:    email,
-		Password: password,
-	}
+func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, baseURL string) {
+	db := database.NewConnection("5432")
 
-	data, err := json.Marshal(loginForm)
+	gin.SetMode(gin.TestMode)
+	db.Exec("TRUNCATE users, tweets CASCADE;") // Ugly, but lets keep it for convenience for now
+
+	err := db.QueryRow("INSERT INTO users (username, email, password, name)"+
+		"VALUES ($1, $2, $3, $4) RETURNING id, username, email, password, name",
+		"user", "user@email.com", "password", "name").
+		Scan(&testUser.ID, &testUser.Username, &testUser.Email, &testUser.Password, &testUser.Name)
 	if err != nil {
-		return 0, err
+		panic(fmt.Sprintf("Error inserting test user into database = %v", err))
 	}
 
-	buf := bytes.NewBuffer(data)
-	req, err := http.NewRequest("POST", url+"/signup", buf)
+	err = db.QueryRow("INSERT INTO users (username, email, password, name)"+
+		"VALUES ($1, $2, $3, $4) RETURNING id, username, email, password, name",
+		"otheruser", "otheruser@email.com", "otherpassword", "othername").
+		Scan(&otherTestUser.ID, &otherTestUser.Username, &otherTestUser.Email, &otherTestUser.Password, &otherTestUser.Name)
 	if err != nil {
-		return 0, err
-	}
-	req.Header.Add("Content-Type", "application/json")
-
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	if w.Code != http.StatusCreated {
-		return 0, errors.New("")
+		panic(fmt.Sprintf("Error inserting other test user into database = %v", err))
 	}
 
-	var actualUser model.PublicUser
-	err = json.Unmarshal(w.Body.Bytes(), &actualUser)
-	if err != nil {
-		return 0, err
-	}
+	*s = server.New(db)
 
-	return actualUser.ID, nil
+	baseURL = "http://localhost:8080"
 }
 
 func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) string {
