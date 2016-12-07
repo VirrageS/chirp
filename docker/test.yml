@@ -1,0 +1,7 @@
+version: '2'
+services:
+  postgres_test:
+    restart: always
+    build: ../postgres
+    ports:
+      - "5432:5432"

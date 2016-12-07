@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -19,10 +20,8 @@ func init() {
 }
 
 // Handles all dependencies and creates a new server.
-func CreateNew() *gin.Engine {
-	// db dependencies
-	dbConnection := database.NewConnection()
-
+// Takes a DB connection parameter in order to support test database.
+func New(dbConnection *sql.DB) *gin.Engine {
 	// service dependencies
 	serverConfig := config.GetConfig()
 

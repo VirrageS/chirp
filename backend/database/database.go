@@ -21,11 +21,14 @@ func NewDatabase(databaseConnection *sql.DB) DatabaseAccessor {
 	}
 }
 
+const DefaultPostgresPort = "5432"
+
 // Returns new connection to DB specified in config file. Panics when unrecoverable error occurs.
-func NewConnection() *sql.DB {
+// For now it takes port as parameter so we can redirect tests to testing database
+func NewConnection(port string) *sql.DB {
 	// TODO: read user data, host and port from config file
 
-	db, err := sql.Open("postgres", "user=postgres password=postgres host=localhost sslmode=disable")
+	db, err := sql.Open("postgres", "user=postgres password=postgres host=localhost sslmode=disable port="+port)
 	if err != nil {
 		log.WithError(err).Fatal("Error opening database.")
 	}

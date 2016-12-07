@@ -116,12 +116,15 @@ func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.Pub
 	return newUser, nil
 }
 
+// TODO: fix this - maybe service should fetch only 'auth' data and then get fetch user data and return it
 func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
 	email := loginForm.Email
 	password := loginForm.Password
 
 	user, databaseError := service.db.GetUserByEmail(email)
-	if databaseError != nil {
+	if databaseError == errors.NoResultsError {
+		return nil, errors.InvalidCredentialsError // return 401 when user with given email is not found
+	} else if databaseError != nil {
 		return nil, databaseError
 	}
 
@@ -143,7 +146,13 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 
 	response := &model.LoginResponse{
 		AuthToken: token,
-		User:      user,
+		User: &model.PublicUser{
+			ID:        user.ID,
+			Username:  user.Username,
+			Name:      user.Name,
+			AvatarUrl: user.AvatarUrl.String,
+			Following: user.Following,
+		},
 	}
 
 	return response, nil
