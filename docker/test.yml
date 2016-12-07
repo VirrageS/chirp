@@ -4,4 +4,4 @@ services:
     restart: always
     build: ../postgres
     ports:
-      - "5555:5432"
+      - "5432:5432"

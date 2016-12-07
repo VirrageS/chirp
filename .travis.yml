@@ -4,7 +4,13 @@ go:
   - 1.7.3
 os:
   - linux
+
+services:
+  - postgresql
+
 before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres -f postgres/test/schema.sql
+
 script:
   - go get -t -v ./backend/...
   - go test ./backend/...

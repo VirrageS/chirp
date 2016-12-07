@@ -26,7 +26,7 @@ var testUser model.User
 var otherTestUser model.User
 
 func TestMain(m *testing.M) {
-	db := database.NewConnection("5555")
+	db := database.NewConnection("5432")
 
 	gin.SetMode(gin.TestMode)
 	db.Exec("TRUNCATE users, tweets CASCADE;") // Ugly, but lets keep it for convenience for now
