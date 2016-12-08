@@ -1,8 +1,12 @@
 import { inject, async, TestBed } from '@angular/core/testing';
 import { BaseRequestOptions, Http, Response, ResponseOptions } from '@angular/http';
 import { MockBackend } from '@angular/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
+import { StoreHelper } from './store-helper';
+import { Store } from '../store';
 
 
 describe('ApiSerivce', () => {
@@ -11,6 +15,7 @@ describe('ApiSerivce', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [RouterTestingModule],
       providers: [
         BaseRequestOptions,
         MockBackend,
@@ -19,7 +24,10 @@ describe('ApiSerivce', () => {
           useFactory: (backend, options) => new Http(backend, options),
           deps: [MockBackend, BaseRequestOptions]
         },
-        ApiService
+        ApiService,
+        AuthService,
+        StoreHelper,
+        Store,
       ]
     })
   })

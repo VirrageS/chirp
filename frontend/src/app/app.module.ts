@@ -54,11 +54,11 @@ import { MeModule } from './me'
   providers: [
     { provide: APP_BASE_HREF, useValue: '/' },
     ApiService,
-    UserService,
-    TweetService,
     AuthService,
     StoreHelper,
     Store,
+    TweetService,
+    UserService,
   ],
   bootstrap: [AppComponent]
  })

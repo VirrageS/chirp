@@ -14,4 +14,5 @@ type ServiceProvider interface {
 	GetUser(userId int64) (*model.PublicUser, error)
 	RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error)
 	LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error)
+	RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error)
 }

@@ -13,6 +13,16 @@ type LoginForm struct {
 }
 
 type LoginResponse struct {
-	AuthToken string      `json:"auth_token"`
-	User      *PublicUser `json:"user"`
+	AuthToken    string      `json:"auth_token"`
+	RefreshToken string      `json:"refresh_token"`
+	User         *PublicUser `json:"user"`
+}
+
+type RefreshAuthTokenRequest struct {
+	UserID       int64  `json:"user_id" binding:"required"`
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type RefreshAuthTokenResponse struct {
+	AuthToken string `json:"auth_token"`
 }

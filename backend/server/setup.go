@@ -68,6 +68,8 @@ func setupRouter(api api.APIProvider, tokenAuthenticatorConfig config.SecretKeyP
 		accounts.POST("/login", contentTypeChecker, api.LoginUser)
 	}
 
+	router.POST("/token", contentTypeChecker, api.RefreshAuthToken)
+
 	return router
 }
 

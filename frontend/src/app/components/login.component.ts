@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { User, AuthService } from '../shared';
+import { User, UserService } from '../shared';
 
 
 @Component({
@@ -12,7 +12,7 @@ export class LoginComponent {
   user: User
   errors: string[]
 
-  constructor(private _authService: AuthService, private _router: Router) {
+  constructor(private _userService: UserService, private _router: Router) {
     this.user = {
       email: "",
       password: ""
@@ -20,7 +20,7 @@ export class LoginComponent {
   }
 
   onSubmit() {
-    this._authService.login(this.user)
+    this._userService.login(this.user)
       .subscribe(
         result => {
           this._router.navigateByUrl('home')

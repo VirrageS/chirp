@@ -126,6 +126,7 @@ func TestLoginUser(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, expectedUser, actualUser)
 	assert.NotEmpty(t, loginResponse.AuthToken)
+	assert.NotEmpty(t, loginResponse.RefreshToken)
 }
 
 func TestLoginUserWithInvalidPassword(t *testing.T) {
@@ -167,7 +168,7 @@ func TestLoginUserWithInvalidEmail(t *testing.T) {
 }
 
 func TestCreateTweetResponse(t *testing.T) {
-	authToken := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
 
 	newTweet := &model.NewTweet{
 		Content: "new tweet",
@@ -205,7 +206,7 @@ func TestCreateTweetResponse(t *testing.T) {
 }
 
 func TestGetTweetAfterCreatingTweet(t *testing.T) {
-	authToken := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
 	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
 	tweetID := createdTweet.ID
 
@@ -224,7 +225,7 @@ func TestGetTweetAfterCreatingTweet(t *testing.T) {
 }
 
 func TestGetTweetsAfterCreatingTweets(t *testing.T) {
-	authToken := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
 	tweet1 := createTweet("new tweet1", authToken, s, baseURL, t)
 	tweet2 := createTweet("new tweet2", authToken, s, baseURL, t)
 
@@ -244,7 +245,7 @@ func TestGetTweetsAfterCreatingTweets(t *testing.T) {
 }
 
 func TestDeleteTweetResponseAfterCreatingTweet(t *testing.T) {
-	authToken := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
 	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
 	tweetID := createdTweet.ID
 
@@ -264,7 +265,7 @@ func TestDeleteTweetResponseAfterCreatingTweet(t *testing.T) {
 }
 
 func TestGetTweetAfterDeletingTweet(t *testing.T) {
-	authToken := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
 
 	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
 	tweetID := createdTweet.ID
@@ -281,8 +282,8 @@ func TestGetTweetAfterDeletingTweet(t *testing.T) {
 }
 
 func TestHomeFeed(t *testing.T) {
-	user1AuthToken := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
 
 	user1Tweet := createTweet("user1 tweet", user1AuthToken, s, baseURL, t)
 	user2Tweet := createTweet("user2 tweet", user2AuthToken, s, baseURL, t)
@@ -300,4 +301,32 @@ func TestHomeFeed(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, actualTweets, *user1Tweet)
 	assert.NotContains(t, actualTweets, *user2Tweet)
+}
+
+func TestRefreshAuthToken(t *testing.T) {
+	_, refreshToken := loginUser(&testUser, s, baseURL, t)
+
+	refreshData := &model.RefreshAuthTokenRequest{
+		UserID:       testUser.ID,
+		RefreshToken: refreshToken,
+	}
+	data, _ := json.Marshal(refreshData)
+	buf := bytes.NewBuffer(data)
+
+	req, _ := http.NewRequest("POST", baseURL+"/token", buf)
+	req.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var refreshResponse model.RefreshAuthTokenResponse
+	err := json.Unmarshal(w.Body.Bytes(), &refreshResponse)
+	assert.Nil(t, err)
+
+	newAuthToken := refreshResponse.AuthToken
+	assert.NotEmpty(t, newAuthToken)
+
+	// test creating tweet with new auth
+	createdTweet := createTweet("new tweet", newAuthToken, s, baseURL, t)
+	assert.Equal(t, createdTweet.Author.ID, testUser.ID)
 }

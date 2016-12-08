@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { AuthService } from '../shared';
+import { UserService } from '../shared';
 
 
 @Component({
@@ -10,7 +10,7 @@ import { AuthService } from '../shared';
   `
 })
 export class LogoutComponent {
-  constructor(private _authService: AuthService) {
-    this._authService.logout()
+  constructor(private _userService: UserService) {
+    this._userService.logout()
   }
 }
