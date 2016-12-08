@@ -1,59 +1,64 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 
-import { ApiService } from './api.service';
 import { StoreHelper } from './store-helper';
 import { User } from './user.model';
 
 
 @Injectable()
 export class AuthService implements CanActivate {
-  TOKEN_KEY: string = "AUTH_TOKEN"
+  AUTH_TOKEN_KEY: string = "AUTH_TOKEN"
+  REFRESH_TOKEN_KEY: string = "REFRESH_TOKEN"
   USER_KEY: string = "USER_TOKEN"
 
   constructor(
-      private _apiService: ApiService,
       private _router: Router,
       private _storeHelper: StoreHelper
   ) {
-    this.refreshAuthorization()
+    this.initializeAuthorization()
   }
 
-  setAuthorization(token: string, user: User) {
-    window.localStorage.setItem(this.TOKEN_KEY, token)
-    this._apiService.setHeaders({
-      Authorization: `Bearer ${token}`
-    })
-
+  setAuthorization(user: User, authToken: string, refreshToken: string) {
     window.localStorage.setItem(this.USER_KEY, JSON.stringify(user))
     this._storeHelper.update('user', user)
+
+    window.localStorage.setItem(this.AUTH_TOKEN_KEY, authToken)
+    this._storeHelper.update('auth_token', authToken)
+
+    window.localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken)
+    this._storeHelper.update('refresh_token', refreshToken)
   }
 
-  refreshAuthorization() {
-    const token = window.localStorage.getItem(this.TOKEN_KEY)
+  initializeAuthorization() {
     const user = window.localStorage.getItem(this.USER_KEY)
+    const authToken = window.localStorage.getItem(this.AUTH_TOKEN_KEY)
+    const refreshToken = window.localStorage.getItem(this.REFRESH_TOKEN_KEY)
 
-    if (token && user) {
-      this.setAuthorization(token, JSON.parse(user))
+    if (user && authToken && refreshToken) {
+      this.setAuthorization(JSON.parse(user), authToken, refreshToken)
     } else {
       this.removeAuthorization()
     }
   }
 
   removeAuthorization() {
-    window.localStorage.removeItem(this.TOKEN_KEY)
-    this._apiService.setHeaders({
-      Authorization: `Bearer `
-    })
-
     window.localStorage.removeItem(this.USER_KEY)
     this._storeHelper.update('user', null)
+
+    window.localStorage.removeItem(this.AUTH_TOKEN_KEY)
+    this._storeHelper.update('auth_token', '')
+
+    window.localStorage.removeItem(this.REFRESH_TOKEN_KEY)
+    this._storeHelper.update('refresh_token', '')
+
+    this._router.navigate(['', 'home']);
   }
 
   isAuthenticated(): boolean {
-    const token = window.localStorage.getItem(this.TOKEN_KEY)
     const user = window.localStorage.getItem(this.USER_KEY)
-    return (!!token && !!user)
+    const authToken = window.localStorage.getItem(this.AUTH_TOKEN_KEY)
+    const refreshToken = window.localStorage.getItem(this.REFRESH_TOKEN_KEY)
+    return (!!user && !!authToken && !!refreshToken)
   }
 
   canActivate(): boolean {
@@ -66,18 +71,5 @@ export class AuthService implements CanActivate {
     if (!canActivate) {
       this._router.navigate(['', 'login']);
     }
-  }
-
-  signup(body) {
-    return this._apiService.post("/signup", body);
-  }
-
-  login(body) {
-    return this._apiService.post("/login", body)
-      .do((res: any) => this.setAuthorization(res.auth_token, res.user))
-  }
-
-  logout() {
-    this.removeAuthorization()
   }
 }

@@ -13,9 +13,10 @@ import (
 func (api *API) RegisterUser(context *gin.Context) {
 	var newUserForm model.NewUserForm
 	if err := context.BindJSON(&newUserForm); err != nil {
-		context.AbortWithError(http.StatusBadRequest,
-			errors.New("Fields: name, username, password and email are required."))
-
+		context.AbortWithError(
+			http.StatusBadRequest,
+			errors.New("Fields: name, username, password and email are required."),
+		)
 		return
 	}
 
@@ -33,9 +34,10 @@ func (api *API) RegisterUser(context *gin.Context) {
 func (api *API) LoginUser(context *gin.Context) {
 	var loginForm model.LoginForm
 	if err := context.BindJSON(&loginForm); err != nil {
-		context.AbortWithError(http.StatusBadRequest,
-			errors.New("Fields: email and password are required."))
-
+		context.AbortWithError(
+			http.StatusBadRequest,
+			errors.New("Fields: email and password are required."),
+		)
 		return
 	}
 
@@ -47,4 +49,24 @@ func (api *API) LoginUser(context *gin.Context) {
 	}
 
 	context.IndentedJSON(http.StatusOK, loginResponse)
+}
+
+func (api *API) RefreshAuthToken(context *gin.Context) {
+	var request model.RefreshAuthTokenRequest
+	if err := context.BindJSON(&request); err != nil {
+		context.AbortWithError(
+			http.StatusBadRequest,
+			errors.New("Fields: user_id and refresh_token are required."),
+		)
+		return
+	}
+
+	response, err := api.Service.RefreshAuthToken(&request)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, response)
 }

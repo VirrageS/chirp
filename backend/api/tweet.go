@@ -48,6 +48,7 @@ func (api *API) PostTweet(context *gin.Context) {
 
 	if err := context.BindJSON(&newTweet); err != nil {
 		context.AbortWithError(http.StatusBadRequest, errors.New("Field content is required."))
+		return
 	}
 
 	newTweet.AuthorID = tweetAuthorID

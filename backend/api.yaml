@@ -572,6 +572,42 @@ paths:
                 type: string
                 description: Error message.
 
+  /token:
+    post:
+      summary: Refreshes auth token using refresh token
+      parameters:
+        - name: user_id
+          in: query
+          type: string
+          description: User ID of authenticated user
+          required: true
+        - name: refresh_token
+          in: query
+          type: string
+          description: Refresh token obtained when logging in
+          required: true
+      tags:
+        - AuthUsers
+      responses:
+        200:
+          description: New authentication token
+          schema:
+            $ref: '#/definitions/RefreshAuthTokenResponse'
+        400:
+          description: Bad request.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
   /auth/{user_id}:
     patch:
       summary: Updates authentication and account data of a user with given ID.
@@ -986,6 +1022,14 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/User'
+      auth_token:
+        type: string
+      refresh_token:
+        type: string
+
+  RefreshAuthTokenResponse:
+    type: object
+    properties:
       auth_token:
         type: string
 

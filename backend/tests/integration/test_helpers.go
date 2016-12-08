@@ -43,7 +43,7 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 	baseURL = "http://localhost:8080"
 }
 
-func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) string {
+func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) (string, string) {
 	loginData := &model.LoginForm{
 		Email:    user.Email,
 		Password: user.Password,
@@ -69,7 +69,7 @@ func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) string
 		t.Error(err)
 	}
 
-	return loginResponse.AuthToken
+	return loginResponse.AuthToken, loginResponse.RefreshToken
 }
 
 func createTweet(content string, authToken string, s *gin.Engine, url string, t *testing.T) *model.Tweet {
