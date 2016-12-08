@@ -7,20 +7,23 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
+	"github.com/VirrageS/chirp/backend/token"
 )
 
 // Struct that implements APIProvider
 type Service struct {
 	// logger?
-	configuration config.ServiceConfigProvider
-	db            database.DatabaseAccessor
+	config       config.ServiceConfigProvider
+	db           database.DatabaseAccessor
+	tokenManager token.TokenManagerProvider
 }
 
 // Constructs a Service that uses provided objects
-func NewService(databaseAccessor database.DatabaseAccessor, configuration config.ServiceConfigProvider) ServiceProvider {
+func NewService(config config.ServiceConfigProvider, database database.DatabaseAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
 	return &Service{
-		configuration: configuration,
-		db:            databaseAccessor,
+		config:       config,
+		db:           database,
+		tokenManager: tokenManager,
 	}
 }
 
@@ -147,7 +150,7 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	}
 
 	response := &model.LoginResponse{
-		AuthToken: authToken,
+		AuthToken:    authToken,
 		RefreshToken: refreshToken,
 		User: &model.PublicUser{
 			ID:        user.ID,
@@ -167,7 +170,7 @@ func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest)
 		return nil, err
 	}
 
-	response := &model.RefreshAuthTokenResponse {
+	response := &model.RefreshAuthTokenResponse{
 		AuthToken: authToken,
 	}
 
@@ -175,17 +178,15 @@ func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest)
 }
 
 func (service *Service) createAuthToken(userID int64) (string, error) {
-	return CreateToken(
+	return service.tokenManager.CreateToken(
 		userID,
-		service.configuration.GetSecretKey(),
-		service.configuration.GetAuthTokenValidityPeriod(),
+		service.config.GetAuthTokenValidityPeriod(),
 	)
 }
 
 func (service *Service) createRefreshToken(userID int64) (string, error) {
-	return CreateToken(
+	return service.tokenManager.CreateToken(
 		userID,
-		service.configuration.GetSecretKey(),
-		service.configuration.GetRefreshTokenValidityPeriod(),
+		service.config.GetRefreshTokenValidityPeriod(),
 	)
 }

@@ -6,18 +6,15 @@ import (
 
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/service"
+	"github.com/VirrageS/chirp/backend/token"
 )
 
-func TokenAuthenticator(configuration config.SecretKeyProvider) gin.HandlerFunc {
-	secretKey := configuration.GetSecretKey()
-
+func TokenAuthenticator(tokenManager token.TokenManagerProvider) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		fullTokenString := context.Request.Header.Get("Authorization")
 		tokenString := strings.TrimPrefix(fullTokenString, "Bearer ")
 
-		userID, err := service.ValidateToken(tokenString, secretKey)
+		userID, err := tokenManager.ValidateToken(tokenString)
 		if err != nil {
 			context.AbortWithError(http.StatusUnauthorized, err)
 			return

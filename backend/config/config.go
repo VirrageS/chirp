@@ -61,15 +61,15 @@ func readServiceConfig() *Configuration {
 
 	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 {
 		log.WithFields(log.Fields{
-			"secret key": configSecretKey,
-			"auth validity period": configAuthTokenValidityPeriod,
+			"secret key":              configSecretKey,
+			"auth validity period":    configAuthTokenValidityPeriod,
 			"refresh validity period": configRefreshTokenValidityPeriod,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
 	return &Configuration{
-		secretKey: []byte(configSecretKey),
-		authTokenValidityPeriod: configAuthTokenValidityPeriod,
+		secretKey:                  []byte(configSecretKey),
+		authTokenValidityPeriod:    configAuthTokenValidityPeriod,
 		refreshTokenValidityPeriod: configRefreshTokenValidityPeriod,
 	}
 }
