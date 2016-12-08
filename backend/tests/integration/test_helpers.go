@@ -43,6 +43,42 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 	baseURL = "http://localhost:8080"
 }
 
+func createUser(s *gin.Engine, url string, t *testing.T) *model.User {
+	newUserForm := model.NewUserForm{
+		Email:    "random@email.com",
+		Password: "randompassword",
+		Name:     "randomname",
+		Username: "randomusername",
+	}
+	data, _ := json.Marshal(newUserForm)
+
+	buf := bytes.NewBuffer(data)
+	req, _ := http.NewRequest("POST", url+"/signup", buf)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Errorf("error logging user int, status code: %v, expected: %v", w.Code, http.StatusOK)
+	}
+
+	var newUser model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &newUser)
+	if err != nil {
+		t.Error(err)
+	}
+
+	return &model.User{
+		ID:       newUser.ID,
+		Username: newUser.Username,
+		Name:     newUser.Name,
+		Email:    newUserForm.Email,
+		Password: newUserForm.Password,
+	}
+}
+
 func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) string {
 	loginData := &model.LoginForm{
 		Email:    user.Email,

@@ -12,7 +12,22 @@ import (
 )
 
 func (api *API) GetTweets(context *gin.Context) {
-	tweets, err := api.Service.GetTweets()
+	userIDStr := context.Query("userID")
+	var tweets []*model.Tweet
+	var err error
+
+	// TODO: maybe put the logic of checking request parameters to service when there is more than 1 flag
+	if userIDStr != "" {
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+			return
+		}
+		tweets, err = api.Service.GetTweetsOfUserWithID(userID)
+	} else {
+		tweets, err = api.Service.GetTweets()
+	}
+
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
