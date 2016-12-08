@@ -2,13 +2,13 @@ version: '2'
 services:
   frontend:
     extends:
-      file: docker-frontend.yml
+      file: frontend.yml
       service: frontend
     command: npm run build
 
   backend:
     extends:
-      file: docker-backend.yml
+      file: backend.yml
       service: backend
 
   nginx:

@@ -37,6 +37,7 @@ CREATE INDEX followers_follower_idx ON followers (follower);
 CREATE INDEX followers_following_idx ON followers (following);
 CREATE INDEX followers_idx ON followers (follower, following);
 
+
 CREATE TABLE tweets (
   id          SERIAL PRIMARY KEY,
   author_id   INTEGER REFERENCES users (id) ON DELETE CASCADE,
@@ -45,7 +46,28 @@ CREATE TABLE tweets (
 );
 
 CREATE INDEX tweets_idx ON tweets (id);
-CREATE INDEX tweets_fulltext_idx ON tweets USING GIN (to_tsvector('english', content));
+
+
+CREATE TABLE likers (
+  tweet_id INTEGER REFERENCES tweets (id),
+  user_id  INTEGER REFERENCES users (id),
+  liked_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX likers_tweets_idx ON likers (tweet_id);
+CREATE INDEX likers_users_idx ON likers (user_id);
+CREATE INDEX likers_idx ON likers (tweet_id, user_id, liked_at);
+
+
+CREATE TABLE retweeters (
+  tweet_id     INTEGER REFERENCES tweets (id),
+  user_id      INTEGER REFERENCES users (id),
+  retweeted_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX retweeters_tweets_idx ON retweeters (tweet_id);
+CREATE INDEX retweeters_users_idx ON retweeters (user_id);
+CREATE INDEX retweeters_idx ON retweeters (tweet_id, user_id, retweeted_at);
 
 
 CREATE TABLE tags (
@@ -58,7 +80,7 @@ CREATE UNIQUE INDEX tags_lowercase_name_idx ON tags ((lower(name)));
 
 CREATE TABLE tweets_tags (
   tweet_id  INTEGER REFERENCES tweets (id),
-  tag_id  INTEGER REFERENCES tags (id),
+  tag_id    INTEGER REFERENCES tags (id),
 
   PRIMARY KEY (tweet_id, tag_id)
 );
@@ -66,17 +88,3 @@ CREATE TABLE tweets_tags (
 CREATE INDEX tweets_tags_tweets_idx ON tweets_tags (tweet_id);
 CREATE INDEX tweets_tags_tags_idx ON tweets_tags (tag_id);
 CREATE INDEX tweets_tags_idx ON tweets_tags (tweet_id, tag_id);
-
-
-
--- FIXTURES --
-
--- users --
-INSERT INTO users (username, email, password, name, created_at, last_login)
-VALUES ('admin', 'admin@admin.com', 'admin', 'admin', now(), now());
-INSERT INTO users (username, email, password, name, created_at, last_login)
-VALUES ('corpsegrinder', 'corpsegrinder@cannibalcorpse.com', 'fuckthealliance', 'George Fisher', now(), now());
-
--- tweets --
-INSERT INTO tweets (author_id, created_at, content)
-VALUES (1, now(), 'tweet');
