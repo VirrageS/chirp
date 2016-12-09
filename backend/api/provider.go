@@ -5,6 +5,7 @@ import "gopkg.in/gin-gonic/gin.v1"
 type APIProvider interface {
 	RegisterUser(context *gin.Context)
 	LoginUser(context *gin.Context)
+	RefreshAuthToken(context *gin.Context)
 
 	GetTweets(context *gin.Context)
 	GetTweet(context *gin.Context)

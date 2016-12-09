@@ -3,27 +3,27 @@ package service
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/dgrijalva/jwt-go"
-
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
+	"github.com/VirrageS/chirp/backend/token"
 )
 
 // Struct that implements APIProvider
 type Service struct {
 	// logger?
-	configuration config.ServiceConfigProvider
-	db            database.DatabaseAccessor
+	config       config.ServiceConfigProvider
+	db           database.DatabaseAccessor
+	tokenManager token.TokenManagerProvider
 }
 
 // Constructs a Service that uses provided objects
-func NewService(databaseAccessor database.DatabaseAccessor, configuration config.ServiceConfigProvider) ServiceProvider {
+func NewService(config config.ServiceConfigProvider, database database.DatabaseAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
 	return &Service{
-		configuration: configuration,
-		db:            databaseAccessor,
+		config:       config,
+		db:           database,
+		tokenManager: tokenManager,
 	}
 }
 
@@ -96,8 +96,8 @@ func (service *Service) GetUsers() ([]*model.PublicUser, error) {
 	return users, nil
 }
 
-func (service *Service) GetUser(userId int64) (*model.PublicUser, error) {
-	user, err := service.db.GetUserByID(userId)
+func (service *Service) GetUser(userID int64) (*model.PublicUser, error) {
+	user, err := service.db.GetUserByID(userID)
 
 	if err != nil {
 		return nil, err
@@ -139,13 +139,19 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 		return nil, updateError
 	}
 
-	token, serviceError := service.createTokenForUser(user)
-	if serviceError != nil {
-		return nil, serviceError
+	authToken, err := service.createAuthToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := service.createRefreshToken(user.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	response := &model.LoginResponse{
-		AuthToken: token,
+		AuthToken:    authToken,
+		RefreshToken: refreshToken,
 		User: &model.PublicUser{
 			ID:        user.ID,
 			Username:  user.Username,
@@ -158,21 +164,29 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	return response, nil
 }
 
-//TODO: Maybe move out to another package and inject tokenCreator object/closure that can create tokens
-func (service *Service) createTokenForUser(user *model.User) (string, error) {
-	validityDuration := time.Duration(service.configuration.GetTokenValidityPeriod())
-	expirationTime := time.Now().Add(validityDuration * time.Minute)
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.ID,
-		"exp":    expirationTime.Unix(),
-	})
-
-	tokenString, err := token.SignedString(service.configuration.GetSecretKey())
+func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error) {
+	authToken, err := service.createAuthToken(request.UserID)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to sign the token.")
-		return "", errors.UnexpectedError
+		return nil, err
 	}
 
-	return tokenString, nil
+	response := &model.RefreshAuthTokenResponse{
+		AuthToken: authToken,
+	}
+
+	return response, nil
+}
+
+func (service *Service) createAuthToken(userID int64) (string, error) {
+	return service.tokenManager.CreateToken(
+		userID,
+		service.config.GetAuthTokenValidityPeriod(),
+	)
+}
+
+func (service *Service) createRefreshToken(userID int64) (string, error) {
+	return service.tokenManager.CreateToken(
+		userID,
+		service.config.GetRefreshTokenValidityPeriod(),
+	)
 }

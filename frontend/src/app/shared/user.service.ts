@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import * as _ from 'lodash';
 
-import { Store } from '../store';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
+import { Store } from '../store';
 import { StoreHelper } from './store-helper';
 import { User } from './user.model';
 
@@ -13,6 +15,8 @@ export class UserService {
 
   constructor(
     private _apiService: ApiService,
+    private _authService: AuthService,
+    private _router: Router,
     private _store: Store,
     private _storeHelper: StoreHelper
   ) {
@@ -35,5 +39,19 @@ export class UserService {
   getFeed() {
     return this._apiService.get("/home_feed")
       .do(tweets => this._storeHelper.update("feed", tweets))
+  }
+
+  signup(body) {
+    return this._apiService.post("/signup", body)
+  }
+
+  login(body) {
+    return this._apiService.post("/login", body)
+      .do((res: any) => this._authService.setAuthorization(res.user, res.auth_token, res.refresh_token))
+  }
+
+  logout() {
+    this._authService.removeAuthorization()
+    this._router.navigate(['', 'home']);
   }
 }

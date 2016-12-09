@@ -137,10 +137,12 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 }
 
 func (db *TweetDB) getTweets() ([]*model.Tweet, error) {
-	rows, err := db.Query(
-		"SELECT tweets.id, tweets.created_at, tweets.content, " +
-			"users.id, users.username, users.name, users.avatar_url " +
-			"FROM tweets JOIN users on tweets.author_id=users.id;")
+	rows, err := db.Query(`
+		SELECT tweets.id, tweets.created_at, tweets.content,
+				users.id, users.username, users.name, users.avatar_url
+		FROM tweets JOIN users on tweets.author_id=users.id
+		ORDER BY tweets.created_at DESC;
+	`)
 	if err != nil {
 		log.WithError(err).Error("getTweets query error.")
 		return nil, err
@@ -173,9 +175,13 @@ func (db *TweetDB) getTweets() ([]*model.Tweet, error) {
 
 // TODO: almost the same as getTweets()...
 func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
-	rows, err := db.Query("SELECT tweets.id, tweets.created_at, tweets.content, "+
-		"users.id, users.username, users.name, users.avatar_url "+
-		"FROM tweets JOIN users on tweets.author_id=users.id AND users.id=$1;", userID)
+	rows, err := db.Query(
+		`SELECT tweets.id, tweets.created_at, tweets.content,
+				users.id, users.username, users.name, users.avatar_url
+		FROM tweets JOIN users on tweets.author_id=users.id AND users.id=$1
+		ORDER BY tweets.created_at DESC;`,
+		userID,
+	)
 	if err != nil {
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
 		return nil, err

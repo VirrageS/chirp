@@ -11,6 +11,8 @@ export interface State {
   user: User
   following: Array<User>
   followers: Array<User>
+  auth_token: string
+  refresh_token: string
 }
 
 const defaultState = {
@@ -19,6 +21,8 @@ const defaultState = {
   user: {},
   following: [],
   followers: [],
+  auth_token: '',
+  refresh_token: '',
 }
 
 const _store = new BehaviorSubject<State>(defaultState);

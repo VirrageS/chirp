@@ -13,6 +13,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/service"
+	"github.com/VirrageS/chirp/backend/token"
 )
 
 func init() {
@@ -24,22 +25,23 @@ func init() {
 func New(dbConnection *sql.DB) *gin.Engine {
 	// service dependencies
 	serverConfig := config.GetConfig()
+	tokenManager := token.NewTokenManager(serverConfig)
 
 	// api dependencies
 	CORSConfig := setupCORS()
 
 	db := database.NewDatabase(dbConnection)
-	services := service.NewService(db, serverConfig)
+	services := service.NewService(serverConfig, db, tokenManager)
 	APIs := api.NewAPI(services)
 
-	return setupRouter(APIs, serverConfig, CORSConfig)
+	return setupRouter(APIs, tokenManager, CORSConfig)
 }
 
 // TODO: Maybe middlewares should also be dependencies
-func setupRouter(api api.APIProvider, tokenAuthenticatorConfig config.SecretKeyProvider, corsConfig *cors.Config) *gin.Engine {
+func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, corsConfig *cors.Config) *gin.Engine {
 	CORSHandler := cors.New(*corsConfig)
 	contentTypeChecker := middleware.ContentTypeChecker()
-	authenticator := middleware.TokenAuthenticator(tokenAuthenticatorConfig)
+	authenticator := middleware.TokenAuthenticator(tokenManager)
 	errorHandler := middleware.ErrorHandler()
 
 	router := gin.Default()
@@ -62,10 +64,11 @@ func setupRouter(api api.APIProvider, tokenAuthenticatorConfig config.SecretKeyP
 		users.GET("/:id", api.GetUser)
 	}
 
-	accounts := router.Group("")
+	auth := router.Group("")
 	{
-		accounts.POST("/signup", contentTypeChecker, api.RegisterUser)
-		accounts.POST("/login", contentTypeChecker, api.LoginUser)
+		auth.POST("/signup", contentTypeChecker, api.RegisterUser)
+		auth.POST("/login", contentTypeChecker, api.LoginUser)
+		auth.POST("/token", contentTypeChecker, api.RefreshAuthToken)
 	}
 
 	return router

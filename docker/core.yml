@@ -13,11 +13,3 @@ services:
     image: redis:latest
     ports:
       - "6379:6379"
-
-  mongodb:
-    restart: always
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - /var/lib/mongodb

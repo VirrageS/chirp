@@ -13,11 +13,6 @@ services:
       - ../backend:/backend
     command: /go/bin/backend
 
-  mongodb:
-    extends:
-      file: core.yml
-      service: mongodb
-
   postgres:
     extends:
       file: core.yml

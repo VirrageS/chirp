@@ -7,11 +7,6 @@ services:
       - "3000:3000"
     command: npm start
 
-  mongodb:
-    extends:
-      file: core.yml
-      service: mongodb
-
   postgres:
     extends:
       file: core.yml
