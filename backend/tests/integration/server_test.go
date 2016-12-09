@@ -303,6 +303,36 @@ func TestHomeFeed(t *testing.T) {
 	assert.NotContains(t, actualTweets, *user2Tweet)
 }
 
+func TestGetTweetsCreatedByUser(t *testing.T) {
+	newUser := createUser(s, baseURL, t)
+
+	user1AuthToken, _ := loginUser(newUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	user1Tweet1 := createTweet("user1 tweet1", user1AuthToken, s, baseURL, t)
+	user1Tweet2 := createTweet("user1 tweet2", user1AuthToken, s, baseURL, t)
+	user2Tweet := createTweet("user2 tweet", user2AuthToken, s, baseURL, t)
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets", nil)
+	reqGET.URL.Query().Add("userID", strconv.FormatInt(int64(newUser.ID), 10))
+	values := reqGET.URL.Query()
+	values.Add("userID", strconv.FormatInt(int64(newUser.ID), 10))
+	reqGET.URL.RawQuery = values.Encode()
+	reqGET.Header.Add("Authorization", "Bearer "+user1AuthToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, reqGET)
+
+	var actualTweets []model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweets)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, actualTweets, *user1Tweet1)
+	assert.Contains(t, actualTweets, *user1Tweet2)
+	assert.NotContains(t, actualTweets, *user2Tweet)
+}
+
 func TestRefreshAuthToken(t *testing.T) {
 	_, refreshToken := loginUser(&testUser, s, baseURL, t)
 
