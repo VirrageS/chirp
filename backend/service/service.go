@@ -86,6 +86,20 @@ func (service *Service) DeleteTweet(userID, tweetID int64) error {
 	return nil
 }
 
+func (service *Service) LikeTweet(tweetID, userID int64) (*model.Tweet, error) {
+	err := service.db.LikeTweet(tweetID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	tweet, err := service.GetTweet(tweetID)
+	if err != nil {
+		return nil, err
+	}
+
+	return tweet, nil
+}
+
 func (service *Service) GetUsers() ([]*model.PublicUser, error) {
 	users, err := service.db.GetUsers()
 

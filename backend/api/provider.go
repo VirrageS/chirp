@@ -11,6 +11,7 @@ type APIProvider interface {
 	GetTweet(context *gin.Context)
 	PostTweet(context *gin.Context)
 	DeleteTweet(context *gin.Context)
+	LikeTweet(context *gin.Context)
 	HomeFeed(context *gin.Context)
 
 	GetUsers(context *gin.Context)

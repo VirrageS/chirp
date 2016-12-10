@@ -51,7 +51,9 @@ CREATE INDEX tweets_idx ON tweets (id);
 CREATE TABLE likes (
   tweet_id INTEGER REFERENCES tweets (id),
   user_id  INTEGER REFERENCES users (id),
-  liked_at TIMESTAMP NOT NULL DEFAULT now()
+  liked_at TIMESTAMP NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (tweet_id, user_id)
 );
 
 CREATE INDEX likes_tweets_idx ON likes (tweet_id);
@@ -62,7 +64,9 @@ CREATE INDEX likes_idx ON likes (tweet_id, user_id, liked_at);
 CREATE TABLE retweets (
   tweet_id     INTEGER REFERENCES tweets (id),
   user_id      INTEGER REFERENCES users (id),
-  retweeted_at TIMESTAMP NOT NULL DEFAULT now()
+  retweeted_at TIMESTAMP NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (tweet_id, user_id)
 );
 
 CREATE INDEX retweets_tweets_idx ON retweets (tweet_id);

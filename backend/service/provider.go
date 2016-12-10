@@ -9,6 +9,7 @@ type ServiceProvider interface {
 	GetTweet(tweetID int64) (*model.Tweet, error)
 	PostTweet(newTweet *model.NewTweet) (*model.Tweet, error)
 	DeleteTweet(userID, tweetID int64) error
+	LikeTweet(tweetID, userID int64) (*model.Tweet, error)
 
 	GetUsers() ([]*model.PublicUser, error)
 	GetUser(userId int64) (*model.PublicUser, error)

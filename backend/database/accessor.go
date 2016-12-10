@@ -12,6 +12,7 @@ type TweetDataAccessor interface {
 	GetTweet(tweetID int64) (*model.Tweet, error)
 	InsertTweet(tweet *model.NewTweet) (*model.Tweet, error)
 	DeleteTweet(tweetID int64) error
+	LikeTweet(tweetID, userID int64) error
 }
 
 type UserDataAccessor interface {
