@@ -197,8 +197,8 @@ func TestCreateTweetResponse(t *testing.T) {
 	}
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, int64(0), actualTweet.Likes)
-	assert.Equal(t, int64(0), actualTweet.Retweets)
+	assert.Equal(t, int64(0), actualTweet.LikeCount)
+	assert.Equal(t, int64(0), actualTweet.RetweetCount)
 	assert.Equal(t, "new tweet", actualTweet.Content)
 	assert.Equal(t, false, actualTweet.Liked)
 	assert.Equal(t, false, actualTweet.Retweeted)
@@ -350,7 +350,7 @@ func TestLikeTweet(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(1), actualTweet.Likes)
+	assert.Equal(t, int64(1), actualTweet.LikeCount)
 }
 
 func TestMultipleTweetLikes(t *testing.T) {
@@ -373,7 +373,7 @@ func TestMultipleTweetLikes(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w2.Code)
-	assert.Equal(t, int64(1), actualTweet.Likes)
+	assert.Equal(t, int64(1), actualTweet.LikeCount)
 }
 
 func TestLikedFieldAfterLikingTweet(t *testing.T) {
@@ -435,7 +435,7 @@ func TestUnlikeTweet(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(0), actualTweet.Likes)
+	assert.Equal(t, int64(0), actualTweet.LikeCount)
 }
 
 func TestUnlikeNotLikedTweet(t *testing.T) {
@@ -455,7 +455,7 @@ func TestUnlikeNotLikedTweet(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(0), actualTweet.Likes)
+	assert.Equal(t, int64(0), actualTweet.LikeCount)
 }
 
 func TestLikedFieldOfUnlikedTweet(t *testing.T) {

@@ -121,7 +121,7 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 	var author model.PublicUser
 
 	err := row.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-		&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes, &tweet.Liked)
+		&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.LikeCount, &tweet.Liked)
 	if err != nil && err != sql.ErrNoRows {
 		log.WithFields(log.Fields{
 			"query": query,
@@ -197,7 +197,7 @@ func (db *TweetDB) getTweets(requestingUserID int64) ([]*model.Tweet, error) {
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes, &tweet.Liked)
+			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.LikeCount, &tweet.Liked)
 		if err != nil {
 			log.WithError(err).Error("getTweets row scan error.")
 			return nil, err
@@ -240,7 +240,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID, requestingUserID int64) ([]*mod
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes, &tweet.Liked)
+			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.LikeCount, &tweet.Liked)
 		if err != nil {
 			log.WithError(err).Error("getTweetsOfUserWithID row scan error.")
 			return nil, err
