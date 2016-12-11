@@ -147,3 +147,16 @@ func deleteTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *
 		t.Errorf("error deleting tweet, status code: %v, expected: %v", w.Code, http.StatusNoContent)
 	}
 }
+
+func likeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
+	req, _ := http.NewRequest("POST", url+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("error liking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
+	}
+}

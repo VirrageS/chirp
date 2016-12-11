@@ -27,8 +27,8 @@ func NewService(config config.ServiceConfigProvider, database database.DatabaseA
 	}
 }
 
-func (service *Service) GetTweets() ([]*model.Tweet, error) {
-	tweets, err := service.db.GetTweets()
+func (service *Service) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
+	tweets, err := service.db.GetTweets(requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func (service *Service) GetTweets() ([]*model.Tweet, error) {
 }
 
 // Use GetTweets() with filtering parameters instead, when filtering will be supported
-func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
-	tweets, err := service.db.GetTweetsOfUserWithID(userID)
+func (service *Service) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
+	tweets, err := service.db.GetTweetsOfUserWithID(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +46,8 @@ func (service *Service) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, err
 	return tweets, nil
 }
 
-func (service *Service) GetTweet(tweetID int64) (*model.Tweet, error) {
-	tweet, err := service.db.GetTweet(tweetID)
+func (service *Service) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
+	tweet, err := service.db.GetTweet(tweetID, requestingUserID)
 
 	if err != nil {
 		return nil, err
@@ -56,9 +56,9 @@ func (service *Service) GetTweet(tweetID int64) (*model.Tweet, error) {
 	return tweet, nil
 }
 
-func (service *Service) PostTweet(tweet *model.NewTweet) (*model.Tweet, error) {
+func (service *Service) PostTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error) {
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
-	newTweet, err := service.db.InsertTweet(tweet)
+	newTweet, err := service.db.InsertTweet(tweet, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,15 +66,15 @@ func (service *Service) PostTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 	return newTweet, nil
 }
 
-func (service *Service) DeleteTweet(userID, tweetID int64) error {
+func (service *Service) DeleteTweet(tweetID, requestingUserID int64) error {
 	// TODO: Maybe fetch Tweet not TweetWithAuthor
-	databaseTweet, err := service.db.GetTweet(tweetID)
+	databaseTweet, err := service.db.GetTweet(tweetID, requestingUserID)
 
 	if err != nil {
 		return err
 	}
 
-	if databaseTweet.Author.ID != userID {
+	if databaseTweet.Author.ID != requestingUserID {
 		return errors.ForbiddenError
 	}
 
@@ -86,13 +86,13 @@ func (service *Service) DeleteTweet(userID, tweetID int64) error {
 	return nil
 }
 
-func (service *Service) LikeTweet(tweetID, userID int64) (*model.Tweet, error) {
-	err := service.db.LikeTweet(tweetID, userID)
+func (service *Service) LikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
+	err := service.db.LikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
 
-	tweet, err := service.GetTweet(tweetID)
+	tweet, err := service.GetTweet(tweetID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}

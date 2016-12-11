@@ -19,8 +19,8 @@ func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
 	return &TweetDB{databaseConnection}
 }
 
-func (db *TweetDB) GetTweets() ([]*model.Tweet, error) {
-	tweets, err := db.getTweets()
+func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
+	tweets, err := db.getTweets(requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -28,8 +28,8 @@ func (db *TweetDB) GetTweets() ([]*model.Tweet, error) {
 	return tweets, nil
 }
 
-func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
-	tweets, err := db.getTweetsOfUserWithID(userID)
+func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
+	tweets, err := db.getTweetsOfUserWithID(userID, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -37,17 +37,18 @@ func (db *TweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 	return tweets, nil
 }
 
-func (db *TweetDB) GetTweet(tweetID int64) (*model.Tweet, error) {
+func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
 	tweet, err := db.getTweetUsingQuery(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
-		 	users.id, users.username, users.name, users.avatar_url, COUNT(likes.tweet_id) as likes
+		 	users.id, users.username, users.name, users.avatar_url,
+		 	COUNT(likes.tweet_id) as likes,
+		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
 		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND tweets.id=$1
+			JOIN users ON tweets.author_id = users.id AND tweets.id=$2
 			LEFT JOIN likes ON tweets.id = likes.tweet_id
 		GROUP BY tweets.id, users.id
 		ORDER BY tweets.created_at DESC;`,
-		tweetID,
-	)
+		requestingUserID, tweetID)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
@@ -59,7 +60,7 @@ func (db *TweetDB) GetTweet(tweetID int64) (*model.Tweet, error) {
 	return tweet, nil
 }
 
-func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
+func (db *TweetDB) InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error) {
 	tweetID, err := db.insertTweetToDatabase(tweet)
 	if err != nil {
 		return nil, errors.UnexpectedError
@@ -69,14 +70,15 @@ func (db *TweetDB) InsertTweet(tweet *model.NewTweet) (*model.Tweet, error) {
 	// Probably could just fetch user from cache
 	newTweet, err := db.getTweetUsingQuery(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
-		 	users.id, users.username, users.name, users.avatar_url, COUNT(likes.tweet_id) as likes
+		 	users.id, users.username, users.name, users.avatar_url,
+		 	COUNT(likes.tweet_id) as likes,
+		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
 		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND tweets.id=$1
+			JOIN users ON tweets.author_id = users.id AND tweets.id=$2
 			LEFT JOIN likes ON tweets.id = likes.tweet_id
 		GROUP BY tweets.id, users.id
 		ORDER BY tweets.created_at DESC;`,
-		tweetID,
-	)
+		requestingUserID, tweetID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -110,7 +112,7 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 	var author model.PublicUser
 
 	err := row.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-		&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes)
+		&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes, &tweet.Liked)
 	if err != nil && err != sql.ErrNoRows {
 		log.WithFields(log.Fields{
 			"query": query,
@@ -161,16 +163,18 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 	return nil
 }
 
-func (db *TweetDB) getTweets() ([]*model.Tweet, error) {
+func (db *TweetDB) getTweets(requestingUserID int64) ([]*model.Tweet, error) {
 	rows, err := db.Query(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
-			users.id, users.username, users.name, users.avatar_url, COUNT(likes.tweet_id) as likes
+		 	users.id, users.username, users.name, users.avatar_url,
+		 	COUNT(likes.tweet_id) as likes,
+		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
 		FROM tweets
-		  JOIN users ON tweets.author_id = users.id
-		  LEFT JOIN likes ON tweets.id = likes.tweet_id
+			JOIN users ON tweets.author_id = users.id
+			LEFT JOIN likes ON tweets.id = likes.tweet_id
 		GROUP BY tweets.id, users.id
-		ORDER BY tweets.created_at DESC;
-	`)
+		ORDER BY tweets.created_at DESC;`,
+		requestingUserID)
 	if err != nil {
 		log.WithError(err).Error("getTweets query error.")
 		return nil, err
@@ -184,7 +188,7 @@ func (db *TweetDB) getTweets() ([]*model.Tweet, error) {
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes)
+			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes, &tweet.Liked)
 		if err != nil {
 			log.WithError(err).Error("getTweets row scan error.")
 			return nil, err
@@ -202,17 +206,18 @@ func (db *TweetDB) getTweets() ([]*model.Tweet, error) {
 }
 
 // TODO: almost the same as getTweets()...
-func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
+func (db *TweetDB) getTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
 	rows, err := db.Query(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
-			users.id, users.username, users.name, users.avatar_url, COUNT(likes.tweet_id) as likes
+		 	users.id, users.username, users.name, users.avatar_url,
+		 	COUNT(likes.tweet_id) as likes,
+		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
 		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND users.id=$1
+			JOIN users ON tweets.author_id = users.id AND users.id=$2
 			LEFT JOIN likes ON tweets.id = likes.tweet_id
 		GROUP BY tweets.id, users.id
 		ORDER BY tweets.created_at DESC;`,
-		userID,
-	)
+		userID, requestingUserID)
 	if err != nil {
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
 		return nil, err
@@ -226,7 +231,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 		var author model.PublicUser
 
 		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content,
-			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes)
+			&author.ID, &author.Username, &author.Name, &author.AvatarUrl, &tweet.Likes, &tweet.Liked)
 		if err != nil {
 			log.WithError(err).Error("getTweetsOfUserWithID row scan error.")
 			return nil, err

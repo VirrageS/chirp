@@ -12,6 +12,7 @@ import (
 )
 
 func (api *API) GetTweets(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
 	userIDStr := context.Query("userID")
 	var tweets []*model.Tweet
 	var err error
@@ -23,9 +24,9 @@ func (api *API) GetTweets(context *gin.Context) {
 			context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
 			return
 		}
-		tweets, err = api.Service.GetTweetsOfUserWithID(userID)
+		tweets, err = api.Service.GetTweetsOfUserWithID(userID, requestingUserID)
 	} else {
-		tweets, err = api.Service.GetTweets()
+		tweets, err = api.Service.GetTweets(requestingUserID)
 	}
 
 	if err != nil {
@@ -38,6 +39,7 @@ func (api *API) GetTweets(context *gin.Context) {
 }
 
 func (api *API) GetTweet(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
 	parameterID := context.Param("id")
 
 	tweetID, err := strconv.ParseInt(parameterID, 10, 64)
@@ -46,7 +48,7 @@ func (api *API) GetTweet(context *gin.Context) {
 		return
 	}
 
-	responseTweet, err := api.Service.GetTweet(tweetID)
+	responseTweet, err := api.Service.GetTweet(tweetID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -58,7 +60,7 @@ func (api *API) GetTweet(context *gin.Context) {
 
 func (api *API) PostTweet(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
-	tweetAuthorID := (context.MustGet("userID").(int64))
+	requestingUserID := (context.MustGet("userID").(int64))
 	var newTweet model.NewTweet
 
 	if err := context.BindJSON(&newTweet); err != nil {
@@ -66,9 +68,9 @@ func (api *API) PostTweet(context *gin.Context) {
 		return
 	}
 
-	newTweet.AuthorID = tweetAuthorID
+	newTweet.AuthorID = requestingUserID
 
-	responseTweet, err := api.Service.PostTweet(&newTweet)
+	responseTweet, err := api.Service.PostTweet(&newTweet, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -81,7 +83,7 @@ func (api *API) PostTweet(context *gin.Context) {
 
 func (api *API) DeleteTweet(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
-	authenticatingUserID := (context.MustGet("userID").(int64))
+	requestingUserID := (context.MustGet("userID").(int64))
 	tweetIDString := context.Param("id")
 
 	tweetID, err := strconv.ParseInt(tweetIDString, 10, 64)
@@ -90,7 +92,7 @@ func (api *API) DeleteTweet(context *gin.Context) {
 		return
 	}
 
-	err = api.Service.DeleteTweet(authenticatingUserID, tweetID)
+	err = api.Service.DeleteTweet(tweetID, requestingUserID)
 
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
@@ -103,7 +105,7 @@ func (api *API) DeleteTweet(context *gin.Context) {
 
 func (api *API) LikeTweet(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
-	likerID := (context.MustGet("userID").(int64))
+	requestingUserID := (context.MustGet("userID").(int64))
 	parameterID := context.Param("id")
 
 	tweetID, err := strconv.ParseInt(parameterID, 10, 64)
@@ -112,7 +114,7 @@ func (api *API) LikeTweet(context *gin.Context) {
 		return
 	}
 
-	tweet, err := api.Service.LikeTweet(tweetID, likerID)
+	tweet, err := api.Service.LikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -124,9 +126,9 @@ func (api *API) LikeTweet(context *gin.Context) {
 
 func (api *API) HomeFeed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
-	tweetAuthorID := (context.MustGet("userID").(int64))
+	requestingUserID := (context.MustGet("userID").(int64))
 
-	tweets, err := api.Service.GetTweetsOfUserWithID(tweetAuthorID)
+	tweets, err := api.Service.GetTweetsOfUserWithID(requestingUserID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
