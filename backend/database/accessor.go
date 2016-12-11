@@ -13,6 +13,7 @@ type TweetDataAccessor interface {
 	InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error)
 	DeleteTweet(tweetID int64) error
 	LikeTweet(tweetID, userID int64) error
+	UnlikeTweet(tweetID, userID int64) error
 }
 
 type UserDataAccessor interface {

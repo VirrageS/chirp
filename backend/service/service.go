@@ -100,6 +100,20 @@ func (service *Service) LikeTweet(tweetID, requestingUserID int64) (*model.Tweet
 	return tweet, nil
 }
 
+func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
+	err := service.db.UnlikeTweet(tweetID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	tweet, err := service.GetTweet(tweetID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return tweet, nil
+}
+
 func (service *Service) GetUsers() ([]*model.PublicUser, error) {
 	users, err := service.db.GetUsers()
 

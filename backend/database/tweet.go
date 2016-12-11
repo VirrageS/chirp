@@ -104,6 +104,15 @@ func (db *TweetDB) LikeTweet(tweetID, userID int64) error {
 	return nil
 }
 
+func (db *TweetDB) UnlikeTweet(tweetID, userID int64) error {
+	err := db.unlikeTweet(tweetID, userID)
+	if err != nil {
+		return errors.UnexpectedError
+	}
+
+	return nil
+}
+
 // TODO: Maybe it should also fetch tweet's User and embed it inside the returned object
 func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model.Tweet, error) {
 	row := db.QueryRow(query, args...)
@@ -267,6 +276,30 @@ func (db *TweetDB) likeTweet(tweetID, userID int64) error {
 			"tweetID": tweetID,
 			"userID":  userID,
 		}).WithError(err).Error("likeTweet query execute error.")
+		return err
+	}
+
+	return nil
+}
+
+func (db *TweetDB) unlikeTweet(tweetID, userID int64) error {
+	query, err := db.Prepare(`
+		DELETE FROM likes
+		WHERE tweet_id=$1 AND user_id=$2;
+		`)
+
+	if err != nil {
+		log.WithError(err).Error("deleteTweet query prepare error")
+		return err
+	}
+	defer query.Close()
+
+	_, err = query.Exec(tweetID, userID)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"tweetID": tweetID,
+			"userID":  userID,
+		}).WithError(err).Error("deleteTweet query execute error.")
 		return err
 	}
 

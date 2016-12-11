@@ -124,6 +124,27 @@ func (api *API) LikeTweet(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, tweet)
 }
 
+func (api *API) UnlikeTweet(context *gin.Context) {
+	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG
+	requestingUserID := (context.MustGet("userID").(int64))
+	parameterID := context.Param("id")
+
+	tweetID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid tweet ID. Expected an integer."))
+		return
+	}
+
+	tweet, err := api.Service.UnlikeTweet(tweetID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, tweet)
+}
+
 func (api *API) HomeFeed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	requestingUserID := (context.MustGet("userID").(int64))
