@@ -55,6 +55,8 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		tweets.POST("", contentTypeChecker, api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
 		tweets.DELETE("/:id", api.DeleteTweet)
+		tweets.POST("/:id/like", api.LikeTweet)
+		tweets.POST("/:id/unlike", api.UnlikeTweet)
 
 		homeFeed := authorizedRoutes.Group("home_feed")
 		homeFeed.GET("", api.HomeFeed)

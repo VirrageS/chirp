@@ -7,11 +7,13 @@ import (
 )
 
 type TweetDataAccessor interface {
-	GetTweets() ([]*model.Tweet, error)
-	GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error)
-	GetTweet(tweetID int64) (*model.Tweet, error)
-	InsertTweet(tweet *model.NewTweet) (*model.Tweet, error)
+	GetTweets(requestingUserID int64) ([]*model.Tweet, error)
+	GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error)
+	GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
+	InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error)
 	DeleteTweet(tweetID int64) error
+	LikeTweet(tweetID, userID int64) error
+	UnlikeTweet(tweetID, userID int64) error
 }
 
 type UserDataAccessor interface {

@@ -4,11 +4,13 @@ import model "github.com/VirrageS/chirp/backend/model"
 
 // TODO: Maybe split into 2 services: tweet and user service?
 type ServiceProvider interface {
-	GetTweets() ([]*model.Tweet, error)
-	GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error)
-	GetTweet(tweetID int64) (*model.Tweet, error)
-	PostTweet(newTweet *model.NewTweet) (*model.Tweet, error)
-	DeleteTweet(userID, tweetID int64) error
+	GetTweets(requestingUserID int64) ([]*model.Tweet, error)
+	GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error)
+	GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
+	PostTweet(newTweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error)
+	DeleteTweet(tweetID, requestingUserID int64) error
+	LikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
+	UnlikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
 
 	GetUsers() ([]*model.PublicUser, error)
 	GetUser(userId int64) (*model.PublicUser, error)

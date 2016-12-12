@@ -197,8 +197,8 @@ func TestCreateTweetResponse(t *testing.T) {
 	}
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, int64(0), actualTweet.Likes)
-	assert.Equal(t, int64(0), actualTweet.Retweets)
+	assert.Equal(t, int64(0), actualTweet.LikeCount)
+	assert.Equal(t, int64(0), actualTweet.RetweetCount)
 	assert.Equal(t, "new tweet", actualTweet.Content)
 	assert.Equal(t, false, actualTweet.Liked)
 	assert.Equal(t, false, actualTweet.Retweeted)
@@ -331,6 +331,160 @@ func TestGetTweetsCreatedByUser(t *testing.T) {
 	assert.Contains(t, actualTweets, *user1Tweet1)
 	assert.Contains(t, actualTweets, *user1Tweet2)
 	assert.NotContains(t, actualTweets, *user2Tweet)
+}
+
+func TestLikeTweet(t *testing.T) {
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(1), actualTweet.LikeCount)
+}
+
+func TestConsecutiveTweetLikes(t *testing.T) {
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+
+	w2 := httptest.NewRecorder()
+
+	s.ServeHTTP(w2, req)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, int64(1), actualTweet.LikeCount)
+	assert.True(t, actualTweet.Liked)
+}
+
+func TestMultipleTweetLikes(t *testing.T) {
+	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", user1AuthToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+
+	likeTweet(tweetID, user1AuthToken, s, baseURL, t)
+	likeTweet(tweetID, user2AuthToken, s, baseURL, t)
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET.Header.Add("Authorization", "Bearer "+user2AuthToken)
+	w2 := httptest.NewRecorder()
+	s.ServeHTTP(w2, reqGET)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, int64(2), actualTweet.LikeCount)
+}
+
+func TestLikedFieldOfNotLikedTweet(t *testing.T) {
+	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", user1AuthToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+
+	likeTweet(tweetID, user1AuthToken, s, baseURL, t)
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET.Header.Add("Authorization", "Bearer "+user2AuthToken)
+	w2 := httptest.NewRecorder()
+	s.ServeHTTP(w2, reqGET)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.False(t, actualTweet.Liked)
+}
+
+func TestUnlikeTweet(t *testing.T) {
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+	likeTweet(tweetID, authToken, s, baseURL, t)
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(0), actualTweet.LikeCount)
+	assert.False(t, actualTweet.Liked)
+}
+
+func TestUnlikeNotLikedTweet(t *testing.T) {
+	authToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+
+	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(0), actualTweet.LikeCount)
+}
+
+func TestUnlikeTweetLikedBySomebodyElse(t *testing.T) {
+	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+
+	createdTweet := createTweet("new tweet", user1AuthToken, s, baseURL, t)
+	tweetID := createdTweet.ID
+
+	likeTweet(tweetID, user1AuthToken, s, baseURL, t)
+	unlikeTweet(tweetID, user2AuthToken, s, baseURL, t)
+
+	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET.Header.Add("Authorization", "Bearer "+user2AuthToken)
+	w2 := httptest.NewRecorder()
+	s.ServeHTTP(w2, reqGET)
+
+	var actualTweet model.Tweet
+	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, int64(1), actualTweet.LikeCount)
 }
 
 func TestRefreshAuthToken(t *testing.T) {
