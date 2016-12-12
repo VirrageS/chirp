@@ -160,3 +160,16 @@ func likeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *te
 		t.Errorf("error liking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
 	}
 }
+
+func unlikeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
+	req, _ := http.NewRequest("POST", url+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("error liking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
+	}
+}
