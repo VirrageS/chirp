@@ -170,6 +170,32 @@ func unlikeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *
 	s.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("error liking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
+		t.Errorf("error unliking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
+	}
+}
+
+func followUser(userID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
+	req, _ := http.NewRequest("POST", url+"/users/"+strconv.FormatInt(int64(userID), 10)+"/follow", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("error following user, status code: %v, expected: %v", w.Code, http.StatusOK)
+	}
+}
+
+func unfollowUser(userID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
+	req, _ := http.NewRequest("POST", url+"/users/"+strconv.FormatInt(int64(userID), 10)+"/unfollow", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("error unfollowing user, status code: %v, expected: %v", w.Code, http.StatusOK)
 	}
 }

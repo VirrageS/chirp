@@ -23,6 +23,7 @@ type UserDataAccessor interface {
 	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 	FollowUser(followeeID, followerID int64) error
+	UnfollowUser(followeeID, followerID int64) error
 }
 
 type DatabaseAccessor interface {

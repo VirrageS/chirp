@@ -102,6 +102,15 @@ func (db *UserDB) FollowUser(followeeID, followerID int64) error {
 	return nil
 }
 
+func (db *UserDB) UnfollowUser(followeeID, followerID int64) error {
+	err := db.unfollowUser(followeeID, followerID)
+	if err != nil {
+		return errors.UnexpectedError
+	}
+
+	return nil
+}
+
 func (db *UserDB) getPublicUsers(requestingUserID int64) ([]*model.PublicUser, error) {
 	rows, err := db.Query(`
 		SELECT id, username, name, avatar_url, SUM(case when follows.follower_id=$1 then 1 else 0 end) > 0 as following
@@ -222,6 +231,30 @@ func (db *UserDB) followUser(followeeID, followerID int64) error {
 			"followeeID": followeeID,
 			"followerID": followerID,
 		}).WithError(err).Error("followUser query execute error.")
+		return err
+	}
+
+	return nil
+}
+
+func (db *UserDB) unfollowUser(followeeID, followerID int64) error {
+	query, err := db.Prepare(`
+		DELETE FROM follows
+		WHERE followee_id=$1 AND follower_id=$2;
+		`)
+
+	if err != nil {
+		log.WithError(err).Error("unfollowUser query prepare error")
+		return err
+	}
+	defer query.Close()
+
+	_, err = query.Exec(followeeID, followerID)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"followeeID": followeeID,
+			"followerID": followerID,
+		}).WithError(err).Error("unfollowUser query execute error.")
 		return err
 	}
 
