@@ -43,12 +43,12 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 	baseURL = "http://localhost:8080"
 }
 
-func createUser(s *gin.Engine, url string, t *testing.T) *model.User {
+func createUser(name string, s *gin.Engine, url string, t *testing.T) *model.User {
 	newUserForm := model.NewUserForm{
-		Email:    "random@email.com",
-		Password: "randompassword",
-		Name:     "randomname",
-		Username: "randomusername",
+		Email:    name + "@email.com",
+		Password: name + "password",
+		Name:     name + "name",
+		Username: name + "username",
 	}
 	data, _ := json.Marshal(newUserForm)
 
