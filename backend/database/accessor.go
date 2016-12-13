@@ -22,6 +22,7 @@ type UserDataAccessor interface {
 	GetUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
+	FollowUser(followeeID, followerID int64) error
 }
 
 type DatabaseAccessor interface {

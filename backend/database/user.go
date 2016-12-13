@@ -87,6 +87,15 @@ func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	return nil
 }
 
+func (db *UserDB) FollowUser(followeeID, followerID int64) error {
+	err := db.followUser(followeeID, followerID)
+	if err != nil {
+		return errors.UnexpectedError
+	}
+
+	return nil
+}
+
 func (db *UserDB) getPublicUsers() ([]*model.PublicUser, error) {
 	rows, err := db.Query("SELECT id, username, last_login, name, avatar_url FROM users;")
 	if err != nil {
@@ -183,6 +192,27 @@ func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	return nil
 }
 
-func toSqlNullString(s string) sql.NullString {
-	return sql.NullString{String: s, Valid: s != ""}
+func (db *UserDB) followUser(followeeID, followerID int64) error {
+	query, err := db.Prepare(`
+		INSERT INTO follows (followee_id, follower_id)
+		VALUES ($1, $2)
+		ON CONFLICT (followee_id, follower_id) DO NOTHING;
+		`)
+
+	if err != nil {
+		log.WithError(err).Error("followUser query prepare error")
+		return err
+	}
+	defer query.Close()
+
+	_, err = query.Exec(followeeID, followerID)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"followeeID": followeeID,
+			"followerID":  followerID,
+		}).WithError(err).Error("followUser query execute error.")
+		return err
+	}
+
+	return nil
 }

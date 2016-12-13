@@ -28,12 +28,36 @@ func (api *API) GetUser(context *gin.Context) {
 		return
 	}
 
-	responseUser, err := api.Service.GetUser(userID)
+	user, err := api.Service.GetUser(userID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, responseUser)
+	context.IndentedJSON(http.StatusOK, user)
+}
+
+func (api *API) FollowUser(context *gin.Context) {
+	parameterID := context.Param("id")
+	requestingUserID := (context.MustGet("userID").(int64))
+
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+		return
+	}
+	if userID == requestingUserID {
+		context.AbortWithError(http.StatusBadRequest, errors.New("User can't follow himself."))
+		return
+	}
+
+	user, err := api.Service.FollowUser(userID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, user)
 }

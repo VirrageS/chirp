@@ -134,6 +134,20 @@ func (service *Service) GetUser(userID int64) (*model.PublicUser, error) {
 	return user, nil
 }
 
+func (service *Service) FollowUser(userID, requestingUserID int64) (*model.PublicUser, error) {
+	err := service.db.FollowUser(userID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := service.db.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
 	newUser, err := service.db.InsertUser(newUserForm)
 
