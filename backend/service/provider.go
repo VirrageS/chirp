@@ -12,8 +12,11 @@ type ServiceProvider interface {
 	LikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
 	UnlikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
 
-	GetUsers() ([]*model.PublicUser, error)
-	GetUser(userId int64) (*model.PublicUser, error)
+	GetUsers(requestingUserID int64) ([]*model.PublicUser, error)
+	GetUser(userID, requestingUserID int64) (*model.PublicUser, error)
+	FollowUser(userID, requestingUserID int64) (*model.PublicUser, error)
+	UnfollowUser(userID, requestingUserID int64) (*model.PublicUser, error)
+
 	RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error)
 	LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error)
 	RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error)

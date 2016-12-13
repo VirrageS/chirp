@@ -26,16 +26,17 @@ CREATE INDEX users_email_idx ON users (email);
 CREATE INDEX users_active_idx ON users (active);
 
 
-CREATE TABLE followers (
-  follower   INTEGER REFERENCES users (id) ON DELETE CASCADE,
-  following  INTEGER REFERENCES users (id) ON DELETE CASCADE,
+CREATE TABLE follows (
+  follower_id   INTEGER REFERENCES users (id) ON DELETE CASCADE,
+  followee_id   INTEGER REFERENCES users (id) ON DELETE CASCADE,
 
-  PRIMARY KEY (follower, following)
+  PRIMARY KEY (follower_id, followee_id),
+  CHECK       (follower_id != followee_id)
 );
 
-CREATE INDEX followers_follower_idx ON followers (follower);
-CREATE INDEX followers_following_idx ON followers (following);
-CREATE INDEX followers_idx ON followers (follower, following);
+CREATE INDEX follows_follower_idx ON follows (follower_id);
+CREATE INDEX follows_followee_idx ON follows (followee_id);
+CREATE INDEX follows_idx ON follows (follower_id, followee_id);
 
 
 CREATE TABLE tweets (

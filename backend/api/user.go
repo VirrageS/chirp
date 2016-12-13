@@ -9,7 +9,9 @@ import (
 )
 
 func (api *API) GetUsers(context *gin.Context) {
-	users, err := api.Service.GetUsers()
+	requestingUserID := (context.MustGet("userID").(int64))
+
+	users, err := api.Service.GetUsers(requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -20,6 +22,7 @@ func (api *API) GetUsers(context *gin.Context) {
 }
 
 func (api *API) GetUser(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
 	parameterID := context.Param("id")
 
 	userID, err := strconv.ParseInt(parameterID, 10, 64)
@@ -28,12 +31,56 @@ func (api *API) GetUser(context *gin.Context) {
 		return
 	}
 
-	responseUser, err := api.Service.GetUser(userID)
+	user, err := api.Service.GetUser(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, responseUser)
+	context.IndentedJSON(http.StatusOK, user)
+}
+
+func (api *API) FollowUser(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
+	parameterID := context.Param("id")
+
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+		return
+	}
+	if userID == requestingUserID {
+		context.AbortWithError(http.StatusBadRequest, errors.New("User can't follow himself."))
+		return
+	}
+
+	user, err := api.Service.FollowUser(userID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, user)
+}
+
+func (api *API) UnfollowUser(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
+	parameterID := context.Param("id")
+
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+		return
+	}
+
+	user, err := api.Service.UnfollowUser(userID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, user)
 }

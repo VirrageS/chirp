@@ -23,8 +23,8 @@ func NewUserDB(databaseConnection *sql.DB) *UserDB {
 	return &UserDB{databaseConnection}
 }
 
-func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
-	users, err := db.getPublicUsers()
+func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
+	users, err := db.getPublicUsers(requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -32,8 +32,14 @@ func (db *UserDB) GetUsers() ([]*model.PublicUser, error) {
 	return users, nil
 }
 
-func (db *UserDB) GetUserByID(userID int64) (*model.PublicUser, error) {
-	user, err := db.getPublicUserUsingQuery("SELECT id, username, name, avatar_url from users WHERE id=$1", userID)
+func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error) {
+	user, err := db.getPublicUserUsingQuery(`
+		SELECT id, username, name, avatar_url, SUM(case when follows.follower_id=$2 then 1 else 0 end) > 0 as following
+		FROM users
+			LEFT JOIN follows on users.id = follows.followee_id
+		WHERE users.id = $1
+		GROUP BY users.id;`,
+		userID, requestingUserID)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
@@ -87,8 +93,31 @@ func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	return nil
 }
 
-func (db *UserDB) getPublicUsers() ([]*model.PublicUser, error) {
-	rows, err := db.Query("SELECT id, username, last_login, name, avatar_url FROM users;")
+func (db *UserDB) FollowUser(followeeID, followerID int64) error {
+	err := db.followUser(followeeID, followerID)
+	if err != nil {
+		return errors.UnexpectedError
+	}
+
+	return nil
+}
+
+func (db *UserDB) UnfollowUser(followeeID, followerID int64) error {
+	err := db.unfollowUser(followeeID, followerID)
+	if err != nil {
+		return errors.UnexpectedError
+	}
+
+	return nil
+}
+
+func (db *UserDB) getPublicUsers(requestingUserID int64) ([]*model.PublicUser, error) {
+	rows, err := db.Query(`
+		SELECT id, username, name, avatar_url, SUM(case when follows.follower_id=$1 then 1 else 0 end) > 0 as following
+		FROM users
+			LEFT JOIN follows on users.id = follows.followee_id
+		GROUP BY users.id;`,
+		requestingUserID)
 	if err != nil {
 		log.WithError(err).Error("getPublicUsers query error.")
 		return nil, err
@@ -99,7 +128,7 @@ func (db *UserDB) getPublicUsers() ([]*model.PublicUser, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var user model.PublicUser
-		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
+		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.Following)
 		if err != nil {
 			log.WithError(err).Error("getPublicUsers row scan error.")
 			return nil, err
@@ -135,7 +164,7 @@ func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*m
 	var user model.PublicUser
 
 	row := db.QueryRow(query, args...)
-	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
+	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.Following)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getPublicUserUsingQuery database error.")
@@ -183,6 +212,51 @@ func (db *UserDB) updateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	return nil
 }
 
-func toSqlNullString(s string) sql.NullString {
-	return sql.NullString{String: s, Valid: s != ""}
+func (db *UserDB) followUser(followeeID, followerID int64) error {
+	query, err := db.Prepare(`
+		INSERT INTO follows (followee_id, follower_id)
+		VALUES ($1, $2)
+		ON CONFLICT (followee_id, follower_id) DO NOTHING;
+		`)
+
+	if err != nil {
+		log.WithError(err).Error("followUser query prepare error")
+		return err
+	}
+	defer query.Close()
+
+	_, err = query.Exec(followeeID, followerID)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"followeeID": followeeID,
+			"followerID": followerID,
+		}).WithError(err).Error("followUser query execute error.")
+		return err
+	}
+
+	return nil
+}
+
+func (db *UserDB) unfollowUser(followeeID, followerID int64) error {
+	query, err := db.Prepare(`
+		DELETE FROM follows
+		WHERE followee_id=$1 AND follower_id=$2;
+		`)
+
+	if err != nil {
+		log.WithError(err).Error("unfollowUser query prepare error")
+		return err
+	}
+	defer query.Close()
+
+	_, err = query.Exec(followeeID, followerID)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"followeeID": followeeID,
+			"followerID": followerID,
+		}).WithError(err).Error("unfollowUser query execute error.")
+		return err
+	}
+
+	return nil
 }

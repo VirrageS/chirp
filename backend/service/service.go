@@ -114,8 +114,8 @@ func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Twe
 	return tweet, nil
 }
 
-func (service *Service) GetUsers() ([]*model.PublicUser, error) {
-	users, err := service.db.GetUsers()
+func (service *Service) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
+	users, err := service.db.GetUsers(requestingUserID)
 
 	if err != nil {
 		return nil, err
@@ -124,9 +124,37 @@ func (service *Service) GetUsers() ([]*model.PublicUser, error) {
 	return users, nil
 }
 
-func (service *Service) GetUser(userID int64) (*model.PublicUser, error) {
-	user, err := service.db.GetUserByID(userID)
+func (service *Service) GetUser(userID, requestingUserID int64) (*model.PublicUser, error) {
+	user, err := service.db.GetUserByID(userID, requestingUserID)
 
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (service *Service) FollowUser(userID, requestingUserID int64) (*model.PublicUser, error) {
+	err := service.db.FollowUser(userID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := service.db.GetUserByID(userID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (service *Service) UnfollowUser(userID, requestingUserID int64) (*model.PublicUser, error) {
+	err := service.db.UnfollowUser(userID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := service.db.GetUserByID(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
