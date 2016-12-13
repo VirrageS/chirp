@@ -34,9 +34,9 @@ CREATE TABLE follows (
   CHECK       (follower_id != followee_id)
 );
 
-CREATE INDEX followers_follower_idx ON follows (follower_id);
-CREATE INDEX followers_followee_idx ON follows (followee_id);
-CREATE INDEX followers_idx ON follows (follower_id, followee_id);
+CREATE INDEX follows_follower_idx ON follows (follower_id);
+CREATE INDEX follows_followee_idx ON follows (followee_id);
+CREATE INDEX follows_idx ON follows (follower_id, followee_id);
 
 
 CREATE TABLE tweets (

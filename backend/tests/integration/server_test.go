@@ -171,9 +171,8 @@ func TestFollowUser(t *testing.T) {
 	authToken, _ := loginUser(&testUser, s, baseURL, t)
 
 	newUser := createUser("follow", s, baseURL, t)
-	newUserID := newUser.ID
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUserID), 10)+"/follow", nil)
+	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/follow", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -191,9 +190,8 @@ func TestConsecutiveUserFollows(t *testing.T) {
 	authToken, _ := loginUser(&testUser, s, baseURL, t)
 
 	newUser := createUser("consecutiveFollows", s, baseURL, t)
-	newUserID := newUser.ID
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUserID), 10)+"/follow", nil)
+	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/follow", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
@@ -213,10 +211,9 @@ func TestUnfollowUser(t *testing.T) {
 	authToken, _ := loginUser(&testUser, s, baseURL, t)
 
 	newUser := createUser("unfollow", s, baseURL, t)
-	newUserID := newUser.ID
-	followUser(newUserID, authToken, s, baseURL, t)
+	followUser(newUser.ID, authToken, s, baseURL, t)
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUserID), 10)+"/unfollow", nil)
+	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/unfollow", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -234,9 +231,8 @@ func TestUnfollowNotFollowedUser(t *testing.T) {
 	authToken, _ := loginUser(&testUser, s, baseURL, t)
 
 	newUser := createUser("unfollownotfollowed", s, baseURL, t)
-	newUserID := newUser.ID
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUserID), 10)+"/unfollow", nil)
+	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/unfollow", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -255,12 +251,10 @@ func TestUnfollowUserFollowedBySomebodyElse(t *testing.T) {
 	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
 
 	newUser := createUser("unfollowsomebodyelse", s, baseURL, t)
-	newUserID := newUser.ID
+	followUser(newUser.ID, user1AuthToken, s, baseURL, t)
+	unfollowUser(newUser.ID, user2AuthToken, s, baseURL, t)
 
-	followUser(newUserID, user1AuthToken, s, baseURL, t)
-	unfollowUser(newUserID, user2AuthToken, s, baseURL, t)
-
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUserID), 10), nil)
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10), nil)
 	req.Header.Add("Authorization", "Bearer "+user1AuthToken)
 	w := httptest.NewRecorder()
 
