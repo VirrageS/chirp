@@ -7,7 +7,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"gopkg.in/gin-contrib/cors.v1"
 	"gopkg.in/gin-gonic/gin.v1"
-	"gopkg.in/redis.v5"
 
 	"github.com/VirrageS/chirp/backend/api"
 	"github.com/VirrageS/chirp/backend/cache"
@@ -24,14 +23,13 @@ func init() {
 
 // Handles all dependencies and creates a new server.
 // Takes a DB connection parameter in order to support test database.
-func New(dbConnection *sql.DB, redisConnection *redis.Client, serverConfig config.ConfigProvider) *gin.Engine {
+func New(dbConnection *sql.DB, redis cache.CacheProvider, serverConfig config.ConfigProvider) *gin.Engine {
 	// service dependencies
 	tokenManager := token.NewTokenManager(serverConfig)
 
 	// api dependencies
 	CORSConfig := setupCORS()
 
-	redis := cache.NewRedisCache(redisConnection, serverConfig)
 	db := database.NewDatabase(dbConnection, redis)
 	services := service.NewService(serverConfig, db, tokenManager)
 	APIs := api.NewAPI(services)

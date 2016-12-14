@@ -18,7 +18,7 @@ func main() {
 	serverConfig := config.GetConfig("config")
 
 	db := database.NewConnection(database.DefaultPostgresPort)
-	redis := cache.NewRedisConnection(cache.DefaultRedisPort)
+	redis := cache.NewRedisCache(cache.DefaultRedisPort, serverConfig)
 
 	s := server.New(db, redis, serverConfig)
 	s.Run(":8080")

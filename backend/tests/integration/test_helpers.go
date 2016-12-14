@@ -22,7 +22,7 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 	testConfig := config.GetConfig("test")
 
 	db := database.NewConnection("5432")
-	redis := cache.NewRedisConnection("6379")
+	cache := cache.NewDummyCache()
 
 	gin.SetMode(gin.TestMode)
 	db.Exec("TRUNCATE users, tweets CASCADE;") // Ugly, but lets keep it for convenience for now
@@ -43,7 +43,7 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 		panic(fmt.Sprintf("Error inserting other test user into database = %v", err))
 	}
 
-	*s = server.New(db, redis, testConfig)
+	*s = server.New(db, cache, testConfig)
 
 	baseURL = "http://localhost:8080"
 }
