@@ -19,10 +19,31 @@ var baseURL string
 var s *gin.Engine
 
 var testUser model.User
+var testUserPublic model.PublicUser
+
 var otherTestUser model.User
+var otherTestUserPublic model.PublicUser
 
 func TestMain(m *testing.M) {
 	setup(&testUser, &otherTestUser, &s, baseURL)
+
+	testUserPublic = model.PublicUser{
+		ID:            testUser.ID,
+		Username:      testUser.Username,
+		Name:          testUser.Name,
+		AvatarUrl:     "",
+		FollowerCount: 0,
+		Following:     false,
+	}
+	otherTestUserPublic = model.PublicUser{
+		ID:            otherTestUser.ID,
+		Username:      otherTestUser.Username,
+		Name:          otherTestUser.Name,
+		AvatarUrl:     "",
+		FollowerCount: 0,
+		Following:     false,
+	}
+
 	os.Exit(m.Run())
 }
 
@@ -113,15 +134,9 @@ func TestLoginUser(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
 	assert.Nil(t, err)
 
-	actualUser := loginResponse.User
+	expectedUser := &testUserPublic
 
-	expectedUser := &model.PublicUser{
-		ID:        testUser.ID,
-		Username:  testUser.Username,
-		Name:      testUser.Name,
-		AvatarUrl: "",
-		Following: false,
-	}
+	actualUser := loginResponse.User
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, expectedUser, actualUser)
@@ -183,6 +198,7 @@ func TestFollowUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(1), actualUser.FollowerCount)
 	assert.True(t, actualUser.Following)
 }
 
@@ -204,6 +220,30 @@ func TestConsecutiveUserFollows(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(1), actualUser.FollowerCount)
+	assert.True(t, actualUser.Following)
+}
+
+func TestMultipleUserFollows(t *testing.T) {
+	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+
+	newUser := createUser("multiplefollows", s, baseURL, t)
+	followUser(newUser.ID, user1AuthToken, s, baseURL, t)
+	followUser(newUser.ID, user2AuthToken, s, baseURL, t)
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10), nil)
+	req.Header.Add("Authorization", "Bearer "+user1AuthToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualUser model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(2), actualUser.FollowerCount)
 	assert.True(t, actualUser.Following)
 }
 
@@ -224,6 +264,7 @@ func TestUnfollowUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(0), actualUser.FollowerCount)
 	assert.False(t, actualUser.Following)
 }
 
@@ -243,6 +284,7 @@ func TestUnfollowNotFollowedUser(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(0), actualUser.FollowerCount)
 	assert.False(t, actualUser.Following)
 }
 
@@ -265,7 +307,169 @@ func TestUnfollowUserFollowedBySomebodyElse(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, int64(1), actualUser.FollowerCount)
 	assert.True(t, actualUser.Following)
+}
+
+func TestGetFollowersOfFollowedUser(t *testing.T) {
+	userAuthToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	newUser := createUser("getfollowersoffollowed", s, baseURL, t)
+	followUser(newUser.ID, userAuthToken, s, baseURL, t)
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/followers", nil)
+	req.Header.Add("Authorization", "Bearer "+userAuthToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualFollowers []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
+	assert.Nil(t, err)
+
+	expectedFollowers := []*model.PublicUser{&testUserPublic}
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, expectedFollowers, actualFollowers)
+}
+
+func TestGetFollowersOfNotFollowedUser(t *testing.T) {
+	userAuthToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	newUser := createUser("getfollowersofnotfollowed", s, baseURL, t)
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/followers", nil)
+	req.Header.Add("Authorization", "Bearer "+userAuthToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualFollowers []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
+	assert.Nil(t, err)
+
+	notExpectedFollower := &testUserPublic
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, actualFollowers, notExpectedFollower)
+}
+
+func TestGetFollowersOfUserWithMultipleFollowers(t *testing.T) {
+	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+
+	newUser := createUser("getmultiplefollowers", s, baseURL, t)
+	followUser(newUser.ID, user1AuthToken, s, baseURL, t)
+	followUser(newUser.ID, user2AuthToken, s, baseURL, t)
+
+	expectedFollowers := []*model.PublicUser{&testUserPublic, &otherTestUserPublic}
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/followers", nil)
+	req.Header.Add("Authorization", "Bearer "+user1AuthToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualFollowers []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, expectedFollowers, actualFollowers)
+}
+
+func TestGetFollowing(t *testing.T) {
+	newUser := createUser("getfollowing", s, baseURL, t)
+	authToken, _ := loginUser(newUser, s, baseURL, t)
+
+	followUser(testUser.ID, authToken, s, baseURL, t)
+	followUser(otherTestUser.ID, authToken, s, baseURL, t)
+
+	expectedFollowing := []*model.PublicUser{
+		{
+			ID:            testUser.ID,
+			Username:      testUser.Username,
+			Name:          testUser.Name,
+			AvatarUrl:     "",
+			FollowerCount: 1,
+			Following:     true,
+		},
+		{
+			ID:            otherTestUser.ID,
+			Username:      otherTestUser.Username,
+			Name:          otherTestUser.Name,
+			AvatarUrl:     "",
+			FollowerCount: 1,
+			Following:     true,
+		},
+	}
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/following", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualFollowing []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualFollowing)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, expectedFollowing, actualFollowing)
+}
+
+func TestGetFollowingOfUserThatDoesNotFollowAnyone(t *testing.T) {
+	newUser := createUser("getfollowingnotfollowing", s, baseURL, t)
+	authToken, _ := loginUser(newUser, s, baseURL, t)
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/following", nil)
+	req.Header.Add("Authorization", "Bearer "+authToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualFollowing []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualFollowing)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, actualFollowing)
+}
+
+func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
+	newUser := createUser("getfollowingonlyofgivenuser", s, baseURL, t)
+	user1authToken, _ := loginUser(newUser, s, baseURL, t)
+	user2authToken, _ := loginUser(&testUser, s, baseURL, t)
+
+	userToFollow1 := createUser("getfollowingonlyofgivenusertofollow1", s, baseURL, t)
+	userToFollow2 := createUser("getfollowingonlyofgivenusertofollow2", s, baseURL, t)
+
+	followUser(userToFollow1.ID, user1authToken, s, baseURL, t)
+	followUser(userToFollow2.ID, user2authToken, s, baseURL, t)
+
+	expectedFollowing := []*model.PublicUser{
+		{
+			ID:            userToFollow1.ID,
+			Username:      userToFollow1.Username,
+			Name:          userToFollow1.Name,
+			AvatarUrl:     "",
+			FollowerCount: 1,
+			Following:     true,
+		},
+	}
+
+	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/following", nil)
+	req.Header.Add("Authorization", "Bearer "+user1authToken)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, req)
+
+	var actualFollowing []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &actualFollowing)
+	assert.Nil(t, err)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, expectedFollowing, actualFollowing)
 }
 
 func TestCreateTweetResponse(t *testing.T) {

@@ -50,9 +50,12 @@ func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser
 	}
 
 	user, err := db.getPublicUserUsingQuery(`
-		SELECT id, username, name, avatar_url, SUM(case when follows.follower_id=$2 then 1 else 0 end) > 0 as following
+		SELECT id, username, name, avatar_url,
+			COUNT(follows.follower_id) AS follow_count,
+			SUM(CASE WHEN follows.follower_id=$2 THEN 1 ELSE 0 END) > 0 AS following
 		FROM users
-			LEFT JOIN follows on users.id = follows.followee_id
+			LEFT JOIN follows
+			ON users.id = follows.followee_id
 		WHERE users.id = $1
 		GROUP BY users.id;`,
 		userID, requestingUserID)
@@ -75,7 +78,7 @@ func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 		return user, nil
 	}
 
-	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
+	user, err := db.getUserUsingQuery("SELECT * FROM users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
@@ -136,11 +139,74 @@ func (db *UserDB) UnfollowUser(followeeID, followerID int64) error {
 	return nil
 }
 
+func (db *UserDB) Followers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followersIDs, err := db.followers(userID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	var followers []*model.PublicUser
+	for i, id := range followersIDs {
+		var user model.PublicUser
+
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id}, &user); exists {
+			followers = append(followers, &user)
+
+			// remove ID from followingIDs
+			followersIDs[i] = followersIDs[len(followersIDs)-1]
+			followersIDs = followersIDs[:len(followersIDs)-1]
+		}
+	}
+
+	if len(followersIDs) > 0 {
+		dbFollowers, err := db.getPublicUsersFromListOfIDs(requestingUserID, followersIDs)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		followers = append(followers, dbFollowers...)
+	}
+
+	return followers, nil
+}
+
+func (db *UserDB) Followees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followeesIDs, err := db.followees(userID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	var followees []*model.PublicUser
+	for i, id := range followeesIDs {
+		var user model.PublicUser
+
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id}, &user); exists {
+			followees = append(followees, &user)
+
+			// remove ID from followersIDs
+			followeesIDs[i] = followeesIDs[len(followeesIDs)-1]
+			followeesIDs = followeesIDs[:len(followeesIDs)-1]
+		}
+	}
+
+	if len(followeesIDs) > 0 {
+		dbFollowees, err := db.getPublicUsersFromListOfIDs(requestingUserID, followeesIDs)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		followees = append(followees, dbFollowees...)
+	}
+
+	return followees, nil
+}
+
 func (db *UserDB) getPublicUsers(requestingUserID int64) ([]*model.PublicUser, error) {
 	rows, err := db.Query(`
-		SELECT id, username, name, avatar_url, SUM(case when follows.follower_id=$1 then 1 else 0 end) > 0 as following
+		SELECT id, username, name, avatar_url,
+			COUNT(follows.follower_id) as follow_count,
+			SUM(CASE WHEN follows.follower_id=$1 THEN 1 ELSE 0 END) > 0 AS following
 		FROM users
-			LEFT JOIN follows on users.id = follows.followee_id
+			LEFT JOIN follows
+			ON users.id = follows.followee_id
 		GROUP BY users.id;`,
 		requestingUserID)
 	if err != nil {
@@ -153,9 +219,48 @@ func (db *UserDB) getPublicUsers(requestingUserID int64) ([]*model.PublicUser, e
 	defer rows.Close()
 	for rows.Next() {
 		var user model.PublicUser
-		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.Following)
+		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
 		if err != nil {
 			log.WithError(err).Error("getPublicUsers row scan error.")
+			return nil, err
+		}
+
+		users = append(users, &user)
+	}
+	if err = rows.Err(); err != nil {
+		log.WithError(err).Error("getPublicUsers rows iteration error.")
+		return nil, err
+	}
+
+	return users, nil
+}
+
+// TODO this is almost a copy-paste of /\. REFACTOR
+func (db *UserDB) getPublicUsersFromListOfIDs(requestingUserID int64, usersToFindIDs []int64) ([]*model.PublicUser, error) {
+	// TODO: be careful - this ANY query is said to be super inefficient
+	query := `SELECT id, username, name, avatar_url,
+			COUNT(follows.follower_id) as follow_count,
+			SUM(CASE WHEN follows.follower_id=$1 THEN 1 ELSE 0 END) > 0 AS following
+		FROM users
+			LEFT JOIN follows
+			ON users.id = follows.followee_id
+		WHERE users.id = ANY($2)
+		GROUP BY users.id;`
+
+	rows, err := db.Query(query, requestingUserID, pq.Array(usersToFindIDs))
+	if err != nil {
+		log.WithError(err).WithField("query", query).Error("getPublicUsersFromListOfIDs query error.")
+		return nil, err
+	}
+
+	var users []*model.PublicUser
+
+	defer rows.Close()
+	for rows.Next() {
+		var user model.PublicUser
+		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
+		if err != nil {
+			log.WithError(err).Error("getPublicUsersFromListOfIDs row scan error.")
 			return nil, err
 		}
 
@@ -189,7 +294,7 @@ func (db *UserDB) getPublicUserUsingQuery(query string, args ...interface{}) (*m
 	var user model.PublicUser
 
 	row := db.QueryRow(query, args...)
-	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.Following)
+	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
 
 	if err != nil && err != sql.ErrNoRows {
 		log.WithField("query", query).WithError(err).Error("getPublicUserUsingQuery database error.")
@@ -284,4 +389,76 @@ func (db *UserDB) unfollowUser(followeeID, followerID int64) error {
 	}
 
 	return nil
+}
+
+// TODO: this is a temporary workaround
+func (db *UserDB) followers(userID int64) ([]int64, error) {
+	rows, err := db.Query(`
+		SELECT follower_id
+		FROM users
+			INNER JOIN follows
+			ON users.id = follows.followee_id
+		WHERE users.id = $1;`,
+		userID)
+
+	if err != nil {
+		log.WithError(err).Error("followers query error")
+	}
+	defer rows.Close()
+
+	var followersIDs []int64
+
+	defer rows.Close()
+	for rows.Next() {
+		var followerID int64
+		err = rows.Scan(&followerID)
+		if err != nil {
+			log.WithError(err).Error("followers row scan error.")
+			return nil, err
+		}
+
+		followersIDs = append(followersIDs, followerID)
+	}
+	if err = rows.Err(); err != nil {
+		log.WithError(err).Error("followers rows iteration error.")
+		return nil, err
+	}
+
+	return followersIDs, nil
+}
+
+// TODO: this is almost a copy-paste of /\. Refactor.
+func (db *UserDB) followees(userID int64) ([]int64, error) {
+	rows, err := db.Query(`
+		SELECT followee_id
+		FROM users
+			INNER JOIN follows
+			ON users.id = follows.follower_id
+		WHERE users.id = $1;`,
+		userID)
+
+	if err != nil {
+		log.WithError(err).Error("followees query error")
+	}
+	defer rows.Close()
+
+	var followeesIDs []int64
+
+	defer rows.Close()
+	for rows.Next() {
+		var followeeID int64
+		err = rows.Scan(&followeeID)
+		if err != nil {
+			log.WithError(err).Error("followees row scan error.")
+			return nil, err
+		}
+
+		followeesIDs = append(followeesIDs, followeeID)
+	}
+	if err = rows.Err(); err != nil {
+		log.WithError(err).Error("followees rows iteration error.")
+		return nil, err
+	}
+
+	return followeesIDs, nil
 }

@@ -24,6 +24,8 @@ type UserDataAccessor interface {
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 	FollowUser(followeeID, followerID int64) error
 	UnfollowUser(followeeID, followerID int64) error
+	Followers(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	Followees(userID, requestingUserID int64) ([]*model.PublicUser, error)
 }
 
 type DatabaseAccessor interface {
