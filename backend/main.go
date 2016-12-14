@@ -8,14 +8,18 @@ package main
 */
 
 import (
+	"github.com/VirrageS/chirp/backend/cache"
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/server"
 )
 
 func main() {
-	// TODO: create a config here and pass to New()?
-	db := database.NewConnection(database.DefaultPostgresPort)
+	serverConfig := config.GetConfig("config")
 
-	s := server.New(db)
+	db := database.NewConnection(database.DefaultPostgresPort)
+	redis := cache.NewRedisConnection(cache.DefaultRedisPort)
+
+	s := server.New(db, redis, serverConfig)
 	s.Run(":8080")
 }

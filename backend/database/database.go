@@ -5,7 +5,11 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	_ "github.com/lib/pq"
+
+	"github.com/VirrageS/chirp/backend/cache"
 )
+
+const DefaultPostgresPort = "5432"
 
 // Struct that implements DatabaseAccessor
 type Database struct {
@@ -14,14 +18,12 @@ type Database struct {
 }
 
 // Constructs new Database that uses given sql.DB connection
-func NewDatabase(databaseConnection *sql.DB) DatabaseAccessor {
+func NewDatabase(databaseConnection *sql.DB, cache cache.CacheProvider) DatabaseAccessor {
 	return &Database{
-		NewUserDB(databaseConnection),
-		NewTweetDB(databaseConnection),
+		NewUserDB(databaseConnection, cache),
+		NewTweetDB(databaseConnection, cache),
 	}
 }
-
-const DefaultPostgresPort = "5432"
 
 // Returns new connection to DB specified in config file. Panics when unrecoverable error occurs.
 // For now it takes port as parameter so we can redirect tests to testing database

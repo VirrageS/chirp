@@ -1,0 +1,5 @@
+secret_key: "super random string for test"
+auth_token_validity_period: 15
+refresh_token_validity_period: 1440
+
+cache_expiration_time: 1ns # cache should be eliminated (cannot be 0)

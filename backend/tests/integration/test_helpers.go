@@ -11,13 +11,18 @@ import (
 
 	"gopkg.in/gin-gonic/gin.v1"
 
+	"github.com/VirrageS/chirp/backend/cache"
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"
 )
 
 func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, baseURL string) {
+	testConfig := config.GetConfig("test")
+
 	db := database.NewConnection("5432")
+	redis := cache.NewRedisConnection("6379")
 
 	gin.SetMode(gin.TestMode)
 	db.Exec("TRUNCATE users, tweets CASCADE;") // Ugly, but lets keep it for convenience for now
@@ -38,7 +43,7 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 		panic(fmt.Sprintf("Error inserting other test user into database = %v", err))
 	}
 
-	*s = server.New(db)
+	*s = server.New(db, redis, testConfig)
 
 	baseURL = "http://localhost:8080"
 }
