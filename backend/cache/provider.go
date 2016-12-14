@@ -1,12 +1,14 @@
 package cache
 
 type CacheProvider interface {
-	Set(key string, value interface{})
-	SetWithFields(fields Fields, value interface{})
+	Set(key string, value interface{}) error
+	SetWithFields(fields Fields, value interface{}) error
 
-	Get(key string) (interface{}, bool)
-	GetWithFields(fields Fields) (interface{}, bool)
+	Get(key string, value interface{}) (bool, error)
+	GetWithFields(fields Fields, value interface{}) (bool, error)
 
-	Delete(key string)
-	DeleteWithFields(fields Fields)
+	Delete(key string) error
+	DeleteWithFields(fields Fields) error
+
+	Flush() error
 }

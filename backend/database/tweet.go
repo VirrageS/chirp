@@ -25,8 +25,9 @@ func NewTweetDB(databaseConnection *sql.DB, cache cache.CacheProvider) *TweetDB 
 }
 
 func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
-	if tweets, exists := db.cache.Get("tweets"); exists {
-		return tweets.([]*model.Tweet), nil
+	var tweets []*model.Tweet
+	if exists, _ := db.cache.Get("tweets", &tweets); exists {
+		return tweets, nil
 	}
 
 	tweets, err := db.getTweets(requestingUserID)
@@ -39,8 +40,9 @@ func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
 }
 
 func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	if tweets, exists := db.cache.GetWithFields(cache.Fields{"tweets", userID}); exists {
-		return tweets.([]*model.Tweet), nil
+	var tweets []*model.Tweet
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", userID}, &tweets); exists {
+		return tweets, nil
 	}
 
 	tweets, err := db.getTweetsOfUserWithID(userID, requestingUserID)
@@ -53,8 +55,9 @@ func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*mod
 }
 
 func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
-	if tweet, exists := db.cache.GetWithFields(cache.Fields{"tweet", tweetID}); exists {
-		return tweet.(*model.Tweet), nil
+	var tweet *model.Tweet
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweet", tweetID}, tweet); exists {
+		return tweet, nil
 	}
 
 	tweet, err := db.getTweetUsingQuery(`

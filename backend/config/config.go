@@ -12,9 +12,14 @@ import (
 
 // Interfaces that provide only those parameters that are required by different prats of the system
 
+// Provides secret key
+type SecretKeyProvider interface {
+	GetSecretKey() []byte
+}
+
 // Provides configuration for ServiceProvider
 type ServiceConfigProvider interface {
-	GetSecretKey() []byte
+	SecretKeyProvider
 	GetAuthTokenValidityPeriod() int
 	GetRefreshTokenValidityPeriod() int
 }
@@ -22,11 +27,6 @@ type ServiceConfigProvider interface {
 // Provides configuration for CacheProvider
 type CacheConfigProvider interface {
 	GetCacheExpirationTime() time.Duration
-}
-
-// Provides secret key
-type SecretKeyProvider interface {
-	GetSecretKey() []byte
 }
 
 // Provides full configuration

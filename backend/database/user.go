@@ -29,8 +29,9 @@ func NewUserDB(databaseConnection *sql.DB, cache cache.CacheProvider) *UserDB {
 }
 
 func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
-	if users, exists := db.cache.Get("users"); exists {
-		return users.([]*model.PublicUser), nil
+	var users []*model.PublicUser
+	if exists, _ := db.cache.Get("users", &users); exists {
+		return users, nil
 	}
 
 	users, err := db.getPublicUsers(requestingUserID)
@@ -43,8 +44,9 @@ func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) 
 }
 
 func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error) {
-	if user, exists := db.cache.GetWithFields(cache.Fields{"user", "id", userID}); exists {
-		return user.(*model.PublicUser), nil
+	var user *model.PublicUser
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID}, &user); exists {
+		return user, nil
 	}
 
 	user, err := db.getPublicUserUsingQuery(`
@@ -68,8 +70,9 @@ func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser
 }
 
 func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
-	if user, exists := db.cache.GetWithFields(cache.Fields{"user", "email", email}); exists {
-		return user.(*model.User), nil
+	var user *model.User
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "email", email}, &user); exists {
+		return user, nil
 	}
 
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
