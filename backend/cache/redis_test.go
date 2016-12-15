@@ -117,9 +117,14 @@ func TestRedisCacheGetWithFieldsExists(t *testing.T) {
 
 	for _, test := range objectTests {
 		for _, fields := range fieldsTests {
+			err := redisCache.SetWithFields(fields, test.in)
+			assert.Nil(t, err)
+
 			exists, err := redisCache.GetWithFields(fields, test.out)
 			assert.Nil(t, err)
-			assert.False(t, exists)
+			assert.True(t, exists)
+
+			assert.Equal(t, test.in, test.out)
 		}
 	}
 }
