@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 )
@@ -12,32 +13,53 @@ import (
 // Struct that implements TweetDataAccessor using sql (postgres) database
 type TweetDB struct {
 	*sql.DB
+	cache cache.CacheProvider
 }
 
-// Constructs TweetDB that uses a given sql.DB connection
-func NewTweetDB(databaseConnection *sql.DB) *TweetDB {
-	return &TweetDB{databaseConnection}
+// Constructs TweetDB that uses a given sql.DB connection and CacheProvider
+func NewTweetDB(databaseConnection *sql.DB, cache cache.CacheProvider) *TweetDB {
+	return &TweetDB{
+		databaseConnection,
+		cache,
+	}
 }
 
 func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
+	var tweets []*model.Tweet
+	if exists, _ := db.cache.Get("tweets", &tweets); exists {
+		return tweets, nil
+	}
+
 	tweets, err := db.getTweets(requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
 
+	db.cache.Set("tweets", tweets)
 	return tweets, nil
 }
 
 func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
+	var tweets []*model.Tweet
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", userID}, &tweets); exists {
+		return tweets, nil
+	}
+
 	tweets, err := db.getTweetsOfUserWithID(userID, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
 
+	db.cache.SetWithFields(cache.Fields{"tweets", userID}, tweets)
 	return tweets, nil
 }
 
 func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
+	var tweet *model.Tweet
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweet", tweetID}, tweet); exists {
+		return tweet, nil
+	}
+
 	tweet, err := db.getTweetUsingQuery(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
 		 	users.id, users.username, users.name, users.avatar_url,
@@ -53,10 +75,12 @@ func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, erro
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
+
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
 
+	db.cache.SetWithFields(cache.Fields{"tweet", tweetID}, tweet)
 	return tweet, nil
 }
 
@@ -79,6 +103,7 @@ func (db *TweetDB) InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*
 		GROUP BY tweets.id, users.id
 		ORDER BY tweets.created_at DESC;`,
 		requestingUserID, tweetID)
+
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -136,8 +161,9 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 
 // TODO: maybe return whole Tweet struct instead of just ID
 func (db *TweetDB) insertTweetToDatabase(tweet *model.NewTweet) (int64, error) {
-	query, err := db.Prepare("INSERT INTO tweets (author_id, content) " +
-		"VALUES ($1, $2) RETURNING id")
+	query, err := db.Prepare(`
+		INSERT INTO tweets (author_id, content) VALUES ($1, $2) RETURNING id;
+	`)
 	if err != nil {
 		log.WithError(err).Error("insertTweetToDatabase query prepare error.")
 		return 0, err

@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/lib/pq"
@@ -16,23 +17,38 @@ import (
 // Struct that implements UserDataAccessor using sql (postgres) database
 type UserDB struct {
 	*sql.DB
+	cache cache.CacheProvider
 }
 
-// Constructs UserDB that uses a given sql.DB connection
-func NewUserDB(databaseConnection *sql.DB) *UserDB {
-	return &UserDB{databaseConnection}
+// Constructs UserDB that uses a given sql.DB connection and CacheProvider
+func NewUserDB(databaseConnection *sql.DB, cache cache.CacheProvider) *UserDB {
+	return &UserDB{
+		databaseConnection,
+		cache,
+	}
 }
 
 func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
+	var users []*model.PublicUser
+	if exists, _ := db.cache.Get("users", &users); exists {
+		return users, nil
+	}
+
 	users, err := db.getPublicUsers(requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
 
+	db.cache.Set("users", users)
 	return users, nil
 }
 
 func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error) {
+	var user *model.PublicUser
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID}, &user); exists {
+		return user, nil
+	}
+
 	user, err := db.getPublicUserUsingQuery(`
 		SELECT id, username, name, avatar_url, SUM(case when follows.follower_id=$2 then 1 else 0 end) > 0 as following
 		FROM users
@@ -40,17 +56,25 @@ func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser
 		WHERE users.id = $1
 		GROUP BY users.id;`,
 		userID, requestingUserID)
+
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
+
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
 
+	db.cache.SetWithFields(cache.Fields{"user", "id", userID}, user)
 	return user, nil
 }
 
 func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
+	var user *model.User
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "email", email}, &user); exists {
+		return user, nil
+	}
+
 	user, err := db.getUserUsingQuery("SELECT * from users WHERE email=$1", email)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
@@ -59,6 +83,7 @@ func (db *UserDB) GetUserByEmail(email string) (*model.User, error) {
 		return nil, errors.UnexpectedError
 	}
 
+	db.cache.SetWithFields(cache.Fields{"user", "email", email}, user)
 	return user, nil
 }
 

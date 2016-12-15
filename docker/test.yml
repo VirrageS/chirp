@@ -5,3 +5,9 @@ services:
     build: ../postgres
     ports:
       - "5432:5432"
+
+  redis_test:
+    restart: always
+    image: redis:latest
+    ports:
+      - "6379:6379"

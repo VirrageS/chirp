@@ -4,22 +4,35 @@ package config
 // TODO: rename this file
 
 import (
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 // Interfaces that provide only those parameters that are required by different prats of the system
 
+// Provides secret key
+type SecretKeyProvider interface {
+	GetSecretKey() []byte
+}
+
 // Provides configuration for ServiceProvider
 type ServiceConfigProvider interface {
-	GetSecretKey() []byte
+	SecretKeyProvider
 	GetAuthTokenValidityPeriod() int
 	GetRefreshTokenValidityPeriod() int
 }
 
-// Provides secret key
-type SecretKeyProvider interface {
-	GetSecretKey() []byte
+// Provides configuration for CacheProvider
+type CacheConfigProvider interface {
+	GetCacheExpirationTime() time.Duration
+}
+
+// Provides full configuration
+type ConfigProvider interface {
+	ServiceConfigProvider
+	CacheConfigProvider
 }
 
 // Stores global configuration of the system
@@ -27,6 +40,7 @@ type Configuration struct {
 	secretKey                  []byte
 	authTokenValidityPeriod    int
 	refreshTokenValidityPeriod int
+	cacheExpirationTime        time.Duration
 }
 
 func (config *Configuration) GetSecretKey() []byte {
@@ -41,13 +55,17 @@ func (config *Configuration) GetRefreshTokenValidityPeriod() int {
 	return config.refreshTokenValidityPeriod
 }
 
-// TODO: Maybe read the config only once on init() or something and then return the global object?
-func GetConfig() *Configuration {
-	return readServiceConfig()
+func (config *Configuration) GetCacheExpirationTime() time.Duration {
+	return config.cacheExpirationTime
 }
 
-func readServiceConfig() *Configuration {
-	viper.SetConfigName("config")
+// TODO: Maybe read the config only once on init() or something and then return the global object?
+func GetConfig(fileName string) *Configuration {
+	return readServiceConfig(fileName)
+}
+
+func readServiceConfig(fileName string) *Configuration {
+	viper.SetConfigName(fileName)
 	viper.AddConfigPath("$GOPATH/src/github.com/VirrageS/chirp/backend")
 
 	err := viper.ReadInConfig()
@@ -58,12 +76,14 @@ func readServiceConfig() *Configuration {
 	configSecretKey := viper.GetString("secret_key")
 	configAuthTokenValidityPeriod := viper.GetInt("auth_token_validity_period")
 	configRefreshTokenValidityPeriod := viper.GetInt("refresh_token_validity_period")
+	configCacheExpirationTime := viper.GetDuration("cache_expiration_time")
 
 	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 {
 		log.WithFields(log.Fields{
 			"secret key":              configSecretKey,
 			"auth validity period":    configAuthTokenValidityPeriod,
 			"refresh validity period": configRefreshTokenValidityPeriod,
+			"cache expiration time":   configCacheExpirationTime,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
@@ -71,5 +91,6 @@ func readServiceConfig() *Configuration {
 		secretKey:                  []byte(configSecretKey),
 		authTokenValidityPeriod:    configAuthTokenValidityPeriod,
 		refreshTokenValidityPeriod: configRefreshTokenValidityPeriod,
+		cacheExpirationTime:        configCacheExpirationTime,
 	}
 }
