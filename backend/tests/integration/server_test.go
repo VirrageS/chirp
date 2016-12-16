@@ -3,20 +3,15 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/gin-gonic/gin.v1"
-
 	"github.com/VirrageS/chirp/backend/model"
+	"github.com/stretchr/testify/assert"
 )
-
-var baseURL string
-var s *gin.Engine
 
 var testUser model.User
 var testUserPublic model.PublicUser
@@ -57,7 +52,7 @@ func TestCreateNewUser(t *testing.T) {
 	data, _ := json.Marshal(newUser)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
+	req, _ := http.NewRequest("POST", "/signup", buf)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -81,11 +76,10 @@ func TestCreateUserWithUsernameThatAlreadyExists(t *testing.T) {
 		Email:    "some@email.com",
 		Name:     "somename",
 	}
-
 	data, _ := json.Marshal(newUser)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
+	req, _ := http.NewRequest("POST", "/signup", buf)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -102,11 +96,10 @@ func TestCreateUserWithEmailThatAlreadyExists(t *testing.T) {
 		Email:    testUser.Email,
 		Name:     "somename",
 	}
-
 	data, _ := json.Marshal(newUser)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
+	req, _ := http.NewRequest("POST", "/signup", buf)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -124,7 +117,7 @@ func TestLoginUser(t *testing.T) {
 	data, _ := json.Marshal(loginData)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
+	req, _ := http.NewRequest("POST", "/login", buf)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -152,9 +145,8 @@ func TestLoginUserWithInvalidPassword(t *testing.T) {
 	data, _ := json.Marshal(loginData)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
+	req, _ := http.NewRequest("POST", "/login", buf)
 	req.Header.Add("Content-Type", "application/json")
-
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -171,9 +163,8 @@ func TestLoginUserWithInvalidEmail(t *testing.T) {
 	data, _ := json.Marshal(loginData)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
+	req, _ := http.NewRequest("POST", "/login", buf)
 	req.Header.Add("Content-Type", "application/json")
-
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -183,11 +174,11 @@ func TestLoginUserWithInvalidEmail(t *testing.T) {
 }
 
 func TestFollowUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	newUser := createUser("follow", s, baseURL, t)
+	newUser := createUser("follow", t)
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/follow", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/users/%s/follow", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -203,11 +194,11 @@ func TestFollowUser(t *testing.T) {
 }
 
 func TestConsecutiveUserFollows(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	newUser := createUser("consecutiveFollows", s, baseURL, t)
+	newUser := createUser("consecutiveFollows", t)
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/follow", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/users/%s/follow", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
@@ -225,14 +216,14 @@ func TestConsecutiveUserFollows(t *testing.T) {
 }
 
 func TestMultipleUserFollows(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	newUser := createUser("multiplefollows", s, baseURL, t)
-	followUser(newUser.ID, user1AuthToken, s, baseURL, t)
-	followUser(newUser.ID, user2AuthToken, s, baseURL, t)
+	newUser := createUser("multiplefollows", t)
+	followUser(newUser.ID, user1AuthToken, t)
+	followUser(newUser.ID, user2AuthToken, t)
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+user1AuthToken)
 	w := httptest.NewRecorder()
 
@@ -248,12 +239,12 @@ func TestMultipleUserFollows(t *testing.T) {
 }
 
 func TestUnfollowUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	newUser := createUser("unfollow", s, baseURL, t)
-	followUser(newUser.ID, authToken, s, baseURL, t)
+	newUser := createUser("unfollow", t)
+	followUser(newUser.ID, authToken, t)
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/unfollow", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/users/%s/unfollow", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -269,11 +260,11 @@ func TestUnfollowUser(t *testing.T) {
 }
 
 func TestUnfollowNotFollowedUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	newUser := createUser("unfollownotfollowed", s, baseURL, t)
+	newUser := createUser("unfollownotfollowed", t)
 
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/unfollow", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/users/%s/unfollow", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -289,14 +280,14 @@ func TestUnfollowNotFollowedUser(t *testing.T) {
 }
 
 func TestUnfollowUserFollowedBySomebodyElse(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	newUser := createUser("unfollowsomebodyelse", s, baseURL, t)
-	followUser(newUser.ID, user1AuthToken, s, baseURL, t)
-	unfollowUser(newUser.ID, user2AuthToken, s, baseURL, t)
+	newUser := createUser("unfollowsomebodyelse", t)
+	followUser(newUser.ID, user1AuthToken, t)
+	unfollowUser(newUser.ID, user2AuthToken, t)
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+user1AuthToken)
 	w := httptest.NewRecorder()
 
@@ -312,12 +303,12 @@ func TestUnfollowUserFollowedBySomebodyElse(t *testing.T) {
 }
 
 func TestGetFollowersOfFollowedUser(t *testing.T) {
-	userAuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	userAuthToken, _ := loginUser(&testUser, t)
 
-	newUser := createUser("getfollowersoffollowed", s, baseURL, t)
-	followUser(newUser.ID, userAuthToken, s, baseURL, t)
+	newUser := createUser("getfollowersoffollowed", t)
+	followUser(newUser.ID, userAuthToken, t)
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/followers", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s/followers", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+userAuthToken)
 	w := httptest.NewRecorder()
 
@@ -334,11 +325,11 @@ func TestGetFollowersOfFollowedUser(t *testing.T) {
 }
 
 func TestGetFollowersOfNotFollowedUser(t *testing.T) {
-	userAuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	userAuthToken, _ := loginUser(&testUser, t)
 
-	newUser := createUser("getfollowersofnotfollowed", s, baseURL, t)
+	newUser := createUser("getfollowersofnotfollowed", t)
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/followers", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s/followers", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+userAuthToken)
 	w := httptest.NewRecorder()
 
@@ -355,16 +346,16 @@ func TestGetFollowersOfNotFollowedUser(t *testing.T) {
 }
 
 func TestGetFollowersOfUserWithMultipleFollowers(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	newUser := createUser("getmultiplefollowers", s, baseURL, t)
-	followUser(newUser.ID, user1AuthToken, s, baseURL, t)
-	followUser(newUser.ID, user2AuthToken, s, baseURL, t)
+	newUser := createUser("getmultiplefollowers", t)
+	followUser(newUser.ID, user1AuthToken, t)
+	followUser(newUser.ID, user2AuthToken, t)
 
 	expectedFollowers := []*model.PublicUser{&testUserPublic, &otherTestUserPublic}
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/followers", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s/followers", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+user1AuthToken)
 	w := httptest.NewRecorder()
 
@@ -379,11 +370,11 @@ func TestGetFollowersOfUserWithMultipleFollowers(t *testing.T) {
 }
 
 func TestGetFollowing(t *testing.T) {
-	newUser := createUser("getfollowing", s, baseURL, t)
-	authToken, _ := loginUser(newUser, s, baseURL, t)
+	newUser := createUser("getfollowing", t)
+	authToken, _ := loginUser(newUser, t)
 
-	followUser(testUser.ID, authToken, s, baseURL, t)
-	followUser(otherTestUser.ID, authToken, s, baseURL, t)
+	followUser(testUser.ID, authToken, t)
+	followUser(otherTestUser.ID, authToken, t)
 
 	expectedFollowing := []*model.PublicUser{
 		{
@@ -404,7 +395,7 @@ func TestGetFollowing(t *testing.T) {
 		},
 	}
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/following", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s/following", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -419,10 +410,10 @@ func TestGetFollowing(t *testing.T) {
 }
 
 func TestGetFollowingOfUserThatDoesNotFollowAnyone(t *testing.T) {
-	newUser := createUser("getfollowingnotfollowing", s, baseURL, t)
-	authToken, _ := loginUser(newUser, s, baseURL, t)
+	newUser := createUser("getfollowingnotfollowing", t)
+	authToken, _ := loginUser(newUser, t)
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/following", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s/following", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -437,15 +428,15 @@ func TestGetFollowingOfUserThatDoesNotFollowAnyone(t *testing.T) {
 }
 
 func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
-	newUser := createUser("getfollowingonlyofgivenuser", s, baseURL, t)
-	user1authToken, _ := loginUser(newUser, s, baseURL, t)
-	user2authToken, _ := loginUser(&testUser, s, baseURL, t)
+	newUser := createUser("getfollowingonlyofgivenuser", t)
+	user1authToken, _ := loginUser(newUser, t)
+	user2authToken, _ := loginUser(&testUser, t)
 
-	userToFollow1 := createUser("getfollowingonlyofgivenusertofollow1", s, baseURL, t)
-	userToFollow2 := createUser("getfollowingonlyofgivenusertofollow2", s, baseURL, t)
+	userToFollow1 := createUser("getfollowingonlyofgivenusertofollow1", t)
+	userToFollow2 := createUser("getfollowingonlyofgivenusertofollow2", t)
 
-	followUser(userToFollow1.ID, user1authToken, s, baseURL, t)
-	followUser(userToFollow2.ID, user2authToken, s, baseURL, t)
+	followUser(userToFollow1.ID, user1authToken, t)
+	followUser(userToFollow2.ID, user2authToken, t)
 
 	expectedFollowing := []*model.PublicUser{
 		{
@@ -458,7 +449,7 @@ func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
 		},
 	}
 
-	req, _ := http.NewRequest("GET", baseURL+"/users/"+strconv.FormatInt(int64(newUser.ID), 10)+"/following", nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/users/%s/following", baseURL, intToStr(newUser.ID)), nil)
 	req.Header.Add("Authorization", "Bearer "+user1authToken)
 	w := httptest.NewRecorder()
 
@@ -473,7 +464,7 @@ func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
 }
 
 func TestCreateTweetResponse(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
 	newTweet := &model.NewTweet{
 		Content: "new tweet",
@@ -481,10 +472,9 @@ func TestCreateTweetResponse(t *testing.T) {
 	data, _ := json.Marshal(newTweet)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
+	req, _ := http.NewRequest("POST", "/tweets", buf)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+authToken)
-
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -511,11 +501,11 @@ func TestCreateTweetResponse(t *testing.T) {
 }
 
 func TestGetTweetAfterCreatingTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET, _ := http.NewRequest("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqGET.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -530,11 +520,11 @@ func TestGetTweetAfterCreatingTweet(t *testing.T) {
 }
 
 func TestGetTweetsAfterCreatingTweets(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
-	tweet1 := createTweet("new tweet1", authToken, s, baseURL, t)
-	tweet2 := createTweet("new tweet2", authToken, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
+	tweet1 := createTweet("new tweet1", authToken, t)
+	tweet2 := createTweet("new tweet2", authToken, t)
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets", nil)
+	reqGET, _ := http.NewRequest("GET", "/tweets", nil)
 	reqGET.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -550,16 +540,17 @@ func TestGetTweetsAfterCreatingTweets(t *testing.T) {
 }
 
 func TestDeleteTweetResponseAfterCreatingTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
 
-	reqDELETE, _ := http.NewRequest("DELETE", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqDELETE, _ := http.NewRequest("DELETE", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqDELETE.Header.Add("Authorization", "Bearer "+authToken)
-	w := httptest.NewRecorder()
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET, _ := http.NewRequest("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqGET.Header.Add("Authorization", "Bearer "+authToken)
+
+	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqDELETE)
@@ -570,14 +561,13 @@ func TestDeleteTweetResponseAfterCreatingTweet(t *testing.T) {
 }
 
 func TestGetTweetAfterDeletingTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
+	deleteTweet(tweetID, authToken, t)
 
-	deleteTweet(tweetID, authToken, s, baseURL, t)
-
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET, _ := http.NewRequest("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqGET.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -587,13 +577,13 @@ func TestGetTweetAfterDeletingTweet(t *testing.T) {
 }
 
 func TestHomeFeed(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	user1Tweet := createTweet("user1 tweet", user1AuthToken, s, baseURL, t)
-	user2Tweet := createTweet("user2 tweet", user2AuthToken, s, baseURL, t)
+	user1Tweet := createTweet("user1 tweet", user1AuthToken, t)
+	user2Tweet := createTweet("user2 tweet", user2AuthToken, t)
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/home_feed", nil)
+	reqGET, _ := http.NewRequest("GET", "/home_feed", nil)
 	reqGET.Header.Add("Authorization", "Bearer "+user1AuthToken)
 	w := httptest.NewRecorder()
 
@@ -609,19 +599,19 @@ func TestHomeFeed(t *testing.T) {
 }
 
 func TestGetTweetsCreatedByUser(t *testing.T) {
-	newUser := createUser("getcreatedbyuser", s, baseURL, t)
+	newUser := createUser("getcreatedbyuser", t)
 
-	user1AuthToken, _ := loginUser(newUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&testUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(newUser, t)
+	user2AuthToken, _ := loginUser(&testUser, t)
 
-	user1Tweet1 := createTweet("user1 tweet1", user1AuthToken, s, baseURL, t)
-	user1Tweet2 := createTweet("user1 tweet2", user1AuthToken, s, baseURL, t)
-	user2Tweet := createTweet("user2 tweet", user2AuthToken, s, baseURL, t)
+	user1Tweet1 := createTweet("user1 tweet1", user1AuthToken, t)
+	user1Tweet2 := createTweet("user1 tweet2", user1AuthToken, t)
+	user2Tweet := createTweet("user2 tweet", user2AuthToken, t)
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets", nil)
-	reqGET.URL.Query().Add("userID", strconv.FormatInt(int64(newUser.ID), 10))
+	reqGET, _ := http.NewRequest("GET", "/tweets", nil)
+	reqGET.URL.Query().Add("userID", intToStr(newUser.ID))
 	values := reqGET.URL.Query()
-	values.Add("userID", strconv.FormatInt(int64(newUser.ID), 10))
+	values.Add("userID", intToStr(newUser.ID))
 	reqGET.URL.RawQuery = values.Encode()
 	reqGET.Header.Add("Authorization", "Bearer "+user1AuthToken)
 	w := httptest.NewRecorder()
@@ -639,12 +629,12 @@ func TestGetTweetsCreatedByUser(t *testing.T) {
 }
 
 func TestLikeTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
 
-	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/tweets/%s/like", intToStr(tweetID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -660,12 +650,12 @@ func TestLikeTweet(t *testing.T) {
 }
 
 func TestConsecutiveTweetLikes(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
 
-	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/tweets/%s/like", intToStr(tweetID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
@@ -683,58 +673,60 @@ func TestConsecutiveTweetLikes(t *testing.T) {
 }
 
 func TestMultipleTweetLikes(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	createdTweet := createTweet("new tweet", user1AuthToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", user1AuthToken, t)
 	tweetID := createdTweet.ID
 
-	likeTweet(tweetID, user1AuthToken, s, baseURL, t)
-	likeTweet(tweetID, user2AuthToken, s, baseURL, t)
+	likeTweet(tweetID, user1AuthToken, t)
+	likeTweet(tweetID, user2AuthToken, t)
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET, _ := http.NewRequest("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqGET.Header.Add("Authorization", "Bearer "+user2AuthToken)
-	w2 := httptest.NewRecorder()
-	s.ServeHTTP(w2, reqGET)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, reqGET)
 
 	var actualTweet model.Tweet
-	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
 	assert.Nil(t, err)
 
-	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, int64(2), actualTweet.LikeCount)
 }
 
 func TestLikedFieldOfNotLikedTweet(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	createdTweet := createTweet("new tweet", user1AuthToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", user1AuthToken, t)
 	tweetID := createdTweet.ID
 
-	likeTweet(tweetID, user1AuthToken, s, baseURL, t)
+	likeTweet(tweetID, user1AuthToken, t)
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET, _ := http.NewRequest("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqGET.Header.Add("Authorization", "Bearer "+user2AuthToken)
-	w2 := httptest.NewRecorder()
-	s.ServeHTTP(w2, reqGET)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, reqGET)
 
 	var actualTweet model.Tweet
-	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
 	assert.Nil(t, err)
 
-	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.False(t, actualTweet.Liked)
 }
 
 func TestUnlikeTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
-	likeTweet(tweetID, authToken, s, baseURL, t)
+	likeTweet(tweetID, authToken, t)
 
-	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/tweets/%s/unlike", intToStr(tweetID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -750,12 +742,12 @@ func TestUnlikeTweet(t *testing.T) {
 }
 
 func TestUnlikeNotLikedTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, s, baseURL, t)
+	authToken, _ := loginUser(&testUser, t)
 
-	createdTweet := createTweet("new tweet", authToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
 
-	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("/tweets/%s/unlike", intToStr(tweetID)), nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 	w := httptest.NewRecorder()
 
@@ -771,30 +763,31 @@ func TestUnlikeNotLikedTweet(t *testing.T) {
 }
 
 func TestUnlikeTweetLikedBySomebodyElse(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, s, baseURL, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, s, baseURL, t)
+	user1AuthToken, _ := loginUser(&testUser, t)
+	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
-	createdTweet := createTweet("new tweet", user1AuthToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", user1AuthToken, t)
 	tweetID := createdTweet.ID
 
-	likeTweet(tweetID, user1AuthToken, s, baseURL, t)
-	unlikeTweet(tweetID, user2AuthToken, s, baseURL, t)
+	likeTweet(tweetID, user1AuthToken, t)
+	unlikeTweet(tweetID, user2AuthToken, t)
 
-	reqGET, _ := http.NewRequest("GET", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+	reqGET, _ := http.NewRequest("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil)
 	reqGET.Header.Add("Authorization", "Bearer "+user2AuthToken)
-	w2 := httptest.NewRecorder()
-	s.ServeHTTP(w2, reqGET)
+	w := httptest.NewRecorder()
+
+	s.ServeHTTP(w, reqGET)
 
 	var actualTweet model.Tweet
-	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
+	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
 	assert.Nil(t, err)
 
-	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, int64(1), actualTweet.LikeCount)
 }
 
 func TestRefreshAuthToken(t *testing.T) {
-	_, refreshToken := loginUser(&testUser, s, baseURL, t)
+	_, refreshToken := loginUser(&testUser, t)
 
 	refreshData := &model.RefreshAuthTokenRequest{
 		UserID:       testUser.ID,
@@ -803,7 +796,7 @@ func TestRefreshAuthToken(t *testing.T) {
 	data, _ := json.Marshal(refreshData)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/token", buf)
+	req, _ := http.NewRequest("POST", "/token", buf)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -817,6 +810,6 @@ func TestRefreshAuthToken(t *testing.T) {
 	assert.NotEmpty(t, newAuthToken)
 
 	// test creating tweet with new auth
-	createdTweet := createTweet("new tweet", newAuthToken, s, baseURL, t)
+	createdTweet := createTweet("new tweet", newAuthToken, t)
 	assert.Equal(t, createdTweet.Author.ID, testUser.ID)
 }
