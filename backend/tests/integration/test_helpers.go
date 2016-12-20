@@ -16,6 +16,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"
+	"io"
 )
 
 var baseURL string
@@ -210,4 +211,47 @@ func unfollowUser(userID int64, authToken string, t *testing.T) {
 
 func intToStr(int int64) string {
 	return strconv.FormatInt(int64(int), 10)
+}
+
+type requestBuilder struct {
+	request *http.Request
+}
+
+func Request(method, url string, body io.Reader) *requestBuilder {
+	request, _ := http.NewRequest(method, url, body)
+
+	return &requestBuilder{
+		request: request,
+	}
+}
+
+func (rb *requestBuilder) JSON() *requestBuilder {
+	rb.request.Header.Add("Content-Type", "application/json")
+	return rb
+}
+
+func (rb *requestBuilder) AuthorizedWith(authToken string) *requestBuilder {
+	rb.request.Header.Add("Authorization", "Bearer "+authToken)
+	return rb
+}
+
+func (rb *requestBuilder) WithQuery(parameter string, value interface{}) *requestBuilder {
+	queryParameters := rb.request.URL.Query()
+	var valueStr string
+
+	switch v := value.(type) {
+	case string:
+		valueStr = v
+	case int, int32, int64:
+		valueStr = strconv.FormatInt(v.(int64), 10)
+	}
+
+	queryParameters.Add(parameter, valueStr)
+	rb.request.URL.RawQuery = queryParameters.Encode()
+
+	return rb
+}
+
+func (rb *requestBuilder) New() *http.Request {
+	return rb.request
 }
