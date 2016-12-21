@@ -162,6 +162,24 @@ func (service *Service) UnfollowUser(userID, requestingUserID int64) (*model.Pub
 	return user, nil
 }
 
+func (service *Service) UserFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followers, err := service.db.Followers(userID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return followers, nil
+}
+
+func (service *Service) UserFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followers, err := service.db.Followees(userID, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return followers, nil
+}
+
 func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
 	newUser, err := service.db.InsertUser(newUserForm)
 

@@ -16,6 +16,8 @@ type ServiceProvider interface {
 	GetUser(userID, requestingUserID int64) (*model.PublicUser, error)
 	FollowUser(userID, requestingUserID int64) (*model.PublicUser, error)
 	UnfollowUser(userID, requestingUserID int64) (*model.PublicUser, error)
+	UserFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	UserFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
 
 	RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error)
 	LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error)

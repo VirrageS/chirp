@@ -84,3 +84,43 @@ func (api *API) UnfollowUser(context *gin.Context) {
 
 	context.IndentedJSON(http.StatusOK, user)
 }
+
+func (api *API) UserFollowers(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
+	parameterID := context.Param("id")
+
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+		return
+	}
+
+	user, err := api.Service.UserFollowers(userID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, user)
+}
+
+func (api *API) UserFollowing(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
+	parameterID := context.Param("id")
+
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+		return
+	}
+
+	user, err := api.Service.UserFollowees(userID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, user)
+}
