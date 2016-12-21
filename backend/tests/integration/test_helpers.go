@@ -16,7 +16,11 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"
+	"io"
 )
+
+var baseURL string
+var s *gin.Engine
 
 func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, baseURL string) {
 	testConfig := config.GetConfig("test")
@@ -48,7 +52,7 @@ func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, base
 	baseURL = "http://localhost:8080"
 }
 
-func createUser(name string, s *gin.Engine, url string, t *testing.T) *model.User {
+func createUser(name string, t *testing.T) *model.User {
 	newUserForm := model.NewUserForm{
 		Email:    name + "@email.com",
 		Password: name + "password",
@@ -58,7 +62,7 @@ func createUser(name string, s *gin.Engine, url string, t *testing.T) *model.Use
 	data, _ := json.Marshal(newUserForm)
 
 	buf := bytes.NewBuffer(data)
-	req, _ := http.NewRequest("POST", url+"/signup", buf)
+	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -84,7 +88,7 @@ func createUser(name string, s *gin.Engine, url string, t *testing.T) *model.Use
 	}
 }
 
-func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) (string, string) {
+func loginUser(user *model.User, t *testing.T) (string, string) {
 	loginData := &model.LoginForm{
 		Email:    user.Email,
 		Password: user.Password,
@@ -93,7 +97,7 @@ func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) (strin
 	data, _ := json.Marshal(loginData)
 
 	buf := bytes.NewBuffer(data)
-	req, _ := http.NewRequest("POST", url+"/login", buf)
+	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -113,14 +117,14 @@ func loginUser(user *model.User, s *gin.Engine, url string, t *testing.T) (strin
 	return loginResponse.AuthToken, loginResponse.RefreshToken
 }
 
-func createTweet(content string, authToken string, s *gin.Engine, url string, t *testing.T) *model.Tweet {
+func createTweet(content string, authToken string, t *testing.T) *model.Tweet {
 	newTweet1 := &model.NewTweet{
 		Content: content,
 	}
 	data, _ := json.Marshal(newTweet1)
 	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", url+"/tweets", buf)
+	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+authToken)
 
@@ -140,8 +144,8 @@ func createTweet(content string, authToken string, s *gin.Engine, url string, t 
 	return &createdTweet
 }
 
-func deleteTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
-	reqDELETE, _ := http.NewRequest("DELETE", url+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
+func deleteTweet(tweetID int64, authToken string, t *testing.T) {
+	reqDELETE, _ := http.NewRequest("DELETE", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
 	reqDELETE.Header.Add("Authorization", "Bearer "+authToken)
 
 	w := httptest.NewRecorder()
@@ -153,8 +157,8 @@ func deleteTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *
 	}
 }
 
-func likeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
-	req, _ := http.NewRequest("POST", url+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
+func likeTweet(tweetID int64, authToken string, t *testing.T) {
+	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 
 	w := httptest.NewRecorder()
@@ -166,8 +170,8 @@ func likeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *te
 	}
 }
 
-func unlikeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
-	req, _ := http.NewRequest("POST", url+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
+func unlikeTweet(tweetID int64, authToken string, t *testing.T) {
+	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 
 	w := httptest.NewRecorder()
@@ -179,8 +183,8 @@ func unlikeTweet(tweetID int64, authToken string, s *gin.Engine, url string, t *
 	}
 }
 
-func followUser(userID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
-	req, _ := http.NewRequest("POST", url+"/users/"+strconv.FormatInt(int64(userID), 10)+"/follow", nil)
+func followUser(userID int64, authToken string, t *testing.T) {
+	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(userID), 10)+"/follow", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 
 	w := httptest.NewRecorder()
@@ -192,8 +196,8 @@ func followUser(userID int64, authToken string, s *gin.Engine, url string, t *te
 	}
 }
 
-func unfollowUser(userID int64, authToken string, s *gin.Engine, url string, t *testing.T) {
-	req, _ := http.NewRequest("POST", url+"/users/"+strconv.FormatInt(int64(userID), 10)+"/unfollow", nil)
+func unfollowUser(userID int64, authToken string, t *testing.T) {
+	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(userID), 10)+"/unfollow", nil)
 	req.Header.Add("Authorization", "Bearer "+authToken)
 
 	w := httptest.NewRecorder()
@@ -203,4 +207,86 @@ func unfollowUser(userID int64, authToken string, s *gin.Engine, url string, t *
 	if w.Code != http.StatusOK {
 		t.Errorf("error unfollowing user, status code: %v, expected: %v", w.Code, http.StatusOK)
 	}
+}
+
+func body(bodyData interface{}) *bytes.Buffer {
+	data, _ := json.Marshal(bodyData)
+	body := bytes.NewBuffer(data)
+
+	return body
+}
+
+// not a real builder pattern, but exists just to make code in tests more readable
+type requestBuilder struct {
+	request *http.Request
+}
+
+func request(method, url string, body io.Reader) *requestBuilder {
+	request, _ := http.NewRequest(method, url, body)
+
+	return &requestBuilder{
+		request: request,
+	}
+}
+
+func (rb *requestBuilder) json() *requestBuilder {
+	rb.request.Header.Add("Content-Type", "application/json")
+	return rb
+}
+
+func (rb *requestBuilder) authorizedWith(authToken string) *requestBuilder {
+	rb.request.Header.Add("Authorization", "Bearer "+authToken)
+	return rb
+}
+
+func (rb *requestBuilder) withQuery(parameter string, value interface{}) *requestBuilder {
+	queryParameters := rb.request.URL.Query()
+	var valueStr string
+
+	switch v := value.(type) {
+	case string:
+		valueStr = v
+	case int, int32, int64:
+		valueStr = strconv.FormatInt(v.(int64), 10)
+	}
+
+	queryParameters.Add(parameter, valueStr)
+	rb.request.URL.RawQuery = queryParameters.Encode()
+
+	return rb
+}
+
+func (rb *requestBuilder) build() *http.Request {
+	return rb.request
+}
+
+// not a real builder pattern, but exists just to make code in tests more readable
+type publicUserBuilder struct {
+	user *model.PublicUser
+}
+
+func publicUser(user model.User) *publicUserBuilder {
+	return &publicUserBuilder{
+		user: &model.PublicUser{
+			ID:            user.ID,
+			Username:      user.Username,
+			Name:          user.Name,
+			FollowerCount: 0,
+			Following:     false,
+		},
+	}
+}
+
+func (pu *publicUserBuilder) withFollowerCount(followerCount int64) *publicUserBuilder {
+	pu.user.FollowerCount = followerCount
+	return pu
+}
+
+func (pu *publicUserBuilder) withFollowing(following bool) *publicUserBuilder {
+	pu.user.Following = following
+	return pu
+}
+
+func (pu *publicUserBuilder) build() *model.PublicUser {
+	return pu.user
 }

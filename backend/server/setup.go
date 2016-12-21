@@ -67,7 +67,7 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		users.POST(":id/follow", api.FollowUser)
 		users.POST(":id/unfollow", api.UnfollowUser)
 		users.GET(":id/followers", api.UserFollowers)
-		users.GET(":id/following", api.UserFollowing)
+		users.GET(":id/following", api.UserFollowees)
 	}
 
 	auth := router.Group("")

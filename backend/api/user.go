@@ -105,7 +105,7 @@ func (api *API) UserFollowers(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, user)
 }
 
-func (api *API) UserFollowing(context *gin.Context) {
+func (api *API) UserFollowees(context *gin.Context) {
 	requestingUserID := (context.MustGet("userID").(int64))
 	parameterID := context.Param("id")
 

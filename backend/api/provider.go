@@ -20,5 +20,5 @@ type APIProvider interface {
 	FollowUser(context *gin.Context)
 	UnfollowUser(context *gin.Context)
 	UserFollowers(context *gin.Context)
-	UserFollowing(context *gin.Context)
+	UserFollowees(context *gin.Context)
 }
