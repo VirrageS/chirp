@@ -209,15 +209,19 @@ func unfollowUser(userID int64, authToken string, t *testing.T) {
 	}
 }
 
-func intToStr(int int64) string {
-	return strconv.FormatInt(int64(int), 10)
+func body(bodyData interface{}) *bytes.Buffer {
+	data, _ := json.Marshal(bodyData)
+	body := bytes.NewBuffer(data)
+
+	return body
 }
 
+// not a real builder pattern, but exists just to make code in tests more readable
 type requestBuilder struct {
 	request *http.Request
 }
 
-func Request(method, url string, body io.Reader) *requestBuilder {
+func request(method, url string, body io.Reader) *requestBuilder {
 	request, _ := http.NewRequest(method, url, body)
 
 	return &requestBuilder{
@@ -225,17 +229,17 @@ func Request(method, url string, body io.Reader) *requestBuilder {
 	}
 }
 
-func (rb *requestBuilder) JSON() *requestBuilder {
+func (rb *requestBuilder) json() *requestBuilder {
 	rb.request.Header.Add("Content-Type", "application/json")
 	return rb
 }
 
-func (rb *requestBuilder) AuthorizedWith(authToken string) *requestBuilder {
+func (rb *requestBuilder) authorizedWith(authToken string) *requestBuilder {
 	rb.request.Header.Add("Authorization", "Bearer "+authToken)
 	return rb
 }
 
-func (rb *requestBuilder) WithQuery(parameter string, value interface{}) *requestBuilder {
+func (rb *requestBuilder) withQuery(parameter string, value interface{}) *requestBuilder {
 	queryParameters := rb.request.URL.Query()
 	var valueStr string
 
@@ -252,6 +256,37 @@ func (rb *requestBuilder) WithQuery(parameter string, value interface{}) *reques
 	return rb
 }
 
-func (rb *requestBuilder) New() *http.Request {
+func (rb *requestBuilder) build() *http.Request {
 	return rb.request
+}
+
+// not a real builder pattern, but exists just to make code in tests more readable
+type publicUserBuilder struct {
+	user *model.PublicUser
+}
+
+func publicUser(user model.User) *publicUserBuilder {
+	return &publicUserBuilder{
+		user: &model.PublicUser{
+			ID:            user.ID,
+			Username:      user.Username,
+			Name:          user.Name,
+			FollowerCount: 0,
+			Following:     false,
+		},
+	}
+}
+
+func (pu *publicUserBuilder) withFollowerCount(followerCount int64) *publicUserBuilder {
+	pu.user.FollowerCount = followerCount
+	return pu
+}
+
+func (pu *publicUserBuilder) withFollowing(following bool) *publicUserBuilder {
+	pu.user.Following = following
+	return pu
+}
+
+func (pu *publicUserBuilder) build() *model.PublicUser {
+	return pu.user
 }

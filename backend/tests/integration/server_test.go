@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -49,10 +48,8 @@ func TestCreateNewUser(t *testing.T) {
 		Email:    "another@email.com",
 		Name:     "anotherName",
 	}
-	data, _ := json.Marshal(newUser)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/signup", buf).JSON().New()
+	req := request("POST", "/signup", body(newUser)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -75,10 +72,8 @@ func TestCreateUserWithUsernameThatAlreadyExists(t *testing.T) {
 		Email:    "some@email.com",
 		Name:     "somename",
 	}
-	data, _ := json.Marshal(newUser)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/signup", buf).JSON().New()
+	req := request("POST", "/signup", body(newUser)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -94,10 +89,8 @@ func TestCreateUserWithEmailThatAlreadyExists(t *testing.T) {
 		Email:    testUser.Email,
 		Name:     "somename",
 	}
-	data, _ := json.Marshal(newUser)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/signup", buf).JSON().New()
+	req := request("POST", "/signup", body(newUser)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -111,10 +104,10 @@ func TestLoginUser(t *testing.T) {
 		Email:    testUser.Email,
 		Password: testUser.Password,
 	}
-	data, _ := json.Marshal(loginData)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/login", buf).JSON().New()
+	expectedUser := &testUserPublic
+
+	req := request("POST", "/login", body(loginData)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -122,8 +115,6 @@ func TestLoginUser(t *testing.T) {
 	var loginResponse model.LoginResponse
 	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
 	assert.Nil(t, err)
-
-	expectedUser := &testUserPublic
 
 	actualUser := loginResponse.User
 
@@ -138,10 +129,8 @@ func TestLoginUserWithInvalidPassword(t *testing.T) {
 		Email:    testUser.Email,
 		Password: "invalidpassword",
 	}
-	data, _ := json.Marshal(loginData)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/login", buf).JSON().New()
+	req := request("POST", "/login", body(loginData)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -155,10 +144,8 @@ func TestLoginUserWithInvalidEmail(t *testing.T) {
 		Email:    "invalid@email.com",
 		Password: testUser.Password,
 	}
-	data, _ := json.Marshal(loginData)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/login", buf).JSON().New()
+	req := request("POST", "/login", body(loginData)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -172,9 +159,9 @@ func TestFollowUser(t *testing.T) {
 
 	newUser := createUser("follow", t)
 
-	req := Request("POST", fmt.Sprintf("%s/users/%s/follow", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/users/%v/follow", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -193,9 +180,9 @@ func TestConsecutiveUserFollows(t *testing.T) {
 
 	newUser := createUser("consecutiveFollows", t)
 
-	req := Request("POST", fmt.Sprintf("%s/users/%s/follow", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/users/%v/follow", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
 
@@ -219,9 +206,9 @@ func TestMultipleUserFollows(t *testing.T) {
 	followUser(newUser.ID, user1AuthToken, t)
 	followUser(newUser.ID, user2AuthToken, t)
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(user1AuthToken).
-		New()
+	req := request("GET", fmt.Sprintf("/users/%v", newUser.ID), nil).
+		authorizedWith(user1AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -241,9 +228,9 @@ func TestUnfollowUser(t *testing.T) {
 	newUser := createUser("unfollow", t)
 	followUser(newUser.ID, authToken, t)
 
-	req := Request("POST", fmt.Sprintf("%s/users/%s/unfollow", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/users/%v/unfollow", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -262,9 +249,9 @@ func TestUnfollowNotFollowedUser(t *testing.T) {
 
 	newUser := createUser("unfollownotfollowed", t)
 
-	req := Request("POST", fmt.Sprintf("%s/users/%s/unfollow", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/users/%v/unfollow", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -286,9 +273,9 @@ func TestUnfollowUserFollowedBySomebodyElse(t *testing.T) {
 	followUser(newUser.ID, user1AuthToken, t)
 	unfollowUser(newUser.ID, user2AuthToken, t)
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(user1AuthToken).
-		New()
+	req := request("GET", fmt.Sprintf("/users/%v", newUser.ID), nil).
+		authorizedWith(user1AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -308,9 +295,11 @@ func TestGetFollowersOfFollowedUser(t *testing.T) {
 	newUser := createUser("getfollowersoffollowed", t)
 	followUser(newUser.ID, authToken, t)
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s/followers", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	expectedFollowers := []*model.PublicUser{&testUserPublic}
+
+	req := request("GET", fmt.Sprintf("/users/%v/followers", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -318,8 +307,6 @@ func TestGetFollowersOfFollowedUser(t *testing.T) {
 	var actualFollowers []*model.PublicUser
 	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
 	assert.Nil(t, err)
-
-	expectedFollowers := []*model.PublicUser{&testUserPublic}
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, expectedFollowers, actualFollowers)
@@ -330,9 +317,11 @@ func TestGetFollowersOfNotFollowedUser(t *testing.T) {
 
 	newUser := createUser("getfollowersofnotfollowed", t)
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s/followers", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	notExpectedFollower := &testUserPublic
+
+	req := request("GET", fmt.Sprintf("/users/%v/followers", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -340,8 +329,6 @@ func TestGetFollowersOfNotFollowedUser(t *testing.T) {
 	var actualFollowers []*model.PublicUser
 	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
 	assert.Nil(t, err)
-
-	notExpectedFollower := &testUserPublic
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.NotContains(t, actualFollowers, notExpectedFollower)
@@ -357,9 +344,9 @@ func TestGetFollowersOfUserWithMultipleFollowers(t *testing.T) {
 
 	expectedFollowers := []*model.PublicUser{&testUserPublic, &otherTestUserPublic}
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s/followers", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(user1AuthToken).
-		New()
+	req := request("GET", fmt.Sprintf("/users/%v/followers", newUser.ID), nil).
+		authorizedWith(user1AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -372,35 +359,21 @@ func TestGetFollowersOfUserWithMultipleFollowers(t *testing.T) {
 	assert.Equal(t, expectedFollowers, actualFollowers)
 }
 
-func TestGetFollowing(t *testing.T) {
-	newUser := createUser("getfollowing", t)
+func TestGetFollowees(t *testing.T) {
+	newUser := createUser("getfollowees", t)
 	authToken, _ := loginUser(newUser, t)
 
 	followUser(testUser.ID, authToken, t)
 	followUser(otherTestUser.ID, authToken, t)
 
 	expectedFollowing := []*model.PublicUser{
-		{
-			ID:            testUser.ID,
-			Username:      testUser.Username,
-			Name:          testUser.Name,
-			AvatarUrl:     "",
-			FollowerCount: 1,
-			Following:     true,
-		},
-		{
-			ID:            otherTestUser.ID,
-			Username:      otherTestUser.Username,
-			Name:          otherTestUser.Name,
-			AvatarUrl:     "",
-			FollowerCount: 1,
-			Following:     true,
-		},
+		publicUser(testUser).withFollowerCount(1).withFollowing(true).build(),
+		publicUser(otherTestUser).withFollowerCount(1).withFollowing(true).build(),
 	}
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s/following", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("GET", fmt.Sprintf("/users/%v/following", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -417,9 +390,9 @@ func TestGetFollowingOfUserThatDoesNotFollowAnyone(t *testing.T) {
 	newUser := createUser("getfollowingnotfollowing", t)
 	authToken, _ := loginUser(newUser, t)
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s/following", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("GET", fmt.Sprintf("/users/%v/following", newUser.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -444,19 +417,12 @@ func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
 	followUser(userToFollow2.ID, user2AuthToken, t)
 
 	expectedFollowing := []*model.PublicUser{
-		{
-			ID:            userToFollow1.ID,
-			Username:      userToFollow1.Username,
-			Name:          userToFollow1.Name,
-			AvatarUrl:     "",
-			FollowerCount: 1,
-			Following:     true,
-		},
+		publicUser(*userToFollow1).withFollowerCount(1).withFollowing(true).build(),
 	}
 
-	req := Request("GET", fmt.Sprintf("%s/users/%s/following", baseURL, intToStr(newUser.ID)), nil).
-		AuthorizedWith(user1AuthToken).
-		New()
+	req := request("GET", fmt.Sprintf("/users/%v/following", newUser.ID), nil).
+		authorizedWith(user1AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -472,13 +438,14 @@ func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
 func TestCreateTweetResponse(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
 
-	newTweet := &model.NewTweet{
-		Content: "new tweet",
-	}
-	data, _ := json.Marshal(newTweet)
-	buf := bytes.NewBuffer(data)
+	expectedUser := &testUserPublic
 
-	req := Request("POST", "/tweets", buf).JSON().AuthorizedWith(authToken).New()
+	newTweet := &model.NewTweet{Content: "new tweet"}
+
+	req := request("POST", "/tweets", body(newTweet)).
+		json().
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -486,14 +453,6 @@ func TestCreateTweetResponse(t *testing.T) {
 	var actualTweet model.Tweet
 	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
 	assert.Nil(t, err)
-
-	expectedUser := &model.PublicUser{
-		ID:        testUser.ID,
-		Username:  testUser.Username,
-		Name:      testUser.Name,
-		AvatarUrl: "",
-		Following: false,
-	}
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, int64(0), actualTweet.LikeCount)
@@ -509,9 +468,9 @@ func TestGetTweetAfterCreatingTweet(t *testing.T) {
 	createdTweet := createTweet("new tweet", authToken, t)
 	tweetID := createdTweet.ID
 
-	reqGET := Request("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	reqGET := request("GET", fmt.Sprintf("/tweets/%v", tweetID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -529,9 +488,9 @@ func TestGetTweetsAfterCreatingTweets(t *testing.T) {
 	tweet1 := createTweet("new tweet1", authToken, t)
 	tweet2 := createTweet("new tweet2", authToken, t)
 
-	reqGET := Request("GET", "/tweets", nil).
-		AuthorizedWith(authToken).
-		New()
+	reqGET := request("GET", "/tweets", nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -547,16 +506,15 @@ func TestGetTweetsAfterCreatingTweets(t *testing.T) {
 
 func TestDeleteTweetResponseAfterCreatingTweet(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
+
 	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
 
-	reqDELETE := Request("DELETE", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
-
-	reqGET := Request("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	reqDELETE := request("DELETE", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
+	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
 
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
@@ -572,12 +530,11 @@ func TestGetTweetAfterDeletingTweet(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
 
 	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
-	deleteTweet(tweetID, authToken, t)
+	deleteTweet(createdTweet.ID, authToken, t)
 
-	reqGET := Request("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -592,9 +549,9 @@ func TestHomeFeed(t *testing.T) {
 	user1Tweet := createTweet("user1 tweet", user1AuthToken, t)
 	user2Tweet := createTweet("user2 tweet", user2AuthToken, t)
 
-	reqGET := Request("GET", "/home_feed", nil).
-		AuthorizedWith(user1AuthToken).
-		New()
+	reqGET := request("GET", "/home_feed", nil).
+		authorizedWith(user1AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -618,7 +575,10 @@ func TestGetTweetsCreatedByUser(t *testing.T) {
 	user1Tweet2 := createTweet("user1 tweet2", user1AuthToken, t)
 	user2Tweet := createTweet("user2 tweet", user2AuthToken, t)
 
-	reqGET := Request("GET", "/tweets", nil).WithQuery("userID", newUser.ID).AuthorizedWith(user1AuthToken).New()
+	reqGET := request("GET", "/tweets", nil).
+		withQuery("userID", newUser.ID).
+		authorizedWith(user1AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -637,11 +597,10 @@ func TestLikeTweet(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
 
 	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
 
-	req := Request("POST", fmt.Sprintf("/tweets/%s/like", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/tweets/%v/like", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -659,11 +618,10 @@ func TestConsecutiveTweetLikes(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
 
 	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
 
-	req := Request("POST", fmt.Sprintf("/tweets/%s/like", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/tweets/%v/like", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
 
@@ -684,14 +642,13 @@ func TestMultipleTweetLikes(t *testing.T) {
 	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
 	createdTweet := createTweet("new tweet", user1AuthToken, t)
-	tweetID := createdTweet.ID
 
-	likeTweet(tweetID, user1AuthToken, t)
-	likeTweet(tweetID, user2AuthToken, t)
+	likeTweet(createdTweet.ID, user1AuthToken, t)
+	likeTweet(createdTweet.ID, user2AuthToken, t)
 
-	reqGET := Request("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(user2AuthToken).
-		New()
+	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
+		authorizedWith(user2AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -709,13 +666,12 @@ func TestLikedFieldOfNotLikedTweet(t *testing.T) {
 	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
 	createdTweet := createTweet("new tweet", user1AuthToken, t)
-	tweetID := createdTweet.ID
 
-	likeTweet(tweetID, user1AuthToken, t)
+	likeTweet(createdTweet.ID, user1AuthToken, t)
 
-	reqGET := Request("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(user2AuthToken).
-		New()
+	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
+		authorizedWith(user2AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -732,12 +688,11 @@ func TestUnlikeTweet(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
 
 	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
-	likeTweet(tweetID, authToken, t)
+	likeTweet(createdTweet.ID, authToken, t)
 
-	req := Request("POST", fmt.Sprintf("/tweets/%s/unlike", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/tweets/%v/unlike", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -755,11 +710,10 @@ func TestUnlikeNotLikedTweet(t *testing.T) {
 	authToken, _ := loginUser(&testUser, t)
 
 	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
 
-	req := Request("POST", fmt.Sprintf("/tweets/%s/unlike", intToStr(tweetID)), nil).
-		AuthorizedWith(authToken).
-		New()
+	req := request("POST", fmt.Sprintf("/tweets/%v/unlike", createdTweet.ID), nil).
+		authorizedWith(authToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
@@ -778,14 +732,13 @@ func TestUnlikeTweetLikedBySomebodyElse(t *testing.T) {
 	user2AuthToken, _ := loginUser(&otherTestUser, t)
 
 	createdTweet := createTweet("new tweet", user1AuthToken, t)
-	tweetID := createdTweet.ID
 
-	likeTweet(tweetID, user1AuthToken, t)
-	unlikeTweet(tweetID, user2AuthToken, t)
+	likeTweet(createdTweet.ID, user1AuthToken, t)
+	unlikeTweet(createdTweet.ID, user2AuthToken, t)
 
-	reqGET := Request("GET", fmt.Sprintf("/tweets/%s", intToStr(tweetID)), nil).
-		AuthorizedWith(user2AuthToken).
-		New()
+	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
+		authorizedWith(user2AuthToken).
+		build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, reqGET)
@@ -805,10 +758,8 @@ func TestRefreshAuthToken(t *testing.T) {
 		UserID:       testUser.ID,
 		RefreshToken: refreshToken,
 	}
-	data, _ := json.Marshal(refreshData)
-	buf := bytes.NewBuffer(data)
 
-	req := Request("POST", "/token", buf).JSON().New()
+	req := request("POST", "/token", body(refreshData)).json().build()
 	w := httptest.NewRecorder()
 
 	s.ServeHTTP(w, req)
