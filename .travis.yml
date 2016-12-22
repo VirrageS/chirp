@@ -5,19 +5,15 @@ go:
 os:
   - linux
 
-sudo: false
+sudo: required
 dist: trusty
 
 services:
-  - postgresql
-  - redis-server
+  - docker
 
 addons:
   postgresql: "9.5"
 
-before_script:
-  - psql -c 'create database travis_ci_test;' -U postgres -f postgres/schema.sql
-
 script:
   - go get -t -v ./backend/...
-  - go test ./backend/...
+  - make test -C  ./backend
