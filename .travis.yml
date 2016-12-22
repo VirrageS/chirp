@@ -11,9 +11,5 @@ dist: trusty
 services:
   - docker
 
-addons:
-  postgresql: "9.5"
-
 script:
-  - go get -t -v ./backend/...
   - make test -C  ./backend
