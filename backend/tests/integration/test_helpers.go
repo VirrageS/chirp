@@ -4,211 +4,245 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
-	"testing"
 
+	. "github.com/onsi/gomega"
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/cache"
-	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
-	"github.com/VirrageS/chirp/backend/server"
-	"io"
 )
 
-var baseURL string
-var s *gin.Engine
-
-func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, baseURL string) {
-	testConfig := config.GetConfig("test")
-
-	db := database.NewConnection("5433")
-	cache := cache.NewDummyCache()
-
-	gin.SetMode(gin.TestMode)
-	db.Exec("TRUNCATE users, tweets CASCADE;") // Ugly, but lets keep it for convenience for now
-
-	err := db.QueryRow("INSERT INTO users (username, email, password, name)"+
-		"VALUES ($1, $2, $3, $4) RETURNING id, username, email, password, name",
-		"user", "user@email.com", "password", "name").
-		Scan(&testUser.ID, &testUser.Username, &testUser.Email, &testUser.Password, &testUser.Name)
-	if err != nil {
-		panic(fmt.Sprintf("Error inserting test user into database = %v", err))
-	}
-
-	err = db.QueryRow("INSERT INTO users (username, email, password, name)"+
-		"VALUES ($1, $2, $3, $4) RETURNING id, username, email, password, name",
-		"otheruser", "otheruser@email.com", "otherpassword", "othername").
-		Scan(&otherTestUser.ID, &otherTestUser.Username, &otherTestUser.Email, &otherTestUser.Password, &otherTestUser.Name)
-	if err != nil {
-		panic(fmt.Sprintf("Error inserting other test user into database = %v", err))
-	}
-
-	*s = server.New(db, cache, testConfig)
-
-	baseURL = "http://localhost:8080"
-}
-
-func createUser(name string, t *testing.T) *model.User {
-	newUserForm := model.NewUserForm{
+// User
+func createUser(s *gin.Engine, name string) *model.User {
+	userForm := model.NewUserForm{
 		Email:    name + "@email.com",
 		Password: name + "password",
 		Name:     name + "name",
 		Username: name + "username",
 	}
-	data, _ := json.Marshal(newUserForm)
 
-	buf := bytes.NewBuffer(data)
-	req, _ := http.NewRequest("POST", baseURL+"/signup", buf)
-	req.Header.Add("Content-Type", "application/json")
-
+	req := request("POST", "/signup", body(userForm)).json().build()
 	w := httptest.NewRecorder()
-
 	s.ServeHTTP(w, req)
-
-	if w.Code != http.StatusCreated {
-		t.Errorf("error logging user int, status code: %v, expected: %v", w.Code, http.StatusOK)
-	}
+	Expect(w.Code).To(Equal(http.StatusCreated))
 
 	var newUser model.PublicUser
 	err := json.Unmarshal(w.Body.Bytes(), &newUser)
-	if err != nil {
-		t.Error(err)
-	}
+	Expect(err).NotTo(HaveOccurred())
 
 	return &model.User{
 		ID:       newUser.ID,
 		Username: newUser.Username,
 		Name:     newUser.Name,
-		Email:    newUserForm.Email,
-		Password: newUserForm.Password,
+		Email:    userForm.Email,
+		Password: userForm.Password,
 	}
 }
 
-func loginUser(user *model.User, t *testing.T) (string, string) {
-	loginData := &model.LoginForm{
+func retrieveUser(s *gin.Engine, userID int64, authToken string) *model.PublicUser {
+	path := fmt.Sprintf("/users/%v", userID)
+	req := request("GET", path, nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var user model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &user)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &user
+}
+
+func loginUser(s *gin.Engine, user *model.User) (string, string) {
+	loginForm := &model.LoginForm{
 		Email:    user.Email,
 		Password: user.Password,
 	}
 
-	data, _ := json.Marshal(loginData)
-
-	buf := bytes.NewBuffer(data)
-	req, _ := http.NewRequest("POST", baseURL+"/login", buf)
-	req.Header.Add("Content-Type", "application/json")
-
+	data, _ := json.Marshal(loginForm)
+	req := request("POST", "/login", bytes.NewBuffer(data)).json().build()
 	w := httptest.NewRecorder()
-
 	s.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("error logging user int, status code: %v, expected: %v", w.Code, http.StatusOK)
-	}
+	Expect(w.Code).To(Equal(http.StatusOK))
 
 	var loginResponse model.LoginResponse
 	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
-	if err != nil {
-		t.Error(err)
-	}
+	Expect(err).NotTo(HaveOccurred())
 
 	return loginResponse.AuthToken, loginResponse.RefreshToken
 }
 
-func createTweet(content string, authToken string, t *testing.T) *model.Tweet {
-	newTweet1 := &model.NewTweet{
+func followUser(s *gin.Engine, userID int64, authToken string) *model.PublicUser {
+	path := fmt.Sprintf("/users/%v/follow", userID)
+	req := request("POST", path, nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var user model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &user)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &user
+}
+
+func unfollowUser(s *gin.Engine, userID int64, authToken string) *model.PublicUser {
+	path := fmt.Sprintf("/users/%v/unfollow", userID)
+	req := request("POST", path, nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var user model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &user)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &user
+}
+
+// Followers
+func retrieveFollowers(s *gin.Engine, userID int64, authToken string) *[]*model.PublicUser {
+	path := fmt.Sprintf("/users/%v/followers", userID)
+	req := request("GET", path, nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var followers []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &followers)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &followers
+}
+
+// Followees
+func retrieveFollowees(s *gin.Engine, userID int64, authToken string) *[]*model.PublicUser {
+	path := fmt.Sprintf("/users/%v/followees", userID)
+	req := request("GET", path, nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var followees []*model.PublicUser
+	err := json.Unmarshal(w.Body.Bytes(), &followees)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &followees
+}
+
+// Tweet
+func createTweet(s *gin.Engine, content string, authToken string) *model.Tweet {
+	newTweet := &model.NewTweet{
 		Content: content,
 	}
-	data, _ := json.Marshal(newTweet1)
-	buf := bytes.NewBuffer(data)
 
-	req, _ := http.NewRequest("POST", baseURL+"/tweets", buf)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+authToken)
-
+	req := request("POST", "/tweets", body(newTweet)).json().authorize(authToken).build()
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusCreated))
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("error creating tweet, status code: %v,  expected: %v", w.Code, http.StatusCreated)
-	}
+	var tweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweet)
+	Expect(err).NotTo(HaveOccurred())
 
-	var createdTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &createdTweet)
-	if err != nil {
-		t.Error(err)
-	}
-
-	return &createdTweet
+	return &tweet
 }
 
-func deleteTweet(tweetID int64, authToken string, t *testing.T) {
-	reqDELETE, _ := http.NewRequest("DELETE", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10), nil)
-	reqDELETE.Header.Add("Authorization", "Bearer "+authToken)
-
+func deleteTweet(s *gin.Engine, tweetID int64, authToken string) {
+	path := fmt.Sprintf("/tweets/%v", tweetID)
+	req := request("DELETE", path, nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqDELETE)
-
-	if w.Code != http.StatusNoContent {
-		t.Errorf("error deleting tweet, status code: %v, expected: %v", w.Code, http.StatusNoContent)
-	}
-}
-
-func likeTweet(tweetID int64, authToken string, t *testing.T) {
-	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/like", nil)
-	req.Header.Add("Authorization", "Bearer "+authToken)
-
-	w := httptest.NewRecorder()
-
 	s.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("error liking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
-	}
+	Expect(w.Code).To(Equal(http.StatusNoContent))
 }
 
-func unlikeTweet(tweetID int64, authToken string, t *testing.T) {
-	req, _ := http.NewRequest("POST", baseURL+"/tweets/"+strconv.FormatInt(int64(tweetID), 10)+"/unlike", nil)
-	req.Header.Add("Authorization", "Bearer "+authToken)
-
+func retrieveTweet(s *gin.Engine, tweetID int64, authToken string) *model.Tweet {
+	path := fmt.Sprintf("/tweets/%v", tweetID)
+	req := request("GET", path, nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
-
 	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
 
-	if w.Code != http.StatusOK {
-		t.Errorf("error unliking tweet, status code: %v, expected: %v", w.Code, http.StatusOK)
-	}
+	var tweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweet)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tweet
 }
 
-func followUser(userID int64, authToken string, t *testing.T) {
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(userID), 10)+"/follow", nil)
-	req.Header.Add("Authorization", "Bearer "+authToken)
-
+func likeTweet(s *gin.Engine, tweetID int64, authToken string) *model.Tweet {
+	path := fmt.Sprintf("/tweets/%v/like", tweetID)
+	req := request("POST", path, nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
-
 	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
 
-	if w.Code != http.StatusOK {
-		t.Errorf("error following user, status code: %v, expected: %v", w.Code, http.StatusOK)
-	}
+	var tweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweet)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tweet
 }
 
-func unfollowUser(userID int64, authToken string, t *testing.T) {
-	req, _ := http.NewRequest("POST", baseURL+"/users/"+strconv.FormatInt(int64(userID), 10)+"/unfollow", nil)
-	req.Header.Add("Authorization", "Bearer "+authToken)
-
+func unlikeTweet(s *gin.Engine, tweetID int64, authToken string) *model.Tweet {
+	path := fmt.Sprintf("/tweets/%v/unlike", tweetID)
+	req := request("POST", path, nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
-
 	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
 
-	if w.Code != http.StatusOK {
-		t.Errorf("error unfollowing user, status code: %v, expected: %v", w.Code, http.StatusOK)
-	}
+	var tweet model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweet)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tweet
 }
 
+// Tweets
+func retrieveTweets(s *gin.Engine, authToken string) *[]*model.Tweet {
+	req := request("GET", "/tweets", nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var tweets []*model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweets)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tweets
+}
+
+func retrieveUserTweets(s *gin.Engine, authToken string, userID int64) *[]*model.Tweet {
+	req := request("GET", "/tweets", nil).authorize(authToken).urlQuery("userID", userID).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var tweets []*model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweets)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tweets
+}
+
+// Home feed
+func retrieveHomeFeed(s *gin.Engine, authToken string) *[]*model.Tweet {
+	req := request("GET", "/home_feed", nil).authorize(authToken).build()
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
+	Expect(w.Code).To(Equal(http.StatusOK))
+
+	var tweets []*model.Tweet
+	err := json.Unmarshal(w.Body.Bytes(), &tweets)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &tweets
+}
+
+// Interface to bytes marshaler (helper for body)
 func body(bodyData interface{}) *bytes.Buffer {
 	data, _ := json.Marshal(bodyData)
 	body := bytes.NewBuffer(data)
@@ -216,11 +250,12 @@ func body(bodyData interface{}) *bytes.Buffer {
 	return body
 }
 
-// not a real builder pattern, but exists just to make code in tests more readable
+// Request build
 type requestBuilder struct {
 	request *http.Request
 }
 
+// Create new request builder struct
 func request(method, url string, body io.Reader) *requestBuilder {
 	request, _ := http.NewRequest(method, url, body)
 
@@ -234,12 +269,12 @@ func (rb *requestBuilder) json() *requestBuilder {
 	return rb
 }
 
-func (rb *requestBuilder) authorizedWith(authToken string) *requestBuilder {
+func (rb *requestBuilder) authorize(authToken string) *requestBuilder {
 	rb.request.Header.Add("Authorization", "Bearer "+authToken)
 	return rb
 }
 
-func (rb *requestBuilder) withQuery(parameter string, value interface{}) *requestBuilder {
+func (rb *requestBuilder) urlQuery(parameter string, value interface{}) *requestBuilder {
 	queryParameters := rb.request.URL.Query()
 	var valueStr string
 
@@ -252,7 +287,6 @@ func (rb *requestBuilder) withQuery(parameter string, value interface{}) *reques
 
 	queryParameters.Add(parameter, valueStr)
 	rb.request.URL.RawQuery = queryParameters.Encode()
-
 	return rb
 }
 
@@ -260,7 +294,7 @@ func (rb *requestBuilder) build() *http.Request {
 	return rb.request
 }
 
-// not a real builder pattern, but exists just to make code in tests more readable
+// Public user builder
 type publicUserBuilder struct {
 	user *model.PublicUser
 }
@@ -277,12 +311,12 @@ func publicUser(user model.User) *publicUserBuilder {
 	}
 }
 
-func (pu *publicUserBuilder) withFollowerCount(followerCount int64) *publicUserBuilder {
+func (pu *publicUserBuilder) followerCount(followerCount int64) *publicUserBuilder {
 	pu.user.FollowerCount = followerCount
 	return pu
 }
 
-func (pu *publicUserBuilder) withFollowing(following bool) *publicUserBuilder {
+func (pu *publicUserBuilder) following(following bool) *publicUserBuilder {
 	pu.user.Following = following
 	return pu
 }

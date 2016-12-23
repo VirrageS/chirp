@@ -1,777 +1,600 @@
 package integration
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"gopkg.in/gin-gonic/gin.v1"
+
+	"github.com/VirrageS/chirp/backend/cache"
+	"github.com/VirrageS/chirp/backend/config"
+	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
-	"github.com/stretchr/testify/assert"
+	"github.com/VirrageS/chirp/backend/server"
 )
 
-var testUser model.User
-var testUserPublic model.PublicUser
-
-var otherTestUser model.User
-var otherTestUserPublic model.PublicUser
-
-func TestMain(m *testing.M) {
-	setup(&testUser, &otherTestUser, &s, baseURL)
-
-	testUserPublic = model.PublicUser{
-		ID:            testUser.ID,
-		Username:      testUser.Username,
-		Name:          testUser.Name,
-		AvatarUrl:     "",
-		FollowerCount: 0,
-		Following:     false,
-	}
-	otherTestUserPublic = model.PublicUser{
-		ID:            otherTestUser.ID,
-		Username:      otherTestUser.Username,
-		Name:          otherTestUser.Name,
-		AvatarUrl:     "",
-		FollowerCount: 0,
-		Following:     false,
-	}
-
-	os.Exit(m.Run())
+func TestIntegration(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Integration")
 }
 
-func TestCreateNewUser(t *testing.T) {
-	newUser := &model.NewUserForm{
-		Username: "anotherUser",
-		Password: "anotherPassword",
-		Email:    "another@email.com",
-		Name:     "anotherName",
-	}
-
-	req := request("POST", "/signup", body(newUser)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, actualUser.Username, newUser.Username)
-	assert.Equal(t, actualUser.Name, newUser.Name)
-	assert.Equal(t, actualUser.AvatarUrl, "")
-	assert.Equal(t, actualUser.Following, false)
-}
-
-func TestCreateUserWithUsernameThatAlreadyExists(t *testing.T) {
-	newUser := &model.NewUserForm{
-		Username: testUser.Username,
-		Password: "somepassword",
-		Email:    "some@email.com",
-		Name:     "somename",
-	}
-
-	req := request("POST", "/signup", body(newUser)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusConflict, w.Code)
-	assert.NotEmpty(t, w.Body)
-}
-
-func TestCreateUserWithEmailThatAlreadyExists(t *testing.T) {
-	newUser := &model.NewUserForm{
-		Username: "someusername",
-		Password: "somepassword",
-		Email:    testUser.Email,
-		Name:     "somename",
-	}
-
-	req := request("POST", "/signup", body(newUser)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusConflict, w.Code)
-	assert.NotEmpty(t, w.Body)
-}
-
-func TestLoginUser(t *testing.T) {
-	loginData := &model.LoginForm{
-		Email:    testUser.Email,
-		Password: testUser.Password,
-	}
-
-	expectedUser := &testUserPublic
-
-	req := request("POST", "/login", body(loginData)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var loginResponse model.LoginResponse
-	err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
-	assert.Nil(t, err)
-
-	actualUser := loginResponse.User
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, expectedUser, actualUser)
-	assert.NotEmpty(t, loginResponse.AuthToken)
-	assert.NotEmpty(t, loginResponse.RefreshToken)
-}
-
-func TestLoginUserWithInvalidPassword(t *testing.T) {
-	loginData := &model.LoginForm{
-		Email:    testUser.Email,
-		Password: "invalidpassword",
-	}
-
-	req := request("POST", "/login", body(loginData)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.NotEmpty(t, w.Body)
-}
-
-func TestLoginUserWithInvalidEmail(t *testing.T) {
-	loginData := &model.LoginForm{
-		Email:    "invalid@email.com",
-		Password: testUser.Password,
-	}
-
-	req := request("POST", "/login", body(loginData)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.NotEmpty(t, w.Body)
-}
-
-func TestFollowUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	newUser := createUser("follow", t)
-
-	req := request("POST", fmt.Sprintf("/users/%v/follow", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(1), actualUser.FollowerCount)
-	assert.True(t, actualUser.Following)
-}
-
-func TestConsecutiveUserFollows(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	newUser := createUser("consecutiveFollows", t)
-
-	req := request("POST", fmt.Sprintf("/users/%v/follow", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-	w2 := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-	s.ServeHTTP(w2, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(1), actualUser.FollowerCount)
-	assert.True(t, actualUser.Following)
-}
-
-func TestMultipleUserFollows(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	newUser := createUser("multiplefollows", t)
-	followUser(newUser.ID, user1AuthToken, t)
-	followUser(newUser.ID, user2AuthToken, t)
-
-	req := request("GET", fmt.Sprintf("/users/%v", newUser.ID), nil).
-		authorizedWith(user1AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(2), actualUser.FollowerCount)
-	assert.True(t, actualUser.Following)
-}
-
-func TestUnfollowUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	newUser := createUser("unfollow", t)
-	followUser(newUser.ID, authToken, t)
-
-	req := request("POST", fmt.Sprintf("/users/%v/unfollow", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(0), actualUser.FollowerCount)
-	assert.False(t, actualUser.Following)
-}
-
-func TestUnfollowNotFollowedUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	newUser := createUser("unfollownotfollowed", t)
-
-	req := request("POST", fmt.Sprintf("/users/%v/unfollow", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(0), actualUser.FollowerCount)
-	assert.False(t, actualUser.Following)
-}
-
-func TestUnfollowUserFollowedBySomebodyElse(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	newUser := createUser("unfollowsomebodyelse", t)
-	followUser(newUser.ID, user1AuthToken, t)
-	unfollowUser(newUser.ID, user2AuthToken, t)
-
-	req := request("GET", fmt.Sprintf("/users/%v", newUser.ID), nil).
-		authorizedWith(user1AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualUser model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(1), actualUser.FollowerCount)
-	assert.True(t, actualUser.Following)
-}
-
-func TestGetFollowersOfFollowedUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	newUser := createUser("getfollowersoffollowed", t)
-	followUser(newUser.ID, authToken, t)
-
-	expectedFollowers := []*model.PublicUser{&testUserPublic}
-
-	req := request("GET", fmt.Sprintf("/users/%v/followers", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualFollowers []*model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, expectedFollowers, actualFollowers)
-}
-
-func TestGetFollowersOfNotFollowedUser(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	newUser := createUser("getfollowersofnotfollowed", t)
-
-	notExpectedFollower := &testUserPublic
-
-	req := request("GET", fmt.Sprintf("/users/%v/followers", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualFollowers []*model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.NotContains(t, actualFollowers, notExpectedFollower)
-}
-
-func TestGetFollowersOfUserWithMultipleFollowers(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	newUser := createUser("getmultiplefollowers", t)
-	followUser(newUser.ID, user1AuthToken, t)
-	followUser(newUser.ID, user2AuthToken, t)
-
-	expectedFollowers := []*model.PublicUser{&testUserPublic, &otherTestUserPublic}
-
-	req := request("GET", fmt.Sprintf("/users/%v/followers", newUser.ID), nil).
-		authorizedWith(user1AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualFollowers []*model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualFollowers)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, expectedFollowers, actualFollowers)
-}
-
-func TestGetFollowees(t *testing.T) {
-	newUser := createUser("getfollowees", t)
-	authToken, _ := loginUser(newUser, t)
-
-	followUser(testUser.ID, authToken, t)
-	followUser(otherTestUser.ID, authToken, t)
-
-	expectedFollowing := []*model.PublicUser{
-		publicUser(testUser).withFollowerCount(1).withFollowing(true).build(),
-		publicUser(otherTestUser).withFollowerCount(1).withFollowing(true).build(),
-	}
-
-	req := request("GET", fmt.Sprintf("/users/%v/following", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualFollowing []*model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualFollowing)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, expectedFollowing, actualFollowing)
-}
-
-func TestGetFollowingOfUserThatDoesNotFollowAnyone(t *testing.T) {
-	newUser := createUser("getfollowingnotfollowing", t)
-	authToken, _ := loginUser(newUser, t)
-
-	req := request("GET", fmt.Sprintf("/users/%v/following", newUser.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualFollowing []*model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualFollowing)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Empty(t, actualFollowing)
-}
-
-func TestGetOnlyFollowingOfGivenUser(t *testing.T) {
-	newUser := createUser("getfollowingonlyofgivenuser", t)
-	user1AuthToken, _ := loginUser(newUser, t)
-	user2AuthToken, _ := loginUser(&testUser, t)
-
-	userToFollow1 := createUser("getfollowingonlyofgivenusertofollow1", t)
-	userToFollow2 := createUser("getfollowingonlyofgivenusertofollow2", t)
-
-	followUser(userToFollow1.ID, user1AuthToken, t)
-	followUser(userToFollow2.ID, user2AuthToken, t)
-
-	expectedFollowing := []*model.PublicUser{
-		publicUser(*userToFollow1).withFollowerCount(1).withFollowing(true).build(),
-	}
-
-	req := request("GET", fmt.Sprintf("/users/%v/following", newUser.ID), nil).
-		authorizedWith(user1AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualFollowing []*model.PublicUser
-	err := json.Unmarshal(w.Body.Bytes(), &actualFollowing)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, expectedFollowing, actualFollowing)
-}
-
-func TestCreateTweetResponse(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	expectedUser := &testUserPublic
-
-	newTweet := &model.NewTweet{Content: "new tweet"}
-
-	req := request("POST", "/tweets", body(newTweet)).
-		json().
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, int64(0), actualTweet.LikeCount)
-	assert.Equal(t, int64(0), actualTweet.RetweetCount)
-	assert.Equal(t, "new tweet", actualTweet.Content)
-	assert.Equal(t, false, actualTweet.Liked)
-	assert.Equal(t, false, actualTweet.Retweeted)
-	assert.Equal(t, expectedUser, actualTweet.Author)
-}
-
-func TestGetTweetAfterCreatingTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-	createdTweet := createTweet("new tweet", authToken, t)
-	tweetID := createdTweet.ID
-
-	reqGET := request("GET", fmt.Sprintf("/tweets/%v", tweetID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, *createdTweet, actualTweet)
-}
-
-func TestGetTweetsAfterCreatingTweets(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-	tweet1 := createTweet("new tweet1", authToken, t)
-	tweet2 := createTweet("new tweet2", authToken, t)
-
-	reqGET := request("GET", "/tweets", nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweets []model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweets)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, actualTweets, *tweet1)
-	assert.Contains(t, actualTweets, *tweet2)
-}
-
-func TestDeleteTweetResponseAfterCreatingTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	createdTweet := createTweet("new tweet", authToken, t)
-
-	reqDELETE := request("DELETE", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-
-	w := httptest.NewRecorder()
-	w2 := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqDELETE)
-	s.ServeHTTP(w2, reqGET)
-
-	assert.Equal(t, http.StatusNoContent, w.Code)
-	assert.Equal(t, http.StatusNotFound, w2.Code)
-}
-
-func TestGetTweetAfterDeletingTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	createdTweet := createTweet("new tweet", authToken, t)
-	deleteTweet(createdTweet.ID, authToken, t)
-
-	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	assert.Equal(t, http.StatusNotFound, w.Code)
-}
-
-func TestHomeFeed(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	user1Tweet := createTweet("user1 tweet", user1AuthToken, t)
-	user2Tweet := createTweet("user2 tweet", user2AuthToken, t)
-
-	reqGET := request("GET", "/home_feed", nil).
-		authorizedWith(user1AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweets []model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweets)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, actualTweets, *user1Tweet)
-	assert.NotContains(t, actualTweets, *user2Tweet)
-}
-
-func TestGetTweetsCreatedByUser(t *testing.T) {
-	newUser := createUser("getcreatedbyuser", t)
-
-	user1AuthToken, _ := loginUser(newUser, t)
-	user2AuthToken, _ := loginUser(&testUser, t)
-
-	user1Tweet1 := createTweet("user1 tweet1", user1AuthToken, t)
-	user1Tweet2 := createTweet("user1 tweet2", user1AuthToken, t)
-	user2Tweet := createTweet("user2 tweet", user2AuthToken, t)
-
-	reqGET := request("GET", "/tweets", nil).
-		withQuery("userID", newUser.ID).
-		authorizedWith(user1AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweets []model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweets)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, actualTweets, *user1Tweet1)
-	assert.Contains(t, actualTweets, *user1Tweet2)
-	assert.NotContains(t, actualTweets, *user2Tweet)
-}
-
-func TestLikeTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	createdTweet := createTweet("new tweet", authToken, t)
-
-	req := request("POST", fmt.Sprintf("/tweets/%v/like", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(1), actualTweet.LikeCount)
-	assert.True(t, actualTweet.Liked)
-}
-
-func TestConsecutiveTweetLikes(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	createdTweet := createTweet("new tweet", authToken, t)
-
-	req := request("POST", fmt.Sprintf("/tweets/%v/like", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-	w2 := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-	s.ServeHTTP(w2, req)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w2.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w2.Code)
-	assert.Equal(t, int64(1), actualTweet.LikeCount)
-	assert.True(t, actualTweet.Liked)
-}
-
-func TestMultipleTweetLikes(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	createdTweet := createTweet("new tweet", user1AuthToken, t)
-
-	likeTweet(createdTweet.ID, user1AuthToken, t)
-	likeTweet(createdTweet.ID, user2AuthToken, t)
-
-	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
-		authorizedWith(user2AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(2), actualTweet.LikeCount)
-}
-
-func TestLikedFieldOfNotLikedTweet(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	createdTweet := createTweet("new tweet", user1AuthToken, t)
-
-	likeTweet(createdTweet.ID, user1AuthToken, t)
-
-	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
-		authorizedWith(user2AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.False(t, actualTweet.Liked)
-}
-
-func TestUnlikeTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	createdTweet := createTweet("new tweet", authToken, t)
-	likeTweet(createdTweet.ID, authToken, t)
-
-	req := request("POST", fmt.Sprintf("/tweets/%v/unlike", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(0), actualTweet.LikeCount)
-	assert.False(t, actualTweet.Liked)
-}
-
-func TestUnlikeNotLikedTweet(t *testing.T) {
-	authToken, _ := loginUser(&testUser, t)
-
-	createdTweet := createTweet("new tweet", authToken, t)
-
-	req := request("POST", fmt.Sprintf("/tweets/%v/unlike", createdTweet.ID), nil).
-		authorizedWith(authToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(0), actualTweet.LikeCount)
-	assert.False(t, actualTweet.Liked)
-}
-
-func TestUnlikeTweetLikedBySomebodyElse(t *testing.T) {
-	user1AuthToken, _ := loginUser(&testUser, t)
-	user2AuthToken, _ := loginUser(&otherTestUser, t)
-
-	createdTweet := createTweet("new tweet", user1AuthToken, t)
-
-	likeTweet(createdTweet.ID, user1AuthToken, t)
-	unlikeTweet(createdTweet.ID, user2AuthToken, t)
-
-	reqGET := request("GET", fmt.Sprintf("/tweets/%v", createdTweet.ID), nil).
-		authorizedWith(user2AuthToken).
-		build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, reqGET)
-
-	var actualTweet model.Tweet
-	err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-	assert.Nil(t, err)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, int64(1), actualTweet.LikeCount)
-}
-
-func TestRefreshAuthToken(t *testing.T) {
-	_, refreshToken := loginUser(&testUser, t)
-
-	refreshData := &model.RefreshAuthTokenRequest{
-		UserID:       testUser.ID,
-		RefreshToken: refreshToken,
-	}
-
-	req := request("POST", "/token", body(refreshData)).json().build()
-	w := httptest.NewRecorder()
-
-	s.ServeHTTP(w, req)
-
-	var refreshResponse model.RefreshAuthTokenResponse
-	err := json.Unmarshal(w.Body.Bytes(), &refreshResponse)
-	assert.Nil(t, err)
-
-	newAuthToken := refreshResponse.AuthToken
-	assert.NotEmpty(t, newAuthToken)
-
-	// test creating tweet with new auth
-	createdTweet := createTweet("new tweet", newAuthToken, t)
-	assert.Equal(t, createdTweet.Author.ID, testUser.ID)
-}
+var _ = Describe("ServerTest", func() {
+	var (
+		router *gin.Engine
+		db     *sql.DB
+
+		ala             *model.User
+		bob             *model.User
+		toor            *model.User
+		ernest          *model.User
+		alaToken        string
+		alaRefreshToken string
+		bobToken        string
+		alaPublic       *model.PublicUser
+		bobPublic       *model.PublicUser
+	)
+
+	BeforeEach(func() {
+		gin.SetMode(gin.TestMode)
+
+		db = database.NewConnection("5433")
+		testConfig := config.GetConfig("test")
+		cache := cache.NewDummyCache()
+		router = server.New(db, cache, testConfig)
+
+		// create users
+		ala = createUser(router, "ala")
+		bob = createUser(router, "bob")
+		alaToken, alaRefreshToken = loginUser(router, ala)
+		bobToken, _ = loginUser(router, bob)
+
+		alaPublic = retrieveUser(router, ala.ID, alaToken)
+		bobPublic = retrieveUser(router, bob.ID, bobToken)
+
+		// create additional users
+		toor = createUser(router, "toor")
+		ernest = createUser(router, "ernest")
+	})
+
+	AfterEach(func() {
+		// this is hack since TRUNCATE can execute up to 1s... whereas this ~5ms
+		db.Exec("DELETE FROM users; DELETE FROM tweets; DELETE FROM follows; DELETE FROM likes; DELETE FROM retweets;")
+	})
+
+	Describe("Create new user", func() {
+		var (
+			newUserForm *model.NewUserForm
+		)
+
+		BeforeEach(func() {
+			newUserForm = &model.NewUserForm{
+				Username: "anotherUser",
+				Password: "anotherPassword",
+				Email:    "another@email.com",
+				Name:     "anotherName",
+			}
+		})
+
+		It("should create user and populate fields correctly", func() {
+			req := request("POST", "/signup", body(newUserForm)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var newUser model.PublicUser
+			err := json.Unmarshal(w.Body.Bytes(), &newUser)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusCreated))
+			Expect(newUser.Username).To(Equal(newUserForm.Username))
+			Expect(newUser.Name).To(Equal(newUserForm.Name))
+			Expect(newUser.AvatarUrl).To(Equal(""))
+			Expect(newUser.Following).To(Equal(false))
+			Expect(newUser.FollowerCount).To(BeEquivalentTo(0))
+		})
+
+		It("should not create user when other user exists with same username", func() {
+			newUserForm.Username = ala.Username
+
+			req := request("POST", "/signup", body(newUserForm)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusConflict))
+			Expect(w.Body.Len()).NotTo(BeEquivalentTo(0))
+		})
+
+		It("should not create user when other user exists with same email", func() {
+			newUserForm.Email = ala.Email
+
+			req := request("POST", "/signup", body(newUserForm)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusConflict))
+			Expect(w.Body.Len()).NotTo(BeEquivalentTo(0))
+		})
+	})
+
+	Describe("Login user", func() {
+		var (
+			loggedUser    *model.PublicUser
+			loginUserForm *model.LoginForm
+		)
+
+		BeforeEach(func() {
+			loggedUser = alaPublic
+			loginUserForm = &model.LoginForm{
+				Email:    ala.Email,
+				Password: ala.Password,
+			}
+		})
+
+		It("should login user and return logged in user", func() {
+			req := request("POST", "/login", body(loginUserForm)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var loginResponse model.LoginResponse
+			err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(loginResponse.User).To(Equal(loggedUser))
+			Expect(loginResponse.AuthToken).NotTo(BeEmpty())
+			Expect(loginResponse.RefreshToken).NotTo(BeEmpty())
+		})
+
+		It("should not login user with wrong password", func() {
+			loginUserForm.Password = "invalidpassword"
+
+			req := request("POST", "/login", body(loginUserForm)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusUnauthorized))
+			Expect(w.Body.Len()).NotTo(BeEquivalentTo(0))
+		})
+
+		It("should not login user with wrong email", func() {
+			loginUserForm.Email = "invalid@email.com"
+
+			req := request("POST", "/login", body(loginUserForm)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusUnauthorized))
+			Expect(w.Body.Len()).NotTo(BeEquivalentTo(0))
+		})
+	})
+
+	Describe("Follow user", func() {
+		BeforeEach(func() {})
+
+		It("should follow user and populate fields appropriately", func() {
+			path := fmt.Sprintf("/users/%v/follow", toor.ID)
+			req := request("POST", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualUser model.PublicUser
+			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(actualUser.FollowerCount).To(BeEquivalentTo(1))
+			Expect(actualUser.Following).To(BeTrue())
+		})
+
+		It("should followed user match actual user", func() {
+			path := fmt.Sprintf("/users/%v/follow", toor.ID)
+			req := request("POST", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualUser model.PublicUser
+			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedUser := retrieveUser(router, toor.ID, alaToken)
+			Expect(actualUser).To(Equal(*expectedUser))
+		})
+
+		It("should not update follow user nor unfollow when following user twice", func() {
+			followUser(router, toor.ID, alaToken)
+			followUser(router, toor.ID, alaToken)
+
+			actualUser := retrieveUser(router, toor.ID, alaToken)
+			Expect(actualUser.FollowerCount).To(BeEquivalentTo(1))
+			Expect(actualUser.Following).To(BeTrue())
+		})
+
+		It("should update follow when two different user follow other user", func() {
+			followUser(router, toor.ID, alaToken)
+			followUser(router, toor.ID, bobToken)
+
+			actualUser := retrieveUser(router, toor.ID, alaToken)
+			Expect(actualUser.FollowerCount).To(BeEquivalentTo(2))
+			Expect(actualUser.Following).To(BeTrue())
+		})
+	})
+
+	Describe("Unfollow user", func() {
+		BeforeEach(func() {})
+
+		It("should unfollow user which is followed and populate all data", func() {
+			followUser(router, toor.ID, alaToken)
+
+			path := fmt.Sprintf("/users/%v/unfollow", toor.ID)
+			req := request("POST", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualUser model.PublicUser
+			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(actualUser.FollowerCount).To(BeEquivalentTo(0))
+			Expect(actualUser.Following).To(BeFalse())
+		})
+
+		It("should unfollowed user match actual user", func() {
+			followUser(router, toor.ID, alaToken)
+
+			path := fmt.Sprintf("/users/%v/unfollow", toor.ID)
+			req := request("POST", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualUser model.PublicUser
+			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedUser := retrieveUser(router, toor.ID, alaToken)
+			Expect(actualUser).To(Equal(*expectedUser))
+		})
+
+		It(`should not perform any operation (but should return user)
+				when trying to unfollow not followed user`, func() {
+			unfollowUser(router, toor.ID, alaToken)
+			actualUser := retrieveUser(router, toor.ID, alaToken)
+
+			Expect(actualUser.FollowerCount).To(BeEquivalentTo(0))
+			Expect(actualUser.Following).To(BeFalse())
+		})
+
+		It(`should not perform any operation (but should return user)
+				when trying unfollow user followed by someone else`, func() {
+			followUser(router, toor.ID, alaToken)
+			unfollowUser(router, toor.ID, bobToken)
+
+			alaActualUser := retrieveUser(router, toor.ID, alaToken)
+			Expect(alaActualUser.FollowerCount).To(BeEquivalentTo(1))
+			Expect(alaActualUser.Following).To(BeTrue())
+
+			bobActualUser := retrieveUser(router, toor.ID, bobToken)
+			Expect(bobActualUser.FollowerCount).To(BeEquivalentTo(1))
+			Expect(bobActualUser.Following).To(BeFalse())
+		})
+	})
+
+	Describe("Get followers", func() {
+		BeforeEach(func() {})
+
+		It("should get followers of followed user", func() {
+			expectedFollowers := []*model.PublicUser{alaPublic}
+
+			followUser(router, toor.ID, alaToken)
+
+			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+			Expect(*actualFollowers).To(Equal(expectedFollowers))
+		})
+
+		It("should get followers of user followed by multiple users", func() {
+			expectedFollowers := []*model.PublicUser{
+				alaPublic,
+				bobPublic,
+			}
+
+			followUser(router, toor.ID, alaToken)
+			followUser(router, toor.ID, bobToken)
+
+			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+			Expect(*actualFollowers).To(Equal(expectedFollowers))
+		})
+
+		It("should get followers of not followed user", func() {
+			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+			Expect(*actualFollowers).To(BeEmpty())
+		})
+
+		It("should get followers of user followed by someone else", func() {
+			expectedFollowers := []*model.PublicUser{bobPublic}
+
+			followUser(router, toor.ID, bobToken)
+
+			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
+		})
+	})
+
+	Describe("Get followees", func() {
+		BeforeEach(func() {})
+
+		It("should get followees", func() {
+			expectedFollowees := []*model.PublicUser{
+				publicUser(*toor).followerCount(1).following(true).build(),
+				publicUser(*ernest).followerCount(1).following(true).build(),
+			}
+
+			followUser(router, toor.ID, alaToken)
+			followUser(router, ernest.ID, alaToken)
+
+			actualFollowees := retrieveFollowees(router, ala.ID, alaToken)
+			Expect(*actualFollowees).To(ConsistOf(expectedFollowees))
+		})
+
+		It("should get empty followees when user is not following anyone", func() {
+			actualFollowers := retrieveFollowees(router, ala.ID, alaToken)
+			Expect(*actualFollowers).To(BeEmpty())
+		})
+
+		It("should get only current user followees", func() {
+			expectedFollowees := []*model.PublicUser{
+				publicUser(*toor).followerCount(1).following(true).build(),
+			}
+
+			followUser(router, toor.ID, alaToken)
+			followUser(router, ernest.ID, bobToken)
+
+			actualFollowers := retrieveFollowees(router, ala.ID, alaToken)
+			Expect(*actualFollowers).To(ConsistOf(expectedFollowees))
+		})
+	})
+
+	Describe("Create and get tweet", func() {
+		BeforeEach(func() {})
+
+		It("should create tweet", func() {
+			newTweet := &model.NewTweet{Content: "new tweet"}
+			req := request("POST", "/tweets", body(newTweet)).json().authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualTweet model.Tweet
+			err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusCreated))
+			Expect(actualTweet.LikeCount).To(BeEquivalentTo(0))
+			Expect(actualTweet.RetweetCount).To(BeEquivalentTo(0))
+			Expect(actualTweet.Content).To(Equal("new tweet"))
+			Expect(actualTweet.Liked).To(Equal(false))
+			Expect(actualTweet.Retweeted).To(Equal(false))
+			Expect(actualTweet.Author).To(Equal(alaPublic))
+		})
+
+		It("should get tweet after creating", func() {
+			expectedTweet := createTweet(router, "new tweet", alaToken)
+			actualTweet := retrieveTweet(router, expectedTweet.ID, alaToken)
+
+			Expect(actualTweet).To(Equal(expectedTweet))
+		})
+	})
+
+	Describe("Delete tweet", func() {
+		BeforeEach(func() {})
+
+		It("should delete existing tweet", func() {
+			createdTweet := createTweet(router, "new tweet", alaToken)
+			deleteTweet(router, createdTweet.ID, alaToken)
+
+			path := fmt.Sprintf("/tweets/%v", createdTweet.ID)
+			req := request("GET", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusNotFound))
+		})
+
+		It("should return when trying to delete not existing tweet", func() {
+			// TODO: what should happen?
+		})
+	})
+
+	Describe("Get tweets", func() {
+		BeforeEach(func() {})
+
+		It("should get tweets after creation", func() {
+			expectedTweets := []*model.Tweet{
+				createTweet(router, "new tweet1", alaToken),
+				createTweet(router, "new tweet2", alaToken),
+			}
+
+			actualTweets := retrieveTweets(router, alaToken)
+			Expect(*actualTweets).To(ConsistOf(expectedTweets))
+		})
+
+		It(`should only get tweets created by specified user
+				when providing user in query parameter`, func() {
+			alaExpectedTweets := []*model.Tweet{
+				createTweet(router, "tweet1", alaToken),
+				createTweet(router, "tweet2", alaToken),
+			}
+
+			bobExpectedTweets := []*model.Tweet{
+				createTweet(router, "something different", bobToken),
+			}
+
+			alaActualTweets := retrieveUserTweets(router, alaToken, ala.ID)
+			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
+
+			bobActualTweets := retrieveUserTweets(router, bobToken, bob.ID)
+			Expect(*bobActualTweets).To(ConsistOf(bobExpectedTweets))
+		})
+	})
+
+	Describe("Get home feed", func() {
+		BeforeEach(func() {})
+
+		It("should get tweets created by user", func() {
+			alaExpectedTweets := []*model.Tweet{
+				createTweet(router, "tweet1", alaToken),
+				createTweet(router, "tweet2", alaToken),
+			}
+
+			bobExpectedTweets := []*model.Tweet{
+				createTweet(router, "something different", bobToken),
+			}
+
+			alaActualTweets := retrieveHomeFeed(router, alaToken)
+			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
+
+			bobActualTweets := retrieveHomeFeed(router, bobToken)
+			Expect(*bobActualTweets).To(ConsistOf(bobExpectedTweets))
+		})
+	})
+
+	Describe("Like tweet", func() {
+		var (
+			alaTweet *model.Tweet
+			bobTweet *model.Tweet
+		)
+
+		BeforeEach(func() {
+			alaTweet = createTweet(router, "new ala tweet", alaToken)
+			bobTweet = createTweet(router, "new bob tweet", bobToken)
+		})
+
+		It("should like tweet and return new liked tweet with populated data", func() {
+			path := fmt.Sprintf("/tweets/%v/like", alaTweet.ID)
+			req := request("POST", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualTweet model.Tweet
+			err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(actualTweet.LikeCount).To(BeEquivalentTo(1))
+			Expect(actualTweet.Liked).To(Equal(true))
+		})
+
+		It("should liked tweet match actual tweet", func() {
+			actualTweet := likeTweet(router, alaTweet.ID, alaToken)
+			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			Expect(actualTweet).To(Equal(expectedTweet))
+		})
+
+		It("should tweet be liked only once after consecutive likes", func() {
+			likeTweet(router, alaTweet.ID, alaToken)
+			likeTweet(router, alaTweet.ID, alaToken)
+
+			actualTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			Expect(actualTweet.LikeCount).To(BeEquivalentTo(1))
+			Expect(actualTweet.Liked).To(Equal(true))
+		})
+
+		It("should return tweet liked twice after multiple (two) likes", func() {
+			likeTweet(router, alaTweet.ID, alaToken)
+			likeTweet(router, alaTweet.ID, bobToken)
+
+			actualTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			Expect(actualTweet.LikeCount).To(BeEquivalentTo(2))
+		})
+
+		It("should return tweet with false `liked` field when tweet was not liked by user", func() {
+			likeTweet(router, bobTweet.ID, bobToken)
+
+			actualTweet := retrieveTweet(router, bobTweet.ID, alaToken)
+			Expect(actualTweet.Liked).To(Equal(false))
+		})
+	})
+
+	Describe("Unlike tweet", func() {
+		var (
+			alaTweet *model.Tweet
+			bobTweet *model.Tweet
+		)
+
+		BeforeEach(func() {
+			alaTweet = createTweet(router, "new ala tweet", alaToken)
+			bobTweet = createTweet(router, "new bob tweet", bobToken)
+		})
+
+		It("should unlike tweet and return unliked tweet with fresh data", func() {
+			likeTweet(router, alaTweet.ID, alaToken)
+
+			path := fmt.Sprintf("/tweets/%v/unlike", alaTweet.ID)
+			req := request("POST", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			var actualTweet model.Tweet
+			err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(actualTweet.LikeCount).To(BeEquivalentTo(0))
+			Expect(actualTweet.Liked).To(Equal(false))
+		})
+
+		It("should new unliked tweet match actual tweet", func() {
+			likeTweet(router, alaTweet.ID, alaToken)
+			actualTweet := unlikeTweet(router, alaTweet.ID, alaToken)
+			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			Expect(actualTweet).To(Equal(expectedTweet))
+		})
+
+		It("should not perform any unexpected actions when trying to unlike not liked tweet", func() {
+			actualTweet := unlikeTweet(router, alaTweet.ID, alaToken)
+			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			Expect(actualTweet).To(Equal(expectedTweet))
+		})
+
+		It("should not unlike tweet which is liked by someone else", func() {
+			likeTweet(router, alaTweet.ID, alaToken)
+			unlikeTweet(router, alaTweet.ID, bobToken)
+
+			alaActualTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			Expect(alaActualTweet.LikeCount).To(BeEquivalentTo(1))
+			Expect(alaActualTweet.Liked).To(Equal(true))
+
+			bobActualTweet := retrieveTweet(router, alaTweet.ID, bobToken)
+			Expect(bobActualTweet.LikeCount).To(BeEquivalentTo(1))
+			Expect(bobActualTweet.Liked).To(Equal(false))
+		})
+	})
+
+	Describe("Refresh auth token", func() {
+		It("should refresh auth token", func() {
+			refreshTokenRequest := &model.RefreshAuthTokenRequest{
+				UserID:       ala.ID,
+				RefreshToken: alaRefreshToken,
+			}
+
+			req := request("POST", "/token", body(refreshTokenRequest)).json().build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			var refreshResponse model.RefreshAuthTokenResponse
+			err := json.Unmarshal(w.Body.Bytes(), &refreshResponse)
+			Expect(err).NotTo(HaveOccurred())
+
+			newAuthToken := refreshResponse.AuthToken
+			Expect(newAuthToken).NotTo(BeEmpty())
+
+			// test creating tweet with new auth
+			createdTweet := createTweet(router, "new tweet", newAuthToken)
+			Expect(createdTweet.Author).To(Equal(alaPublic))
+		})
+	})
+})
