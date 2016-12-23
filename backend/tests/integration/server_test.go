@@ -63,8 +63,14 @@ var _ = Describe("ServerTest", func() {
 	})
 
 	AfterEach(func() {
-		// this is hack since TRUNCATE can execute up to 1s... whereas this ~5ms
-		db.Exec("DELETE FROM users; DELETE FROM tweets; DELETE FROM follows; DELETE FROM likes; DELETE FROM retweets;")
+		// HACK: this is hack since TRUNCATE can execute up to 1s... whereas this ~5ms
+		db.Exec(`
+			DELETE FROM users;
+			DELETE FROM tweets;
+			DELETE FROM follows;
+			DELETE FROM likes;
+			DELETE FROM retweets;
+		`)
 	})
 
 	Describe("Create new user", func() {
@@ -192,17 +198,9 @@ var _ = Describe("ServerTest", func() {
 		})
 
 		It("should followed user match actual user", func() {
-			path := fmt.Sprintf("/users/%v/follow", toor.ID)
-			req := request("POST", path, nil).authorize(alaToken).build()
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			var actualUser model.PublicUser
-			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-			Expect(err).NotTo(HaveOccurred())
-
+			actualUser := followUser(router, toor.ID, alaToken)
 			expectedUser := retrieveUser(router, toor.ID, alaToken)
-			Expect(actualUser).To(Equal(*expectedUser))
+			Expect(actualUser).To(Equal(expectedUser))
 		})
 
 		It("should not update follow user nor unfollow when following user twice", func() {
@@ -247,24 +245,15 @@ var _ = Describe("ServerTest", func() {
 		It("should unfollowed user match actual user", func() {
 			followUser(router, toor.ID, alaToken)
 
-			path := fmt.Sprintf("/users/%v/unfollow", toor.ID)
-			req := request("POST", path, nil).authorize(alaToken).build()
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			var actualUser model.PublicUser
-			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-			Expect(err).NotTo(HaveOccurred())
-
+			actualUser := unfollowUser(router, toor.ID, alaToken)
 			expectedUser := retrieveUser(router, toor.ID, alaToken)
-			Expect(actualUser).To(Equal(*expectedUser))
+			Expect(actualUser).To(Equal(expectedUser))
 		})
 
 		It(`should not perform any operation (but should return user)
 				when trying to unfollow not followed user`, func() {
 			unfollowUser(router, toor.ID, alaToken)
 			actualUser := retrieveUser(router, toor.ID, alaToken)
-
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(0))
 			Expect(actualUser.Following).To(BeFalse())
 		})
@@ -288,7 +277,9 @@ var _ = Describe("ServerTest", func() {
 		BeforeEach(func() {})
 
 		It("should get followers of followed user", func() {
-			expectedFollowers := []*model.PublicUser{alaPublic}
+			expectedFollowers := []*model.PublicUser{
+				alaPublic,
+			}
 
 			followUser(router, toor.ID, alaToken)
 
@@ -403,8 +394,20 @@ var _ = Describe("ServerTest", func() {
 			Expect(w.Code).To(Equal(http.StatusNotFound))
 		})
 
-		It("should return when trying to delete not existing tweet", func() {
-			// TODO: what should happen?
+		It("should not perform any unexpected actions trying to delete not existing tweet", func() {
+			createdTweet := createTweet(router, "new tweet", alaToken)
+			deleteTweet(router, createdTweet.ID, alaToken)
+		})
+
+		It("should not allow to delete tweet created by someone else", func() {
+			createdTweet := createTweet(router, "new tweet", bobToken)
+
+			path := fmt.Sprintf("/tweets/%v", createdTweet.ID)
+			req := request("DELETE", path, nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusForbidden))
 		})
 	})
 
@@ -473,16 +476,7 @@ var _ = Describe("ServerTest", func() {
 		})
 
 		It("should like tweet and return new liked tweet with populated data", func() {
-			path := fmt.Sprintf("/tweets/%v/like", alaTweet.ID)
-			req := request("POST", path, nil).authorize(alaToken).build()
-			w := httptest.NewRecorder()
-			router.ServeHTTP(w, req)
-
-			var actualTweet model.Tweet
-			err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(w.Code).To(Equal(http.StatusOK))
+			actualTweet := likeTweet(router, alaTweet.ID, alaToken)
 			Expect(actualTweet.LikeCount).To(BeEquivalentTo(1))
 			Expect(actualTweet.Liked).To(Equal(true))
 		})
