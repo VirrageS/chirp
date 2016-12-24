@@ -25,7 +25,7 @@ var s *gin.Engine
 func setup(testUser *model.User, otherTestUser *model.User, s **gin.Engine, baseURL string) {
 	testConfig := config.GetConfig("test")
 
-	db := database.NewConnection("5432")
+	db := database.NewConnection("5433")
 	cache := cache.NewDummyCache()
 
 	gin.SetMode(gin.TestMode)
