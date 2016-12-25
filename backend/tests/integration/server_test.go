@@ -197,7 +197,7 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualUser.Following).To(BeTrue())
 		})
 
-		It("should followed user match actual user", func() {
+		It("user returned by follow should match real user", func() {
 			actualUser := followUser(router, toor.ID, alaToken)
 			expectedUser := retrieveUser(router, toor.ID, alaToken)
 			Expect(actualUser).To(Equal(expectedUser))
@@ -212,7 +212,7 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualUser.Following).To(BeTrue())
 		})
 
-		It("should update follow when two different user follow other user", func() {
+		It("should update follower count when two different user follow other user", func() {
 			followUser(router, toor.ID, alaToken)
 			followUser(router, toor.ID, bobToken)
 
@@ -242,7 +242,7 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualUser.Following).To(BeFalse())
 		})
 
-		It("should unfollowed user match actual user", func() {
+		It("user returned by unfollow match real user", func() {
 			followUser(router, toor.ID, alaToken)
 
 			actualUser := unfollowUser(router, toor.ID, alaToken)
@@ -284,7 +284,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, alaToken)
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
-			Expect(*actualFollowers).To(Equal(expectedFollowers))
+			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 
 		It("should get followers of user followed by multiple users", func() {
@@ -297,7 +297,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, bobToken)
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
-			Expect(*actualFollowers).To(Equal(expectedFollowers))
+			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 
 		It("should get followers of not followed user", func() {
@@ -394,9 +394,12 @@ var _ = Describe("ServerTest", func() {
 			Expect(w.Code).To(Equal(http.StatusNotFound))
 		})
 
-		It("should not perform any unexpected actions trying to delete not existing tweet", func() {
-			createdTweet := createTweet(router, "new tweet", alaToken)
-			deleteTweet(router, createdTweet.ID, alaToken)
+		It("should return not found code when trying to delete not existing tweet", func() {
+			req := request("DELETE", "/tweets/123", nil).authorize(alaToken).build()
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusNotFound))
 		})
 
 		It("should not allow to delete tweet created by someone else", func() {
@@ -481,7 +484,7 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualTweet.Liked).To(Equal(true))
 		})
 
-		It("should liked tweet match actual tweet", func() {
+		It("tweet returned by like should match real tweet", func() {
 			actualTweet := likeTweet(router, alaTweet.ID, alaToken)
 			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
 			Expect(actualTweet).To(Equal(expectedTweet))
@@ -540,7 +543,7 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualTweet.Liked).To(Equal(false))
 		})
 
-		It("should new unliked tweet match actual tweet", func() {
+		It("tweet returned by unlike should match real tweet", func() {
 			likeTweet(router, alaTweet.ID, alaToken)
 			actualTweet := unlikeTweet(router, alaTweet.ID, alaToken)
 			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)

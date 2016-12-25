@@ -36,7 +36,7 @@ var _ = Describe("TokenAuthenticator", func() {
 		router.Use(TokenAuthenticator(tokenManager))
 	})
 
-	It("should allow to make normal response since jwt is okay", func() {
+	It("should allow to make normal response when jwt token is okay", func() {
 		correctJWT := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6NDEwMjQ0NDgwMH0.7yRo-iMpG-tp01AAKpvtQAm1ZbX1o6L4n1h5Wws0snw"
 
 		router.POST("/test", func(c *gin.Context) {

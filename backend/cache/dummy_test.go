@@ -10,8 +10,6 @@ type object struct {
 	Num int
 }
 
-var dummyCache CacheProvider = NewDummyCache()
-
 var _ = Describe("DummyCache", func() {
 	var (
 		dummyCache CacheProvider = NewDummyCache()
