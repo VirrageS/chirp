@@ -3,17 +3,23 @@
 all: install test
 
 install:
-	go get -t -v ./...
-	go install
+	@echo "Getting dependencies..."
+	@go get -t -v ./...
+	@echo "Installing..."
+	@go install
 
 test:
-	go get -t -v ./...
-	docker-compose -f ../docker/test.yml build && docker-compose -f ../docker/test.yml up -d
-	until (pg_isready -h localhost -p 5433); do sleep 0.1; done
-	go test ./...
-	docker-compose -f ../docker/test.yml down -v
+	@echo "Starting docker..."
+	@docker-compose -f ../docker/test.yml build &> /dev/null && docker-compose -f ../docker/test.yml up -d &> /dev/null
+	@echo "Waiting for docker instances..."
+	@until (pg_isready -h localhost -p 5433 > /dev/null); do sleep 0.1; done
+	@echo "Testing..."
+	@go test ./...; result=$$?; echo "Cleaning up..."; docker-compose -f ../docker/test.yml down -v &> /dev/null; exit $$result
 
 format:
-	gofmt -w -s .
-	go vet .
-	golint ./...
+	@echo "Formatting..."
+	@gofmt -w -s .
+	@echo "Vetting..."
+	@go vet .
+	@echo "Linting..."
+	@golint ./...
