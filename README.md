@@ -21,15 +21,26 @@ Chirp is simplified Twitter written in Angular 2 and Go.
 
 Install Go language: https://golang.org/doc/install (don't forget to set your GOPATH).
 
+Install postgresql client tools - will be required to run tests:
+
+    $ sudo apt-get install postgresql-client
+
+Install Go-lint - will be required for code formatting:
+
+    $ go get -u github.com/golang/lint/golint
+
+In order for backed to work you also need to have docker and docker-compose, see [Docker](https://github.com/VirrageS/chirp#docker)
+
 Now run
 
     $ go get github.com/VirrageS/chirp
     $ cd $GOPATH/src/github.com/VirrageS/chirp/backend
-    $ go get .
-    $ go install
+    $ make install
+    $ docker-compose -f docker/backend.yml build && docker-compose -f docker/backend.yml up
     $ $GOPATH/bin/backend
 
 Now you've got your chirp backend running on [localhost:8080](http://localhost:8080/)!
+
 
 
 ### Running backend easier
