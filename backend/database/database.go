@@ -9,8 +9,6 @@ import (
 	"github.com/VirrageS/chirp/backend/cache"
 )
 
-const DefaultPostgresPort = "5432"
-
 // Struct that implements DatabaseAccessor
 type Database struct {
 	UserDataAccessor

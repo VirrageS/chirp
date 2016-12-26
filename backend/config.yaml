@@ -3,3 +3,6 @@ auth_token_validity_period: 15
 refresh_token_validity_period: 1440
 
 cache_expiration_time: 1m
+
+postgres_port: "5432"
+redis_port: "6379"

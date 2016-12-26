@@ -8,9 +8,6 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 )
 
-// Default port on which Redis is listening
-const DefaultRedisPort = "6379"
-
 type RedisCache struct {
 	client *redis.Client
 	config config.CacheConfigProvider

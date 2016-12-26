@@ -41,6 +41,8 @@ type Configuration struct {
 	authTokenValidityPeriod    int
 	refreshTokenValidityPeriod int
 	cacheExpirationTime        time.Duration
+	postgresPort               string
+	redisPort                  string
 }
 
 func (config *Configuration) GetSecretKey() []byte {
@@ -57,6 +59,14 @@ func (config *Configuration) GetRefreshTokenValidityPeriod() int {
 
 func (config *Configuration) GetCacheExpirationTime() time.Duration {
 	return config.cacheExpirationTime
+}
+
+func (config *Configuration) GetPostgresPort() string {
+	return config.postgresPort
+}
+
+func (config *Configuration) GetRedisPort() string {
+	return config.redisPort
 }
 
 // TODO: Maybe read the config only once on init() or something and then return the global object?
@@ -77,13 +87,18 @@ func readServiceConfig(fileName string) *Configuration {
 	configAuthTokenValidityPeriod := viper.GetInt("auth_token_validity_period")
 	configRefreshTokenValidityPeriod := viper.GetInt("refresh_token_validity_period")
 	configCacheExpirationTime := viper.GetDuration("cache_expiration_time")
+	configPostgresPort := viper.GetString("postgres_port")
+	configRedisPort := viper.GetString("redis_port")
 
-	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 {
+	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 ||
+		configPostgresPort == "" || configRedisPort == "" {
 		log.WithFields(log.Fields{
 			"secret key":              configSecretKey,
 			"auth validity period":    configAuthTokenValidityPeriod,
 			"refresh validity period": configRefreshTokenValidityPeriod,
 			"cache expiration time":   configCacheExpirationTime,
+			"postgres port":           configPostgresPort,
+			"redis port":              configRedisPort,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
@@ -92,5 +107,7 @@ func readServiceConfig(fileName string) *Configuration {
 		authTokenValidityPeriod:    configAuthTokenValidityPeriod,
 		refreshTokenValidityPeriod: configRefreshTokenValidityPeriod,
 		cacheExpirationTime:        configCacheExpirationTime,
+		postgresPort:               configPostgresPort,
+		redisPort:                  configRedisPort,
 	}
 }
