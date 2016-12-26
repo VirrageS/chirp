@@ -50,8 +50,8 @@ CREATE INDEX tweets_idx ON tweets (id);
 
 
 CREATE TABLE likes (
-  tweet_id INTEGER REFERENCES tweets (id),
-  user_id  INTEGER REFERENCES users (id),
+  tweet_id INTEGER REFERENCES tweets (id) ON DELETE CASCADE,
+  user_id  INTEGER REFERENCES users (id) ON DELETE CASCADE,
   liked_at TIMESTAMP NOT NULL DEFAULT now(),
 
   PRIMARY KEY (tweet_id, user_id)
@@ -63,8 +63,8 @@ CREATE INDEX likes_idx ON likes (tweet_id, user_id, liked_at);
 
 
 CREATE TABLE retweets (
-  tweet_id     INTEGER REFERENCES tweets (id),
-  user_id      INTEGER REFERENCES users (id),
+  tweet_id     INTEGER REFERENCES tweets (id) ON DELETE CASCADE,
+  user_id      INTEGER REFERENCES users (id) ON DELETE CASCADE,
   retweeted_at TIMESTAMP NOT NULL DEFAULT now(),
 
   PRIMARY KEY (tweet_id, user_id)
@@ -84,8 +84,8 @@ CREATE UNIQUE INDEX tags_lowercase_name_idx ON tags ((lower(name)));
 
 
 CREATE TABLE tweets_tags (
-  tweet_id  INTEGER REFERENCES tweets (id),
-  tag_id    INTEGER REFERENCES tags (id),
+  tweet_id  INTEGER REFERENCES tweets (id) ON DELETE CASCADE,
+  tag_id    INTEGER REFERENCES tags (id) ON DELETE CASCADE,
 
   PRIMARY KEY (tweet_id, tag_id)
 );

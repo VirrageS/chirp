@@ -3,10 +3,10 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/token"
@@ -22,181 +22,128 @@ func mockTokenManagerProvider() token.TokenManagerProvider {
 	return token.NewTokenManager(&mockSecretProvider{})
 }
 
-func TestAllGood(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+var _ = Describe("TokenAuthenticator", func() {
+	var (
+		router *gin.Engine
+	)
 
-	tokenManager := mockTokenManagerProvider()
-	called := false
+	BeforeEach(func() {
+		gin.SetMode(gin.TestMode)
 
-	correctJWT := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6NDEwMjQ0NDgwMH0.7yRo-iMpG-tp01AAKpvtQAm1ZbX1o6L4n1h5Wws0snw"
-
-	router := gin.New()
-	router.Use(ErrorHandler())
-	router.Use(TokenAuthenticator(tokenManager))
-	router.POST("/test", func(c *gin.Context) {
-		called = true
-		c.String(200, "%d", c.MustGet("userID").(int64))
+		tokenManager := mockTokenManagerProvider()
+		router = gin.New()
+		router.Use(ErrorHandler())
+		router.Use(TokenAuthenticator(tokenManager))
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+correctJWT)
+	It("should allow to make normal response when jwt token is okay", func() {
+		correctJWT := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6NDEwMjQ0NDgwMH0.7yRo-iMpG-tp01AAKpvtQAm1ZbX1o6L4n1h5Wws0snw"
 
-	router.ServeHTTP(w, req)
+		router.POST("/test", func(c *gin.Context) {
+			c.String(http.StatusOK, "%d", c.MustGet("userID").(int64))
+		})
 
-	assert.True(t, called)
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "1", w.Body.String())
-}
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/test", nil)
+		req.Header.Set("Authorization", "Bearer "+correctJWT)
 
-func TestUnsupportedSigningMethod(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+		router.ServeHTTP(w, req)
 
-	tokenManager := mockTokenManagerProvider()
-	called := false
-
-	unsupportedSigningMethodToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6NDEwMjQ0NDgwMH0.DqWD84gFXT2reQB064MourQ5RT4lhXreEhEEcibWSZQ"
-
-	router := gin.New()
-	router.Use(ErrorHandler())
-	router.Use(TokenAuthenticator(tokenManager))
-	router.POST("/test", func(c *gin.Context) {
-		called = true
-		c.String(200, "%d", c.MustGet("userID").(int64))
+		Expect(w.Code).To(Equal(http.StatusOK))
+		Expect(w.Body.String()).To(Equal("1"))
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+unsupportedSigningMethodToken)
+	It("should return status unauthorized when token has unsupported signing method", func() {
+		unsupportedSigningMethodToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6NDEwMjQ0NDgwMH0.DqWD84gFXT2reQB064MourQ5RT4lhXreEhEEcibWSZQ"
 
-	router.ServeHTTP(w, req)
+		router.POST("/test", func(c *gin.Context) {
+			c.String(http.StatusOK, "%d", c.MustGet("userID").(int64))
+		})
 
-	var resp errorResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/test", nil)
+		req.Header.Set("Authorization", "Bearer "+unsupportedSigningMethodToken)
+		router.ServeHTTP(w, req)
 
-	assert.False(t, called)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, errorResponse{[]string{"Invalid authentication token."}}, resp)
-}
+		var response errorResponse
+		json.NewDecoder(w.Body).Decode(&response)
 
-func TestWrongSignature(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	tokenManager := mockTokenManagerProvider()
-	called := false
-
-	wrongSignatureToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.xfVyuL08DPhDgKSzIIeXnUwNjoSicw6MeMzSW3qVfM4"
-
-	router := gin.New()
-	router.Use(ErrorHandler())
-	router.Use(TokenAuthenticator(tokenManager))
-	router.POST("/test", func(c *gin.Context) {
-		called = true
-		c.String(200, "%d", c.MustGet("userID").(int64))
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+		Expect(response).To(Equal(errorResponse{[]string{"Invalid authentication token."}}))
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+wrongSignatureToken)
+	It("shoud return status unauthorized when token has wrong signature", func() {
+		wrongSignatureToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.xfVyuL08DPhDgKSzIIeXnUwNjoSicw6MeMzSW3qVfM4"
 
-	router.ServeHTTP(w, req)
+		router.POST("/test", func(c *gin.Context) {
+			c.String(http.StatusOK, "%d", c.MustGet("userID").(int64))
+		})
 
-	var resp errorResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/test", nil)
+		req.Header.Set("Authorization", "Bearer "+wrongSignatureToken)
+		router.ServeHTTP(w, req)
 
-	assert.False(t, called)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, errorResponse{[]string{"Invalid authentication token."}}, resp)
-}
+		var response errorResponse
+		json.NewDecoder(w.Body).Decode(&response)
 
-func TestExpiredToken(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	tokenManager := mockTokenManagerProvider()
-	called := false
-
-	expiredToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6OTQ2Njg0ODAwfQ.qCQVAYbj2G0zba0tjiq4bBfjqRqyjKtEh_YD-KAexC4"
-
-	router := gin.New()
-	router.Use(ErrorHandler())
-	router.Use(TokenAuthenticator(tokenManager))
-	router.POST("/test", func(c *gin.Context) {
-		called = true
-		c.String(200, "%d", c.MustGet("userID").(int64))
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+		Expect(response).To(Equal(errorResponse{[]string{"Invalid authentication token."}}))
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+expiredToken)
+	It("should return status unauthorized when token expired", func() {
+		expiredToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjEsImV4cCI6OTQ2Njg0ODAwfQ.qCQVAYbj2G0zba0tjiq4bBfjqRqyjKtEh_YD-KAexC4"
+		router.POST("/test", func(c *gin.Context) {
+			c.String(http.StatusOK, "%d", c.MustGet("userID").(int64))
+		})
 
-	router.ServeHTTP(w, req)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/test", nil)
+		req.Header.Set("Authorization", "Bearer "+expiredToken)
+		router.ServeHTTP(w, req)
 
-	var resp errorResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+		var response errorResponse
+		json.NewDecoder(w.Body).Decode(&response)
 
-	assert.False(t, called)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, errorResponse{[]string{"Token has expired."}}, resp)
-}
-
-// Test the case when token doesn't contain 'exp' field. This is incorrect and should be rejected.
-func TestTokenWithNoExpiryDate(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	tokenManager := mockTokenManagerProvider()
-	called := false
-
-	expiredToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjF9.ZcqhDVtPl_Qm71xVxhGuVJVxDBA7ifm1IXOhJTe-FPc"
-
-	router := gin.New()
-	router.Use(ErrorHandler())
-	router.Use(TokenAuthenticator(tokenManager))
-	router.POST("/test", func(c *gin.Context) {
-		called = true
-		c.String(200, "%d", c.MustGet("userID").(int64))
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+		Expect(response).To(Equal(errorResponse{[]string{"Token has expired."}}))
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+expiredToken)
+	// Test the case when token does not contain 'exp' field. This is incorrect and should be rejected.
+	It("should return status unauthorized when token does not contain `exp` field", func() {
+		expiredToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySUQiOjF9.ZcqhDVtPl_Qm71xVxhGuVJVxDBA7ifm1IXOhJTe-FPc"
+		router.POST("/test", func(c *gin.Context) {
+			c.String(http.StatusOK, "%d", c.MustGet("userID").(int64))
+		})
 
-	router.ServeHTTP(w, req)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/test", nil)
+		req.Header.Set("Authorization", "Bearer "+expiredToken)
+		router.ServeHTTP(w, req)
 
-	var resp errorResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+		var response errorResponse
+		json.NewDecoder(w.Body).Decode(&response)
 
-	assert.False(t, called)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, errorResponse{[]string{"Token has expired."}}, resp)
-}
-
-// Test the case when token doesn't contain 'userID' field. This is incorrect and should be rejected.
-func TestTokenWithNoUserID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	tokenManager := mockTokenManagerProvider()
-	called := false
-
-	noUserIDToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.JtAP_exnIC2Dpdw7q_VCqI06vlzntvNsejr806cqBwA"
-
-	router := gin.New()
-	router.Use(ErrorHandler())
-	router.Use(TokenAuthenticator(tokenManager))
-	router.POST("/test", func(c *gin.Context) {
-		called = true
-		c.String(200, "%d", c.MustGet("userID").(int64))
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+		Expect(response).To(Equal(errorResponse{[]string{"Token has expired."}}))
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+noUserIDToken)
+	// Test the case when token does not contain 'userID' field. This is incorrect and should be rejected.
+	It("should return status unauthorized when token does not cotain `userID` field", func() {
+		noUserIDToken := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.JtAP_exnIC2Dpdw7q_VCqI06vlzntvNsejr806cqBwA"
+		router.POST("/test", func(c *gin.Context) {
+			c.String(http.StatusOK, "%d", c.MustGet("userID").(int64))
+		})
 
-	router.ServeHTTP(w, req)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/test", nil)
+		req.Header.Set("Authorization", "Bearer "+noUserIDToken)
+		router.ServeHTTP(w, req)
 
-	var resp errorResponse
-	json.NewDecoder(w.Body).Decode(&resp)
+		var response errorResponse
+		json.NewDecoder(w.Body).Decode(&response)
 
-	assert.False(t, called)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, errorResponse{[]string{"Token does not contain required data."}}, resp)
-}
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+		Expect(response).To(Equal(errorResponse{[]string{"Token does not contain required data."}}))
+	})
+})
