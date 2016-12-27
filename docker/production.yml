@@ -4,22 +4,45 @@ services:
     extends:
       file: frontend.yml
       service: frontend
-    command: npm run build
+    volumes:
+      - /frontend/dist
+    command: bash -c "node --max-old-space-size=512 ./node_modules/webpack/bin/webpack.js --config config/webpack.prod.js --progress --profile --bail && tail -f /dev/null"
+
+  postgres:
+    extends:
+      file: core.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: core.yml
+      service: redis
 
   backend:
-    extends:
-      file: backend.yml
-      service: backend
+    restart: always
+    build: ../backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../backend:/backend
+    links:
+      - postgres:database
+      - redis:cache
+    command: /go/bin/backend
 
   nginx:
     restart: always
     build: ../nginx
     ports:
       - "80:80"
-    volumes:
-      - /www/static
+    depends_on:
+      - frontend
+      - backend
     volumes_from:
       - frontend
     links:
-      - frontend:frontend
-      - backend:backend
+      - frontend
+      - backend

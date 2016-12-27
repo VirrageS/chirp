@@ -1,0 +1,16 @@
+secret_key: "just a random secret string"
+auth_token_validity_period: 15
+refresh_token_validity_period: 1440
+
+database:
+  username: "postgres"
+  password: "postgres"
+  host: "database"
+  port: "5432"
+
+redis:
+  password: ""
+  host: "cache"
+  port: "6379"
+  db: 0
+  cache_expiration_time: 1m

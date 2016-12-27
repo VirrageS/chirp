@@ -61,6 +61,7 @@ Now run
 
     $ npm install --global typescript webpack webpack-dev-server tslint
     $ npm install
+    $ npm rebuild node-sass
     $ npm start
 
 now open browser to [localhost:3000](http://localhost:3000/) and done! :)
@@ -89,10 +90,6 @@ Then, depending on the services we want to start we have to type:
 
     $ docker-compose -f docker/production.yml build && docker-compose -f docker/production.yml up
 
-### Testing
+### Backend testing
 
-    $ docker-compose -f docker/test.yml build && docker-compose -f docker/test.yml up
-
-To clean up volumes of test database run:
-
-    $ docker-compose -f docker/test.yml down -v
+    /backend$ make test
