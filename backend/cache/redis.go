@@ -5,6 +5,7 @@ import (
 	"gopkg.in/redis.v5"
 	"gopkg.in/vmihailenco/msgpack.v2"
 
+	"fmt"
 	"github.com/VirrageS/chirp/backend/config"
 )
 
@@ -14,12 +15,15 @@ type RedisCache struct {
 }
 
 // Creates new CacheProvider from Redis client
-func NewRedisCache(port string, config config.CacheConfigProvider) CacheProvider {
-	// TODO: read user data, host and port from config file
+func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
+	address := fmt.Sprintf("%s:%s", config.GetRedisHost(), config.GetRedisPort())
+	password := config.GetRedisPassword()
+	db := config.GetRedisDB()
+
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:" + port,
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     address,
+		Password: password,
+		DB:       db,
 	})
 
 	_, err := client.Ping().Result()

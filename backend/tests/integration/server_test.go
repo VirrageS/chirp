@@ -44,7 +44,7 @@ var _ = Describe("ServerTest", func() {
 		gin.SetMode(gin.TestMode)
 
 		testConfig := config.GetConfig("test")
-		db = database.NewConnection(testConfig.GetPostgresPort())
+		db = database.NewConnection(testConfig)
 		cache := cache.NewDummyCache()
 		router = server.New(db, cache, testConfig)
 

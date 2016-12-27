@@ -17,9 +17,25 @@ func (m *mockCacheConfigProvider) GetCacheExpirationTime() time.Duration {
 	return cacheTime
 }
 
+func (m *mockCacheConfigProvider) GetRedisPassword() string {
+	return ""
+}
+
+func (m *mockCacheConfigProvider) GetRedisHost() string {
+	return "localhost"
+}
+
+func (m *mockCacheConfigProvider) GetRedisPort() string {
+	return "6379"
+}
+
+func (m *mockCacheConfigProvider) GetRedisDB() int {
+	return 0
+}
+
 var _ = Describe("RedisCache", func() {
 	var (
-		redisCache CacheProvider = NewRedisCache("6379", &mockCacheConfigProvider{})
+		redisCache CacheProvider = NewRedisCache(&mockCacheConfigProvider{})
 
 		objectTests []struct {
 			in  interface{}

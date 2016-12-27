@@ -23,7 +23,7 @@ func init() {
 
 // Handles all dependencies and creates a new server.
 // Takes a DB connection parameter in order to support test database.
-func New(dbConnection *sql.DB, redis cache.CacheProvider, serverConfig config.ConfigProvider) *gin.Engine {
+func New(dbConnection *sql.DB, redis cache.CacheProvider, serverConfig config.ServiceConfigProvider) *gin.Engine {
 	// service dependencies
 	tokenManager := token.NewTokenManager(serverConfig)
 
