@@ -43,10 +43,10 @@ var _ = Describe("ServerTest", func() {
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
 
-		db = database.NewConnection("5433")
-		testConfig := config.GetConfig("test")
-		cache := cache.NewDummyCache()
-		router = server.New(db, cache, testConfig)
+		testConfig, databaseConfig, _ := config.GetConfig("test_config")
+		db = database.NewConnection(databaseConfig)
+		dummyCache := cache.NewDummyCache()
+		router = server.New(db, dummyCache, testConfig)
 
 		// create users
 		ala = createUser(router, "ala")
