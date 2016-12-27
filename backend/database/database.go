@@ -26,14 +26,14 @@ func NewDatabase(databaseConnection *sql.DB, cache cache.CacheProvider) Database
 }
 
 // Returns new connection to DB specified in config file. Panics when unrecoverable error occurs.
-func NewConnection(config config.DBAccessConfigProvider) *sql.DB {
-	username := config.GetDBUsername()
-	password := config.GetDBPassword()
-	host := config.GetDBHost()
-	port := config.GetDBPort()
+func NewConnection(config config.DBConfigProvider) *sql.DB {
+	username := config.GetUsername()
+	password := config.GetPassword()
+	host := config.GetHost()
+	port := config.GetPort()
 
-	dbAccesString := fmt.Sprintf("user=%s password=%s host=%s sslmode=disable port=%s", username, password, host, port)
-	db, err := sql.Open("postgres", dbAccesString)
+	accessString := fmt.Sprintf("user=%s password=%s host=%s sslmode=disable port=%s", username, password, host, port)
+	db, err := sql.Open("postgres", accessString)
 	if err != nil {
 		log.WithError(err).Fatal("Error opening database.")
 	}

@@ -17,19 +17,19 @@ func (m *mockCacheConfigProvider) GetCacheExpirationTime() time.Duration {
 	return cacheTime
 }
 
-func (m *mockCacheConfigProvider) GetRedisPassword() string {
+func (m *mockCacheConfigProvider) GetPassword() string {
 	return ""
 }
 
-func (m *mockCacheConfigProvider) GetRedisHost() string {
+func (m *mockCacheConfigProvider) GetHost() string {
 	return "localhost"
 }
 
-func (m *mockCacheConfigProvider) GetRedisPort() string {
+func (m *mockCacheConfigProvider) GetPort() string {
 	return "6379"
 }
 
-func (m *mockCacheConfigProvider) GetRedisDB() int {
+func (m *mockCacheConfigProvider) GetDB() int {
 	return 0
 }
 

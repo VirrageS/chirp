@@ -10,110 +10,117 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Stores global configuration of the system. Implements all config interfaces
-type Configuration struct {
+type ServerConfiguration struct {
 	secretKey                  []byte
 	authTokenValidityPeriod    int
 	refreshTokenValidityPeriod int
-	cacheExpirationTime        time.Duration
-
-	DBUsername string
-	DBPassword string
-	DBHost     string
-	DBPort     string
-
-	redisPassword string
-	redisHost     string
-	redisPort     string
-	redisDB       int
 }
 
-func (config *Configuration) GetSecretKey() []byte {
+func (config *ServerConfiguration) GetSecretKey() []byte {
 	return config.secretKey
 }
 
-func (config *Configuration) GetAuthTokenValidityPeriod() int {
+func (config *ServerConfiguration) GetAuthTokenValidityPeriod() int {
 	return config.authTokenValidityPeriod
 }
 
-func (config *Configuration) GetRefreshTokenValidityPeriod() int {
+func (config *ServerConfiguration) GetRefreshTokenValidityPeriod() int {
 	return config.refreshTokenValidityPeriod
 }
 
-func (config *Configuration) GetCacheExpirationTime() time.Duration {
-	return config.cacheExpirationTime
+type DatabaseConfiguration struct {
+	Username string
+	Password string
+	Host     string
+	Port     string
 }
 
-func (config *Configuration) GetDBUsername() string {
-	return config.DBUsername
+func (dbConfig *DatabaseConfiguration) GetUsername() string {
+	return dbConfig.Username
 }
 
-func (config *Configuration) GetDBPassword() string {
-	return config.DBPassword
+func (dbConfig *DatabaseConfiguration) GetPassword() string {
+	return dbConfig.Password
 }
 
-func (config *Configuration) GetDBHost() string {
-	return config.DBHost
+func (dbConfig *DatabaseConfiguration) GetHost() string {
+	return dbConfig.Host
 }
 
-func (config *Configuration) GetDBPort() string {
-	return config.DBPort
+func (dbConfig *DatabaseConfiguration) GetPort() string {
+	return dbConfig.Port
 }
 
-func (config *Configuration) GetRedisPassword() string {
-	return config.redisPassword
+type RedisCacheConfiguration struct {
+	password            string
+	host                string
+	port                string
+	db                  int
+	cacheExpirationTime time.Duration
 }
 
-func (config *Configuration) GetRedisHost() string {
-	return config.redisHost
+func (cacheConfig *RedisCacheConfiguration) GetPassword() string {
+	return cacheConfig.password
 }
 
-func (config *Configuration) GetRedisPort() string {
-	return config.redisPort
+func (cacheConfig *RedisCacheConfiguration) GetHost() string {
+	return cacheConfig.host
 }
 
-func (config *Configuration) GetRedisDB() int {
-	return config.redisDB
+func (cacheConfig *RedisCacheConfiguration) GetPort() string {
+	return cacheConfig.port
+}
+
+func (cacheConfig *RedisCacheConfiguration) GetDB() int {
+	return cacheConfig.db
+}
+
+func (cacheConfig *RedisCacheConfiguration) GetCacheExpirationTime() time.Duration {
+	return cacheConfig.cacheExpirationTime
 }
 
 // TODO: Maybe read the config only once on init() or something and then return the global object?
-func GetConfig(fileName string) *Configuration {
-	return readServiceConfig(fileName)
-}
-
-func readServiceConfig(fileName string) *Configuration {
-	viper.SetConfigName(fileName)
+func GetConfig(fileName string) (ServiceConfigProvider, DBConfigProvider, RedisConfigProvider) {
 	viper.AddConfigPath("$GOPATH/src/github.com/VirrageS/chirp/backend")
+	viper.SetConfigName(fileName)
 
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.WithError(err).Fatal("Error reading config file.")
 	}
 
+	serviceConfig := readServiceConfig()
+	databaseConfig := readDatabaseConfig()
+	cacheConfig := readCacheConfig()
+
+	return serviceConfig, databaseConfig, cacheConfig
+}
+
+func readServiceConfig() *ServerConfiguration {
 	configSecretKey := viper.GetString("secret_key")
 	configAuthTokenValidityPeriod := viper.GetInt("auth_token_validity_period")
 	configRefreshTokenValidityPeriod := viper.GetInt("refresh_token_validity_period")
-	configCacheExpirationTime := viper.GetDuration("cache_expiration_time")
 
-	configDBUsername := viper.GetString("database.username")
-	configDBPassword := viper.GetString("database.password")
-	configDBHost := viper.GetString("database.host")
-	configDBPort := viper.GetString("database.port")
-
-	configRedisPassword := viper.GetString("redis.password")
-	configRedisHost := viper.GetString("redis.host")
-	configRedisPort := viper.GetString("redis.port")
-	configRedisDB := viper.GetInt("redis.db")
-
-	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 ||
-		configRedisPort == "" {
+	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 {
 		log.WithFields(log.Fields{
 			"secret key":              configSecretKey,
 			"auth validity period":    configAuthTokenValidityPeriod,
 			"refresh validity period": configRefreshTokenValidityPeriod,
-			"cache expiration time":   configCacheExpirationTime,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
+
+	return &ServerConfiguration{
+		secretKey:                  []byte(configSecretKey),
+		authTokenValidityPeriod:    configAuthTokenValidityPeriod,
+		refreshTokenValidityPeriod: configRefreshTokenValidityPeriod,
+	}
+}
+
+func readDatabaseConfig() *DatabaseConfiguration {
+	configDBUsername := viper.GetString("database.username")
+	configDBPassword := viper.GetString("database.password")
+	configDBHost := viper.GetString("database.host")
+	configDBPort := viper.GetString("database.port")
 
 	if configDBUsername == "" || configDBPassword == "" || configDBHost == "" || configDBPort == "" {
 		log.WithFields(log.Fields{
@@ -124,29 +131,36 @@ func readServiceConfig(fileName string) *Configuration {
 		}).Fatal("Config file doesn't contain valid database access data.")
 	}
 
-	if configRedisHost == "" || configRedisPort == "" || configRedisDB < 0 {
+	return &DatabaseConfiguration{
+		Username: configDBUsername,
+		Password: configDBPassword,
+		Host:     configDBHost,
+		Port:     configDBPort,
+	}
+}
+
+func readCacheConfig() *RedisCacheConfiguration {
+	password := viper.GetString("redis.password")
+	host := viper.GetString("redis.host")
+	port := viper.GetString("redis.port")
+	DB := viper.GetInt("redis.db")
+	cacheExpirationTime := viper.GetDuration("redis.cache_expiration_time")
+
+	if host == "" || port == "" || DB < 0 || cacheExpirationTime < 0 {
 		log.WithFields(log.Fields{
-			"password": configRedisPassword,
-			"host":     configRedisHost,
-			"port":     configRedisPort,
-			"db":       configRedisDB,
+			"password":        password,
+			"host":            host,
+			"port":            port,
+			"db":              DB,
+			"expiration time": cacheExpirationTime,
 		}).Fatal("Config file doesn't contain valid redis access data.")
 	}
 
-	return &Configuration{
-		secretKey:                  []byte(configSecretKey),
-		authTokenValidityPeriod:    configAuthTokenValidityPeriod,
-		refreshTokenValidityPeriod: configRefreshTokenValidityPeriod,
-		cacheExpirationTime:        configCacheExpirationTime,
-
-		DBUsername: configDBUsername,
-		DBPassword: configDBPassword,
-		DBHost:     configDBHost,
-		DBPort:     configDBPort,
-
-		redisPassword: configRedisPassword,
-		redisHost:     configRedisHost,
-		redisPort:     configRedisPort,
-		redisDB:       configRedisDB,
+	return &RedisCacheConfiguration{
+		password:            password,
+		host:                host,
+		port:                port,
+		db:                  DB,
+		cacheExpirationTime: cacheExpirationTime,
 	}
 }

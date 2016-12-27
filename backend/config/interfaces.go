@@ -9,36 +9,31 @@ type SecretKeyProvider interface {
 	GetSecretKey() []byte
 }
 
-// Provides configuration for CacheProvider
-type CacheConfigProvider interface {
-	GetCacheExpirationTime() time.Duration
-}
-
-// Provides DB access configuration
-type DBAccessConfigProvider interface {
-	GetDBUsername() string
-	GetDBPassword() string
-	GetDBHost() string
-	GetDBPort() string
-}
-
-// Provides Redis access configuration
-type RedisAccessConfigProvider interface {
-	GetRedisPassword() string
-	GetRedisHost() string
-	GetRedisPort() string
-	GetRedisDB() int
-}
-
-// Provides full redis configuration
-type RedisConfigProvider interface {
-	RedisAccessConfigProvider
-	CacheConfigProvider
-}
-
 // Provides configuration for ServiceProvider
 type ServiceConfigProvider interface {
 	SecretKeyProvider
 	GetAuthTokenValidityPeriod() int
 	GetRefreshTokenValidityPeriod() int
+}
+
+// Provides DB access configuration
+type DBConfigProvider interface {
+	GetUsername() string
+	GetPassword() string
+	GetHost() string
+	GetPort() string
+}
+
+// Provides configuration for CacheProvider
+type CacheConfigProvider interface {
+	GetPassword() string
+	GetHost() string
+	GetPort() string
+	GetCacheExpirationTime() time.Duration
+}
+
+// Provides full redis configuration
+type RedisConfigProvider interface {
+	CacheConfigProvider
+	GetDB() int
 }

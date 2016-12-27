@@ -16,9 +16,9 @@ type RedisCache struct {
 
 // Creates new CacheProvider from Redis client
 func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
-	address := fmt.Sprintf("%s:%s", config.GetRedisHost(), config.GetRedisPort())
-	password := config.GetRedisPassword()
-	db := config.GetRedisDB()
+	address := fmt.Sprintf("%s:%s", config.GetHost(), config.GetPort())
+	password := config.GetPassword()
+	db := config.GetDB()
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     address,

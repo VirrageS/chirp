@@ -15,10 +15,10 @@ import (
 )
 
 func main() {
-	serverConfig := config.GetConfig("config")
+	serverConfig, databaseConfig, redisConfig := config.GetConfig("config")
 
-	db := database.NewConnection(serverConfig)
-	redis := cache.NewRedisCache(serverConfig)
+	db := database.NewConnection(databaseConfig)
+	redis := cache.NewRedisCache(redisConfig)
 
 	s := server.New(db, redis, serverConfig)
 	s.Run(":8080")
