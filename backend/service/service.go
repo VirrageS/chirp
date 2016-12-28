@@ -231,7 +231,7 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 			Username:      user.Username,
 			Name:          user.Name,
 			AvatarUrl:     user.AvatarUrl.String,
-			Following:     user.Following,
+			Following:     false, // should always be false since user can't follow himself
 			FollowerCount: user.FollowerCount,
 		},
 	}

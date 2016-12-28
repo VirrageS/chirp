@@ -30,7 +30,7 @@ func NewUserDB(databaseConnection *sql.DB, cache cache.CacheProvider) *UserDB {
 
 func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
 	users := make([]*model.PublicUser, 0)
-	if exists, _ := db.cache.Get("users", &users); exists {
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"users", "requser", requestingUserID}, &users); exists {
 		return users, nil
 	}
 
@@ -39,13 +39,13 @@ func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) 
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.Set("users", users)
+	db.cache.SetWithFields(cache.Fields{"users", "requser", requestingUserID}, users)
 	return users, nil
 }
 
 func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error) {
 	var user *model.PublicUser
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID}, &user); exists {
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID, "requser", requestingUserID}, &user); exists {
 		return user, nil
 	}
 
@@ -68,7 +68,7 @@ func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.SetWithFields(cache.Fields{"user", "id", userID}, user)
+	db.cache.SetWithFields(cache.Fields{"user", "id", userID, "requser", requestingUserID}, user)
 	return user, nil
 }
 
@@ -109,6 +109,10 @@ func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser,
 		Following: false,
 	}
 
+	// We don't flush cache on purpose. The data in cache can be not precise for some time.
+	// We also don't add the user to cache because this would not make sense, since we compute additional data
+	// for each user that depends on requesting user.
+
 	return newPublicUser, nil
 }
 
@@ -117,6 +121,9 @@ func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	if err != nil {
 		return errors.UnexpectedError
 	}
+
+	// No point updating cache, because that is not a very important data and updating it would need to invalidate
+	// whole cache.
 
 	return nil
 }
@@ -127,6 +134,10 @@ func (db *UserDB) FollowUser(followeeID, followerID int64) error {
 		return errors.UnexpectedError
 	}
 
+	// TODO: Maybe a smarter way: don't delete, but just update cache with followerCount++ and following=true
+	// Just delete from cache for the requesting user, it will be fetched back in next GET query
+	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, "requser", followerID})
+
 	return nil
 }
 
@@ -135,6 +146,10 @@ func (db *UserDB) UnfollowUser(followeeID, followerID int64) error {
 	if err != nil {
 		return errors.UnexpectedError
 	}
+
+	// TODO: Maybe a smarter way: don't delete, but just update cache with followerCount-- and following=false
+	// Just delete from cache for the requesting user, it will be fetched back in next GET query
+	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, "requser", followerID})
 
 	return nil
 }
@@ -149,7 +164,7 @@ func (db *UserDB) Followers(userID, requestingUserID int64) ([]*model.PublicUser
 	for i, id := range followersIDs {
 		var user model.PublicUser
 
-		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id}, &user); exists {
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, "requser", requestingUserID}, &user); exists {
 			followers = append(followers, &user)
 
 			// remove ID from followingIDs
@@ -179,7 +194,7 @@ func (db *UserDB) Followees(userID, requestingUserID int64) ([]*model.PublicUser
 	for i, id := range followeesIDs {
 		var user model.PublicUser
 
-		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id}, &user); exists {
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, "requser", requestingUserID}, &user); exists {
 			followees = append(followees, &user)
 
 			// remove ID from followersIDs
