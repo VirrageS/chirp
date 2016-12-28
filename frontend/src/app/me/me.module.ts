@@ -8,7 +8,7 @@ import { MyTweetsComponent }  from './my-tweets.component';
 import { FollowingComponent } from './following.component';
 import { FollowersComponent } from './followers.component';
 
-import { TweetsModule } from '../components';
+import { TweetsModule, UsersModule } from '../components';
 
 import { AuthService } from '../shared';
 
@@ -33,6 +33,7 @@ import { AuthService } from '../shared';
     ]),
 
     TweetsModule,
+    UsersModule,
   ],
   declarations: [
     MeComponent,

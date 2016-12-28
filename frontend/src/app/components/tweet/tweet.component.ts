@@ -1,7 +1,6 @@
 import { Component, Input } from '@angular/core';
 
-import { Tweet, TweetService } from '../../shared';
-
+import { Tweet, TweetService, UserService } from '../../shared';
 
 import '../../../../public/scss/abstract.scss';
 
@@ -14,11 +13,19 @@ import '../../../../public/scss/abstract.scss';
 export class TweetComponent {
   @Input() tweet: Tweet
 
-  constructor(private _tweetService: TweetService) {
+  constructor(
+    private _tweetService: TweetService,
+    private _userService: UserService
+  ) {
+
   }
 
   private _follow() {
     this.tweet.author.following = true
+
+    // send real request
+    this._userService.follow(this.tweet.author.id)
+      .subscribe(author => this.tweet.author = author)
   }
 
   private _toggleLike() {
@@ -32,7 +39,7 @@ export class TweetComponent {
     toggleFunc
       .subscribe(
         result => {
-          // this.tweet = result
+          this.tweet = result
         },
         error => {}
       )
@@ -43,7 +50,7 @@ export class TweetComponent {
     this._tweetService.retweet(this.tweet.id)
       .subscribe(
         result => {
-          // this.tweet = result
+          this.tweet = result
         },
         error => {}
       )

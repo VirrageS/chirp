@@ -1,8 +1,29 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+
+import { User, UserService } from '../shared';
+import { Store } from '../store';
+
 
 @Component({
   template: `
-    <h2>FollowingComponent</h2>
-    <p>Get your heroes here</p>`
+    <users [users]="following"></users>
+  `
 })
-export class FollowingComponent { }
+export class FollowingComponent implements OnInit {
+  following: User[] = []
+
+  constructor(
+    private _userService: UserService,
+    private _store: Store
+  ) {
+
+  }
+
+  ngOnInit(): void {
+    this._userService.getFollowing()
+      .subscribe((users: any) => this.following = users)
+
+    this._store.changes.pluck("my_following")
+      .subscribe((users: any) => this.following = users)
+  }
+}

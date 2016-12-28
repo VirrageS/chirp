@@ -7,7 +7,7 @@ import { Tweet } from './tweet.model';
 
 @Injectable()
 export class TweetService {
-  tweet_path: string = "/tweets"
+  private tweet_path: string = "/tweets"
 
   constructor(
     private _apiService: ApiService,

@@ -9,7 +9,7 @@ import { AppComponent }   from './app.component';
 
 import {
   ApiService, AuthService, StoreHelper,
-  TweetService, UserService
+  TweetService, UserService,
 } from './shared';
 import { Store } from './store';
 
@@ -17,7 +17,7 @@ import { NavigationBarComponent } from './layout';
 import {
   HomeComponent, SearchComponent,
   SignupComponent, LoginComponent, LogoutComponent,
-  TweetsModule
+  TweetsModule, UsersModule,
 } from './components';
 
 import { MeModule } from './me'
@@ -40,6 +40,7 @@ import { MeModule } from './me'
 
     MeModule,
     TweetsModule,
+    UsersModule,
   ],
   declarations: [
     AppComponent,

@@ -65,8 +65,6 @@ export class ApiService {
       body: JSON.stringify(body)
     })
     return this._http.request(new Request(options))
-      .retryWhen(error => error.delay(this.retry))
-      .timeout(this.timeout)
       .catch((error: Response) => {
         if (error && error.status == 401) {
           // not authenticated so try to refresh token and send request again
@@ -78,6 +76,8 @@ export class ApiService {
 
         return Observable.throw(error)
       })
+      .retryWhen(error => error.delay(this.retry))
+      .timeout(this.timeout)
       .map(this._checkForError)
       .catch(err => Observable.throw(err))
       .map(this._getJson)

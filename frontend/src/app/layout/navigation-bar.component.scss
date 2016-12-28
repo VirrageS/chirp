@@ -34,3 +34,11 @@ $active-link-color: rgb(251, 104, 78);
     color: $active-link-color;
   }
 }
+
+.authentication_buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 150px;
+}

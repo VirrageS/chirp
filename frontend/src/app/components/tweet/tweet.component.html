@@ -1,9 +1,9 @@
 <div class="tweet">
   <div class="tweet__header">
     <div class="avatar"></div>
-    <div class="user">
-      <div class="user__name">{{ tweet.author.name }}</div>
-      <div class="user__username">@{{ tweet.author.username }}</div>
+    <div class="author">
+      <div class="author__name">{{ tweet.author.name }}</div>
+      <div class="author__username">@{{ tweet.author.username }}</div>
     </div>
     <button *ngIf="!tweet.author.following" class="btn btn-success btn-sm btn-follow" (click)=_follow()>
       <i class="fa fa-plus" aria-hidden="true"></i>
