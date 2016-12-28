@@ -29,7 +29,7 @@ func NewUserDB(databaseConnection *sql.DB, cache cache.CacheProvider) *UserDB {
 }
 
 func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
-	var users []*model.PublicUser
+	users := make([]*model.PublicUser, 0)
 	if exists, _ := db.cache.Get("users", &users); exists {
 		return users, nil
 	}
@@ -145,7 +145,7 @@ func (db *UserDB) Followers(userID, requestingUserID int64) ([]*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	var followers []*model.PublicUser
+	followers := make([]*model.PublicUser, 0)
 	for i, id := range followersIDs {
 		var user model.PublicUser
 
@@ -175,7 +175,7 @@ func (db *UserDB) Followees(userID, requestingUserID int64) ([]*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	var followees []*model.PublicUser
+	followees := make([]*model.PublicUser, 0)
 	for i, id := range followeesIDs {
 		var user model.PublicUser
 
@@ -213,10 +213,9 @@ func (db *UserDB) getPublicUsers(requestingUserID int64) ([]*model.PublicUser, e
 		log.WithError(err).Error("getPublicUsers query error.")
 		return nil, err
 	}
-
-	var users []*model.PublicUser
-
 	defer rows.Close()
+
+	users := make([]*model.PublicUser, 0)
 	for rows.Next() {
 		var user model.PublicUser
 		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
@@ -252,10 +251,9 @@ func (db *UserDB) getPublicUsersFromListOfIDs(requestingUserID int64, usersToFin
 		log.WithError(err).WithField("query", query).Error("getPublicUsersFromListOfIDs query error.")
 		return nil, err
 	}
-
-	var users []*model.PublicUser
-
 	defer rows.Close()
+
+	users := make([]*model.PublicUser, 0)
 	for rows.Next() {
 		var user model.PublicUser
 		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
@@ -406,9 +404,7 @@ func (db *UserDB) followers(userID int64) ([]int64, error) {
 	}
 	defer rows.Close()
 
-	var followersIDs []int64
-
-	defer rows.Close()
+	followersIDs := make([]int64, 0)
 	for rows.Next() {
 		var followerID int64
 		err = rows.Scan(&followerID)
@@ -442,9 +438,7 @@ func (db *UserDB) followees(userID int64) ([]int64, error) {
 	}
 	defer rows.Close()
 
-	var followeesIDs []int64
-
-	defer rows.Close()
+	followeesIDs := make([]int64, 0)
 	for rows.Next() {
 		var followeeID int64
 		err = rows.Scan(&followeeID)

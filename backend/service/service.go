@@ -227,11 +227,12 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 		AuthToken:    authToken,
 		RefreshToken: refreshToken,
 		User: &model.PublicUser{
-			ID:        user.ID,
-			Username:  user.Username,
-			Name:      user.Name,
-			AvatarUrl: user.AvatarUrl.String,
-			Following: user.Following,
+			ID:            user.ID,
+			Username:      user.Username,
+			Name:          user.Name,
+			AvatarUrl:     user.AvatarUrl.String,
+			Following:     user.Following,
+			FollowerCount: user.FollowerCount,
 		},
 	}
 

@@ -25,7 +25,7 @@ func NewTweetDB(databaseConnection *sql.DB, cache cache.CacheProvider) *TweetDB 
 }
 
 func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
-	var tweets []*model.Tweet
+	tweets := make([]*model.Tweet, 0)
 	if exists, _ := db.cache.Get("tweets", &tweets); exists {
 		return tweets, nil
 	}
@@ -40,7 +40,7 @@ func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
 }
 
 func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	var tweets []*model.Tweet
+	tweets := make([]*model.Tweet, 0)
 	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", userID}, &tweets); exists {
 		return tweets, nil
 	}
@@ -214,10 +214,9 @@ func (db *TweetDB) getTweets(requestingUserID int64) ([]*model.Tweet, error) {
 		log.WithError(err).Error("getTweets query error.")
 		return nil, err
 	}
-
-	var tweets []*model.Tweet
-
 	defer rows.Close()
+
+	tweets := make([]*model.Tweet, 0)
 	for rows.Next() {
 		var tweet model.Tweet
 		var author model.PublicUser
@@ -257,10 +256,9 @@ func (db *TweetDB) getTweetsOfUserWithID(userID, requestingUserID int64) ([]*mod
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
 		return nil, err
 	}
-
-	var tweets []*model.Tweet
-
 	defer rows.Close()
+
+	tweets := make([]*model.Tweet, 0)
 	for rows.Next() {
 		var tweet model.Tweet
 		var author model.PublicUser
