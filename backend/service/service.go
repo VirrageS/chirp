@@ -3,6 +3,8 @@ package service
 import (
 	"time"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
@@ -227,11 +229,12 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 		AuthToken:    authToken,
 		RefreshToken: refreshToken,
 		User: &model.PublicUser{
-			ID:        user.ID,
-			Username:  user.Username,
-			Name:      user.Name,
-			AvatarUrl: user.AvatarUrl.String,
-			Following: user.Following,
+			ID:            user.ID,
+			Username:      user.Username,
+			Name:          user.Name,
+			AvatarUrl:     user.AvatarUrl.String,
+			Following:     false, // should always be false since user can't follow himself
+			FollowerCount: user.FollowerCount,
 		},
 	}
 
@@ -239,7 +242,23 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 }
 
 func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error) {
-	authToken, err := service.createAuthToken(request.UserID)
+	userID, err := service.tokenManager.ValidateToken(request.RefreshToken)
+	if err != nil {
+		log.WithError(err).Error("Error validating token in RefreshAuthToken.")
+		return nil, err
+	}
+
+	// check if authenticating user exists
+	_, err = service.db.GetUserByID(userID, userID)
+	if err == errors.NoResultsError {
+		return nil, errors.NotExistingUserAuthenticatingError
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// generate new auth token for the user
+	authToken, err := service.createAuthToken(userID)
 	if err != nil {
 		return nil, err
 	}

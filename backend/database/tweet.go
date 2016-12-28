@@ -25,8 +25,8 @@ func NewTweetDB(databaseConnection *sql.DB, cache cache.CacheProvider) *TweetDB 
 }
 
 func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
-	var tweets []*model.Tweet
-	if exists, _ := db.cache.Get("tweets", &tweets); exists {
+	tweets := make([]*model.Tweet, 0)
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", requestingUserID}, &tweets); exists {
 		return tweets, nil
 	}
 
@@ -35,13 +35,13 @@ func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.Set("tweets", tweets)
+	db.cache.SetWithFields(cache.Fields{"tweets", requestingUserID}, tweets)
 	return tweets, nil
 }
 
 func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	var tweets []*model.Tweet
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", userID}, &tweets); exists {
+	tweets := make([]*model.Tweet, 0)
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", userID, requestingUserID}, &tweets); exists {
 		return tweets, nil
 	}
 
@@ -50,13 +50,13 @@ func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*mod
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.SetWithFields(cache.Fields{"tweets", userID}, tweets)
+	db.cache.SetWithFields(cache.Fields{"tweets", userID, requestingUserID}, tweets)
 	return tweets, nil
 }
 
 func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
 	var tweet *model.Tweet
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweet", tweetID}, tweet); exists {
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet); exists {
 		return tweet, nil
 	}
 
@@ -80,7 +80,7 @@ func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, erro
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.SetWithFields(cache.Fields{"tweet", tweetID}, tweet)
+	db.cache.SetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet)
 	return tweet, nil
 }
 
@@ -108,6 +108,9 @@ func (db *TweetDB) InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*
 		return nil, errors.UnexpectedError
 	}
 
+	// We don't flush cache on purpose. The data in cache can be not precise for some time.
+	db.cache.SetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet)
+
 	return newTweet, nil
 }
 
@@ -117,23 +120,34 @@ func (db *TweetDB) DeleteTweet(tweetID int64) error {
 		return errors.UnexpectedError
 	}
 
-	return nil
-}
-
-func (db *TweetDB) LikeTweet(tweetID, userID int64) error {
-	err := db.likeTweet(tweetID, userID)
-	if err != nil {
-		return errors.UnexpectedError
-	}
+	// Its better to just flush the cache here, because almost everything changes.
+	db.cache.Flush()
 
 	return nil
 }
 
-func (db *TweetDB) UnlikeTweet(tweetID, userID int64) error {
-	err := db.unlikeTweet(tweetID, userID)
+func (db *TweetDB) LikeTweet(tweetID, requestingUserID int64) error {
+	err := db.likeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
+
+	// TODO: Maybe a smarter way: don't delete, but just update cache with likeCount++ and liked=true,
+	// Just delete from cache for the requesting user, it will be fetched back in next GET query
+	db.cache.DeleteWithFields(cache.Fields{"tweet", tweetID, requestingUserID})
+
+	return nil
+}
+
+func (db *TweetDB) UnlikeTweet(tweetID, requestingUserID int64) error {
+	err := db.unlikeTweet(tweetID, requestingUserID)
+	if err != nil {
+		return errors.UnexpectedError
+	}
+
+	// TODO: Maybe a smarter way: don't delete, but just update cache with likeCount-- and liked=false
+	// Just delete from cache for the requesting user, it will be fetched back in next GET query
+	db.cache.DeleteWithFields(cache.Fields{"tweet", tweetID, requestingUserID})
 
 	return nil
 }
@@ -214,10 +228,9 @@ func (db *TweetDB) getTweets(requestingUserID int64) ([]*model.Tweet, error) {
 		log.WithError(err).Error("getTweets query error.")
 		return nil, err
 	}
-
-	var tweets []*model.Tweet
-
 	defer rows.Close()
+
+	tweets := make([]*model.Tweet, 0)
 	for rows.Next() {
 		var tweet model.Tweet
 		var author model.PublicUser
@@ -257,10 +270,9 @@ func (db *TweetDB) getTweetsOfUserWithID(userID, requestingUserID int64) ([]*mod
 		log.WithError(err).Error("getTweetsOfUserWithID query error.")
 		return nil, err
 	}
-
-	var tweets []*model.Tweet
-
 	defer rows.Close()
+
+	tweets := make([]*model.Tweet, 0)
 	for rows.Next() {
 		var tweet model.Tweet
 		var author model.PublicUser

@@ -63,6 +63,7 @@ var _ = Describe("TokenAuthenticator", func() {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/test", nil)
 		req.Header.Set("Authorization", "Bearer "+unsupportedSigningMethodToken)
+
 		router.ServeHTTP(w, req)
 
 		var response errorResponse
@@ -82,6 +83,7 @@ var _ = Describe("TokenAuthenticator", func() {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/test", nil)
 		req.Header.Set("Authorization", "Bearer "+wrongSignatureToken)
+
 		router.ServeHTTP(w, req)
 
 		var response errorResponse
@@ -100,6 +102,7 @@ var _ = Describe("TokenAuthenticator", func() {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/test", nil)
 		req.Header.Set("Authorization", "Bearer "+expiredToken)
+
 		router.ServeHTTP(w, req)
 
 		var response errorResponse
@@ -119,6 +122,7 @@ var _ = Describe("TokenAuthenticator", func() {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/test", nil)
 		req.Header.Set("Authorization", "Bearer "+expiredToken)
+
 		router.ServeHTTP(w, req)
 
 		var response errorResponse
@@ -138,6 +142,7 @@ var _ = Describe("TokenAuthenticator", func() {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("POST", "/test", nil)
 		req.Header.Set("Authorization", "Bearer "+noUserIDToken)
+
 		router.ServeHTTP(w, req)
 
 		var response errorResponse

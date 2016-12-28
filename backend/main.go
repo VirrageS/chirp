@@ -12,6 +12,7 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/server"
+	"github.com/VirrageS/chirp/backend/token"
 )
 
 func main() {
@@ -19,7 +20,8 @@ func main() {
 
 	db := database.NewConnection(databaseConfig)
 	redis := cache.NewRedisCache(redisConfig)
+	tokenManager := token.NewTokenManager(serverConfig)
 
-	s := server.New(db, redis, serverConfig)
+	s := server.New(db, redis, tokenManager, serverConfig)
 	s.Run(":8080")
 }

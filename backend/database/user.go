@@ -29,8 +29,8 @@ func NewUserDB(databaseConnection *sql.DB, cache cache.CacheProvider) *UserDB {
 }
 
 func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
-	var users []*model.PublicUser
-	if exists, _ := db.cache.Get("users", &users); exists {
+	users := make([]*model.PublicUser, 0)
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"users", requestingUserID}, &users); exists {
 		return users, nil
 	}
 
@@ -39,13 +39,13 @@ func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) 
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.Set("users", users)
+	db.cache.SetWithFields(cache.Fields{"users", requestingUserID}, users)
 	return users, nil
 }
 
 func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error) {
 	var user *model.PublicUser
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID}, &user); exists {
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID, requestingUserID}, &user); exists {
 		return user, nil
 	}
 
@@ -68,7 +68,7 @@ func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.SetWithFields(cache.Fields{"user", "id", userID}, user)
+	db.cache.SetWithFields(cache.Fields{"user", "id", userID, requestingUserID}, user)
 	return user, nil
 }
 
@@ -109,6 +109,10 @@ func (db *UserDB) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser,
 		Following: false,
 	}
 
+	// We don't flush cache on purpose. The data in cache can be not precise for some time.
+	// We also don't add the user to cache because this would not make sense, since we compute additional data
+	// for each user that depends on requesting user.
+
 	return newPublicUser, nil
 }
 
@@ -117,6 +121,9 @@ func (db *UserDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 	if err != nil {
 		return errors.UnexpectedError
 	}
+
+	// No point updating cache, because that is not a very important data and updating it would need to invalidate
+	// whole cache.
 
 	return nil
 }
@@ -127,6 +134,10 @@ func (db *UserDB) FollowUser(followeeID, followerID int64) error {
 		return errors.UnexpectedError
 	}
 
+	// TODO: Maybe a smarter way: don't delete, but just update cache with followerCount++ and following=true
+	// Just delete from cache for the requesting user, it will be fetched back in next GET query
+	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, followerID})
+
 	return nil
 }
 
@@ -135,6 +146,10 @@ func (db *UserDB) UnfollowUser(followeeID, followerID int64) error {
 	if err != nil {
 		return errors.UnexpectedError
 	}
+
+	// TODO: Maybe a smarter way: don't delete, but just update cache with followerCount-- and following=false
+	// Just delete from cache for the requesting user, it will be fetched back in next GET query
+	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, followerID})
 
 	return nil
 }
@@ -145,11 +160,11 @@ func (db *UserDB) Followers(userID, requestingUserID int64) ([]*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	var followers []*model.PublicUser
+	followers := make([]*model.PublicUser, 0)
 	for i, id := range followersIDs {
 		var user model.PublicUser
 
-		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id}, &user); exists {
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, requestingUserID}, &user); exists {
 			followers = append(followers, &user)
 
 			// remove ID from followingIDs
@@ -175,11 +190,11 @@ func (db *UserDB) Followees(userID, requestingUserID int64) ([]*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	var followees []*model.PublicUser
+	followees := make([]*model.PublicUser, 0)
 	for i, id := range followeesIDs {
 		var user model.PublicUser
 
-		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id}, &user); exists {
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, requestingUserID}, &user); exists {
 			followees = append(followees, &user)
 
 			// remove ID from followersIDs
@@ -213,10 +228,9 @@ func (db *UserDB) getPublicUsers(requestingUserID int64) ([]*model.PublicUser, e
 		log.WithError(err).Error("getPublicUsers query error.")
 		return nil, err
 	}
-
-	var users []*model.PublicUser
-
 	defer rows.Close()
+
+	users := make([]*model.PublicUser, 0)
 	for rows.Next() {
 		var user model.PublicUser
 		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
@@ -252,10 +266,9 @@ func (db *UserDB) getPublicUsersFromListOfIDs(requestingUserID int64, usersToFin
 		log.WithError(err).WithField("query", query).Error("getPublicUsersFromListOfIDs query error.")
 		return nil, err
 	}
-
-	var users []*model.PublicUser
-
 	defer rows.Close()
+
+	users := make([]*model.PublicUser, 0)
 	for rows.Next() {
 		var user model.PublicUser
 		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl, &user.FollowerCount, &user.Following)
@@ -406,9 +419,7 @@ func (db *UserDB) followers(userID int64) ([]int64, error) {
 	}
 	defer rows.Close()
 
-	var followersIDs []int64
-
-	defer rows.Close()
+	followersIDs := make([]int64, 0)
 	for rows.Next() {
 		var followerID int64
 		err = rows.Scan(&followerID)
@@ -442,9 +453,7 @@ func (db *UserDB) followees(userID int64) ([]int64, error) {
 	}
 	defer rows.Close()
 
-	var followeesIDs []int64
-
-	defer rows.Close()
+	followeesIDs := make([]int64, 0)
 	for rows.Next() {
 		var followeeID int64
 		err = rows.Scan(&followeeID)

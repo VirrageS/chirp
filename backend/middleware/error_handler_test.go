@@ -37,6 +37,7 @@ var _ = Describe("ErrorHandler", func() {
 
 		w := httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/test", nil)
+
 		router.ServeHTTP(w, request)
 
 		var response errorResponse
