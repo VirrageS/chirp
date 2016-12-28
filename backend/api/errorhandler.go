@@ -9,11 +9,12 @@ import (
 )
 
 var errorToCodeMap = map[error]int{
-	errors.NoResultsError:          http.StatusNotFound,
-	errors.UnexpectedError:         http.StatusInternalServerError,
-	errors.UserAlreadyExistsError:  http.StatusConflict,
-	errors.ForbiddenError:          http.StatusForbidden,
-	errors.InvalidCredentialsError: http.StatusUnauthorized,
+	errors.NoResultsError:                     http.StatusNotFound,
+	errors.UnexpectedError:                    http.StatusInternalServerError,
+	errors.UserAlreadyExistsError:             http.StatusConflict,
+	errors.ForbiddenError:                     http.StatusForbidden,
+	errors.InvalidCredentialsError:            http.StatusUnauthorized,
+	errors.NotExistingUserAuthenticatingError: http.StatusBadRequest,
 }
 
 func getStatusCodeFromError(err error) int {

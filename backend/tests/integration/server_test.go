@@ -17,6 +17,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"
+	"github.com/VirrageS/chirp/backend/token"
 )
 
 func TestIntegration(t *testing.T) {
@@ -26,8 +27,9 @@ func TestIntegration(t *testing.T) {
 
 var _ = Describe("ServerTest", func() {
 	var (
-		router *gin.Engine
-		db     *sql.DB
+		router       *gin.Engine
+		db           *sql.DB
+		tokenManager token.TokenManagerProvider
 
 		ala             *model.User
 		bob             *model.User
@@ -46,7 +48,8 @@ var _ = Describe("ServerTest", func() {
 		testConfig, databaseConfig, _ := config.GetConfig("test_config")
 		db = database.NewConnection(databaseConfig)
 		dummyCache := cache.NewDummyCache()
-		router = server.New(db, dummyCache, testConfig)
+		tokenManager = token.NewTokenManager(testConfig)
+		router = server.New(db, dummyCache, tokenManager, testConfig)
 
 		// create users
 		ala = createUser(router, "ala")
@@ -573,7 +576,6 @@ var _ = Describe("ServerTest", func() {
 	Describe("Refresh auth token", func() {
 		It("should refresh auth token", func() {
 			refreshTokenRequest := &model.RefreshAuthTokenRequest{
-				UserID:       ala.ID,
 				RefreshToken: alaRefreshToken,
 			}
 
@@ -592,6 +594,20 @@ var _ = Describe("ServerTest", func() {
 			// test creating tweet with new auth
 			createdTweet := createTweet(router, "new tweet", newAuthToken)
 			Expect(createdTweet.Author).To(Equal(alaPublic))
+		})
+
+		It("should return bad request when trying to refresh token using a token of a user that does not exist", func() {
+			refreshToken, _ := tokenManager.CreateToken(-1, 10)
+			refreshTokenRequest := &model.RefreshAuthTokenRequest{
+				RefreshToken: refreshToken,
+			}
+
+			req := request("POST", "/token", body(refreshTokenRequest)).json().build()
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
 		})
 	})
 })
