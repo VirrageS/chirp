@@ -10,12 +10,18 @@ import { Store } from '../store';
   styleUrls: ['./me.component.scss']
 })
 export class MeComponent {
-  following: number = 384
-  followers: number = 2934890
+  following: number = 0
+  followers: number = 0
   tweets: number = 0
 
   constructor(private _store: Store) {
     this._store.changes.pluck("my_tweets")
       .subscribe((tweets: any) => this.tweets = tweets.length)
+
+    this._store.changes.pluck("user")
+      .subscribe((user: any) => {
+        // this.following = user.followee_count
+        // this.followers = user.follower_count
+      })
   }
 }

@@ -9,8 +9,8 @@ export interface State {
   feed: Array<Tweet>
   my_tweets: Array<Tweet>
   user: User
-  following: Array<User>
-  followers: Array<User>
+  my_following: Array<User>
+  my_followers: Array<User>
   auth_token: string
   refresh_token: string
 }
@@ -19,8 +19,8 @@ const defaultState = {
   feed: [],
   my_tweets: [],
   user: {},
-  following: [],
-  followers: [],
+  my_following: [],
+  my_followers: [],
   auth_token: '',
   refresh_token: '',
 }

@@ -11,6 +11,7 @@ import { User } from './user.model';
 
 @Injectable()
 export class UserService {
+  private user_path: string = "/users"
   user?: User
 
   constructor(
@@ -25,7 +26,7 @@ export class UserService {
   }
 
   getUser() {
-    return this._apiService.get("/users/" + this.user.id)
+    return this._apiService.get(this.user_path + "/" + this.user.id)
       .do(user => this._storeHelper.update("user", user))
   }
 
@@ -39,6 +40,25 @@ export class UserService {
   getFeed() {
     return this._apiService.get("/home_feed")
       .do(tweets => this._storeHelper.update("feed", tweets))
+  }
+
+  getFollowing() {
+    // NOTE: only here should happen name rewrite from followees => following
+    return this._apiService.get(this.user_path + "/" + this.user.id + "/followees")
+      .do(followees => this._storeHelper.update("my_following", followees))
+  }
+
+  getFollowers() {
+    return this._apiService.get(this.user_path + "/" + this.user.id + "/followers")
+      .do(followers => this._storeHelper.update("my_followers", followers))
+  }
+
+  follow(user_id: number) {
+    return this._apiService.post(this.user_path + "/" + user_id + "/follow", {})
+  }
+
+  unfollow(user_id: number) {
+    return this._apiService.post(this.user_path + "/" + user_id + "/unfollow", {})
   }
 
   signup(body) {

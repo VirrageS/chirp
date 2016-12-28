@@ -7,4 +7,6 @@ export interface User {
   created_at?: string;
 
   following?: boolean;
+  follower_count?: number;
+  followee_count?: number;
 }
