@@ -576,11 +576,6 @@ paths:
     post:
       summary: Refreshes auth token using refresh token
       parameters:
-        - name: user_id
-          in: query
-          type: string
-          description: User ID of authenticated user
-          required: true
         - name: refresh_token
           in: query
           type: string
@@ -782,7 +777,7 @@ paths:
                 type: string
                 description: Error message.
 
-  /user/{user_id}/unfollow:
+  /users/{user_id}/unfollow:
     post:
       summary: Authenticated user unfollows user with a given ID.
       parameters:
@@ -833,7 +828,7 @@ paths:
                 type: string
                 description: Error message.
 
-  /user/{user_id}/followers:
+  /users/{user_id}/followers:
     get:
       summary: Get list of followers of user with a given ID.
       parameters:
@@ -872,7 +867,7 @@ paths:
                 type: string
                 description: Error message.
 
-  /user/{user_id}/following:
+  /users/{user_id}/followees:
     get:
       summary: Get list of users followed by a user with a given ID.
       parameters:
