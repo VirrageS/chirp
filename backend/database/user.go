@@ -30,7 +30,7 @@ func NewUserDB(databaseConnection *sql.DB, cache cache.CacheProvider) *UserDB {
 
 func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
 	users := make([]*model.PublicUser, 0)
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"users", "requser", requestingUserID}, &users); exists {
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"users", requestingUserID}, &users); exists {
 		return users, nil
 	}
 
@@ -39,13 +39,13 @@ func (db *UserDB) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) 
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.SetWithFields(cache.Fields{"users", "requser", requestingUserID}, users)
+	db.cache.SetWithFields(cache.Fields{"users", requestingUserID}, users)
 	return users, nil
 }
 
 func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error) {
 	var user *model.PublicUser
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID, "requser", requestingUserID}, &user); exists {
+	if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", userID, requestingUserID}, &user); exists {
 		return user, nil
 	}
 
@@ -68,7 +68,7 @@ func (db *UserDB) GetUserByID(userID, requestingUserID int64) (*model.PublicUser
 		return nil, errors.UnexpectedError
 	}
 
-	db.cache.SetWithFields(cache.Fields{"user", "id", userID, "requser", requestingUserID}, user)
+	db.cache.SetWithFields(cache.Fields{"user", "id", userID, requestingUserID}, user)
 	return user, nil
 }
 
@@ -136,7 +136,7 @@ func (db *UserDB) FollowUser(followeeID, followerID int64) error {
 
 	// TODO: Maybe a smarter way: don't delete, but just update cache with followerCount++ and following=true
 	// Just delete from cache for the requesting user, it will be fetched back in next GET query
-	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, "requser", followerID})
+	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, followerID})
 
 	return nil
 }
@@ -149,7 +149,7 @@ func (db *UserDB) UnfollowUser(followeeID, followerID int64) error {
 
 	// TODO: Maybe a smarter way: don't delete, but just update cache with followerCount-- and following=false
 	// Just delete from cache for the requesting user, it will be fetched back in next GET query
-	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, "requser", followerID})
+	db.cache.DeleteWithFields(cache.Fields{"user", followeeID, followerID})
 
 	return nil
 }
@@ -164,7 +164,7 @@ func (db *UserDB) Followers(userID, requestingUserID int64) ([]*model.PublicUser
 	for i, id := range followersIDs {
 		var user model.PublicUser
 
-		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, "requser", requestingUserID}, &user); exists {
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, requestingUserID}, &user); exists {
 			followers = append(followers, &user)
 
 			// remove ID from followingIDs
@@ -194,7 +194,7 @@ func (db *UserDB) Followees(userID, requestingUserID int64) ([]*model.PublicUser
 	for i, id := range followeesIDs {
 		var user model.PublicUser
 
-		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, "requser", requestingUserID}, &user); exists {
+		if exists, _ := db.cache.GetWithFields(cache.Fields{"user", "id", id, requestingUserID}, &user); exists {
 			followees = append(followees, &user)
 
 			// remove ID from followersIDs
