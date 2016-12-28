@@ -28,6 +28,7 @@ var _ = Describe("ContentTypeChecker", func() {
 		w := httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", "/test", nil)
 		request.Header.Set("Content-Type", "application/json")
+
 		router.ServeHTTP(w, request)
 
 		Expect(w.Code).To(Equal(http.StatusOK))
@@ -37,6 +38,7 @@ var _ = Describe("ContentTypeChecker", func() {
 		w := httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", "/test", nil)
 		request.Header.Set("Content-Type", "application/xml")
+
 		router.ServeHTTP(w, request)
 
 		Expect(w.Code).To(Equal(http.StatusUnsupportedMediaType))
@@ -45,6 +47,7 @@ var _ = Describe("ContentTypeChecker", func() {
 	It("should not allow to make request when content type header is not set", func() {
 		w := httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", "/test", nil)
+
 		router.ServeHTTP(w, request)
 
 		Expect(w.Code).To(Equal(http.StatusUnsupportedMediaType))

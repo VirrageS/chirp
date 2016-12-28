@@ -93,12 +93,13 @@ var _ = Describe("ServerTest", func() {
 		It("should create user and populate fields correctly", func() {
 			req := request("POST", "/signup", body(newUserForm)).json().build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			var newUser model.PublicUser
 			err := json.Unmarshal(w.Body.Bytes(), &newUser)
-			Expect(err).NotTo(HaveOccurred())
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusCreated))
 			Expect(newUser.Username).To(Equal(newUserForm.Username))
 			Expect(newUser.Name).To(Equal(newUserForm.Name))
@@ -112,6 +113,7 @@ var _ = Describe("ServerTest", func() {
 
 			req := request("POST", "/signup", body(newUserForm)).json().build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusConflict))
@@ -123,6 +125,7 @@ var _ = Describe("ServerTest", func() {
 
 			req := request("POST", "/signup", body(newUserForm)).json().build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusConflict))
@@ -147,12 +150,13 @@ var _ = Describe("ServerTest", func() {
 		It("should login user and return logged in user", func() {
 			req := request("POST", "/login", body(loginUserForm)).json().build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			var loginResponse model.LoginResponse
 			err := json.Unmarshal(w.Body.Bytes(), &loginResponse)
-			Expect(err).NotTo(HaveOccurred())
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(loginResponse.User).To(Equal(loggedUser))
 			Expect(loginResponse.AuthToken).NotTo(BeEmpty())
@@ -164,6 +168,7 @@ var _ = Describe("ServerTest", func() {
 
 			req := request("POST", "/login", body(loginUserForm)).json().build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusUnauthorized))
@@ -175,6 +180,7 @@ var _ = Describe("ServerTest", func() {
 
 			req := request("POST", "/login", body(loginUserForm)).json().build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusUnauthorized))
@@ -189,12 +195,13 @@ var _ = Describe("ServerTest", func() {
 			path := fmt.Sprintf("/users/%v/follow", toor.ID)
 			req := request("POST", path, nil).authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			var actualUser model.PublicUser
 			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-			Expect(err).NotTo(HaveOccurred())
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(1))
 			Expect(actualUser.Following).To(BeTrue())
@@ -202,6 +209,7 @@ var _ = Describe("ServerTest", func() {
 
 		It("user returned by follow should match real user", func() {
 			actualUser := followUser(router, toor.ID, alaToken)
+
 			expectedUser := retrieveUser(router, toor.ID, alaToken)
 			Expect(actualUser).To(Equal(expectedUser))
 		})
@@ -211,6 +219,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, alaToken)
 
 			actualUser := retrieveUser(router, toor.ID, alaToken)
+
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(1))
 			Expect(actualUser.Following).To(BeTrue())
 		})
@@ -220,6 +229,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, bobToken)
 
 			actualUser := retrieveUser(router, toor.ID, alaToken)
+
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(2))
 			Expect(actualUser.Following).To(BeTrue())
 		})
@@ -234,12 +244,13 @@ var _ = Describe("ServerTest", func() {
 			path := fmt.Sprintf("/users/%v/unfollow", toor.ID)
 			req := request("POST", path, nil).authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			var actualUser model.PublicUser
 			err := json.Unmarshal(w.Body.Bytes(), &actualUser)
-			Expect(err).NotTo(HaveOccurred())
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(0))
 			Expect(actualUser.Following).To(BeFalse())
@@ -249,6 +260,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, alaToken)
 
 			actualUser := unfollowUser(router, toor.ID, alaToken)
+
 			expectedUser := retrieveUser(router, toor.ID, alaToken)
 			Expect(actualUser).To(Equal(expectedUser))
 		})
@@ -256,7 +268,9 @@ var _ = Describe("ServerTest", func() {
 		It(`should not perform any operation (but should return user)
 				when trying to unfollow not followed user`, func() {
 			unfollowUser(router, toor.ID, alaToken)
+
 			actualUser := retrieveUser(router, toor.ID, alaToken)
+
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(0))
 			Expect(actualUser.Following).To(BeFalse())
 		})
@@ -287,6 +301,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, alaToken)
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+
 			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 
@@ -300,11 +315,13 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, bobToken)
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+
 			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 
 		It("should get followers of not followed user", func() {
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+
 			Expect(*actualFollowers).To(BeEmpty())
 		})
 
@@ -314,6 +331,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, toor.ID, bobToken)
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
+
 			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 	})
@@ -331,11 +349,13 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, ernest.ID, alaToken)
 
 			actualFollowees := retrieveFollowees(router, ala.ID, alaToken)
+
 			Expect(*actualFollowees).To(ConsistOf(expectedFollowees))
 		})
 
 		It("should get empty followees when user is not following anyone", func() {
 			actualFollowers := retrieveFollowees(router, ala.ID, alaToken)
+
 			Expect(*actualFollowers).To(BeEmpty())
 		})
 
@@ -348,6 +368,7 @@ var _ = Describe("ServerTest", func() {
 			followUser(router, ernest.ID, bobToken)
 
 			actualFollowers := retrieveFollowees(router, ala.ID, alaToken)
+
 			Expect(*actualFollowers).To(ConsistOf(expectedFollowees))
 		})
 	})
@@ -359,12 +380,13 @@ var _ = Describe("ServerTest", func() {
 			newTweet := &model.NewTweet{Content: "new tweet"}
 			req := request("POST", "/tweets", body(newTweet)).json().authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			var actualTweet model.Tweet
 			err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-			Expect(err).NotTo(HaveOccurred())
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusCreated))
 			Expect(actualTweet.LikeCount).To(BeEquivalentTo(0))
 			Expect(actualTweet.RetweetCount).To(BeEquivalentTo(0))
@@ -376,6 +398,7 @@ var _ = Describe("ServerTest", func() {
 
 		It("should get tweet after creating", func() {
 			expectedTweet := createTweet(router, "new tweet", alaToken)
+
 			actualTweet := retrieveTweet(router, expectedTweet.ID, alaToken)
 
 			Expect(actualTweet).To(Equal(expectedTweet))
@@ -392,6 +415,7 @@ var _ = Describe("ServerTest", func() {
 			path := fmt.Sprintf("/tweets/%v", createdTweet.ID)
 			req := request("GET", path, nil).authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusNotFound))
@@ -400,6 +424,7 @@ var _ = Describe("ServerTest", func() {
 		It("should return not found code when trying to delete not existing tweet", func() {
 			req := request("DELETE", "/tweets/123", nil).authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusNotFound))
@@ -411,6 +436,7 @@ var _ = Describe("ServerTest", func() {
 			path := fmt.Sprintf("/tweets/%v", createdTweet.ID)
 			req := request("DELETE", path, nil).authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusForbidden))
@@ -427,6 +453,7 @@ var _ = Describe("ServerTest", func() {
 			}
 
 			actualTweets := retrieveTweets(router, alaToken)
+
 			Expect(*actualTweets).To(ConsistOf(expectedTweets))
 		})
 
@@ -442,9 +469,9 @@ var _ = Describe("ServerTest", func() {
 			}
 
 			alaActualTweets := retrieveUserTweets(router, alaToken, ala.ID)
-			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
-
 			bobActualTweets := retrieveUserTweets(router, bobToken, bob.ID)
+
+			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
 			Expect(*bobActualTweets).To(ConsistOf(bobExpectedTweets))
 		})
 	})
@@ -463,9 +490,9 @@ var _ = Describe("ServerTest", func() {
 			}
 
 			alaActualTweets := retrieveHomeFeed(router, alaToken)
-			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
-
 			bobActualTweets := retrieveHomeFeed(router, bobToken)
+
+			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
 			Expect(*bobActualTweets).To(ConsistOf(bobExpectedTweets))
 		})
 	})
@@ -483,12 +510,14 @@ var _ = Describe("ServerTest", func() {
 
 		It("should like tweet and return new liked tweet with populated data", func() {
 			actualTweet := likeTweet(router, alaTweet.ID, alaToken)
+
 			Expect(actualTweet.LikeCount).To(BeEquivalentTo(1))
 			Expect(actualTweet.Liked).To(Equal(true))
 		})
 
 		It("tweet returned by like should match real tweet", func() {
 			actualTweet := likeTweet(router, alaTweet.ID, alaToken)
+
 			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
 			Expect(actualTweet).To(Equal(expectedTweet))
 		})
@@ -498,6 +527,7 @@ var _ = Describe("ServerTest", func() {
 			likeTweet(router, alaTweet.ID, alaToken)
 
 			actualTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+
 			Expect(actualTweet.LikeCount).To(BeEquivalentTo(1))
 			Expect(actualTweet.Liked).To(Equal(true))
 		})
@@ -507,6 +537,7 @@ var _ = Describe("ServerTest", func() {
 			likeTweet(router, alaTweet.ID, bobToken)
 
 			actualTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+
 			Expect(actualTweet.LikeCount).To(BeEquivalentTo(2))
 		})
 
@@ -514,6 +545,7 @@ var _ = Describe("ServerTest", func() {
 			likeTweet(router, bobTweet.ID, bobToken)
 
 			actualTweet := retrieveTweet(router, bobTweet.ID, alaToken)
+
 			Expect(actualTweet.Liked).To(Equal(false))
 		})
 	})
@@ -535,12 +567,13 @@ var _ = Describe("ServerTest", func() {
 			path := fmt.Sprintf("/tweets/%v/unlike", alaTweet.ID)
 			req := request("POST", path, nil).authorize(alaToken).build()
 			w := httptest.NewRecorder()
+
 			router.ServeHTTP(w, req)
 
 			var actualTweet model.Tweet
 			err := json.Unmarshal(w.Body.Bytes(), &actualTweet)
-			Expect(err).NotTo(HaveOccurred())
 
+			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(actualTweet.LikeCount).To(BeEquivalentTo(0))
 			Expect(actualTweet.Liked).To(Equal(false))
@@ -548,14 +581,18 @@ var _ = Describe("ServerTest", func() {
 
 		It("tweet returned by unlike should match real tweet", func() {
 			likeTweet(router, alaTweet.ID, alaToken)
+
 			actualTweet := unlikeTweet(router, alaTweet.ID, alaToken)
+
 			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
 			Expect(actualTweet).To(Equal(expectedTweet))
 		})
 
 		It("should not perform any unexpected actions when trying to unlike not liked tweet", func() {
-			actualTweet := unlikeTweet(router, alaTweet.ID, alaToken)
 			expectedTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+
+			actualTweet := unlikeTweet(router, alaTweet.ID, alaToken)
+
 			Expect(actualTweet).To(Equal(expectedTweet))
 		})
 
@@ -564,10 +601,10 @@ var _ = Describe("ServerTest", func() {
 			unlikeTweet(router, alaTweet.ID, bobToken)
 
 			alaActualTweet := retrieveTweet(router, alaTweet.ID, alaToken)
+			bobActualTweet := retrieveTweet(router, alaTweet.ID, bobToken)
+
 			Expect(alaActualTweet.LikeCount).To(BeEquivalentTo(1))
 			Expect(alaActualTweet.Liked).To(Equal(true))
-
-			bobActualTweet := retrieveTweet(router, alaTweet.ID, bobToken)
 			Expect(bobActualTweet.LikeCount).To(BeEquivalentTo(1))
 			Expect(bobActualTweet.Liked).To(Equal(false))
 		})
