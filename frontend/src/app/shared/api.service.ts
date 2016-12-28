@@ -30,7 +30,7 @@ export class ApiService {
   ) {
     this.apiUrl = 'http://0.0.0.0:8080'
     if (process.env.ENV === 'production') {
-      this.apiUrl = '' // TODO: we should set some apiUrl when on production
+      this.apiUrl = 'http://backend.local'
     }
 
     this._store.changes.pluck('user')

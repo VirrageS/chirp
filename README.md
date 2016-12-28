@@ -20,15 +20,6 @@ Chirp is simplified Twitter written in Angular 2 and Go.
 ## Getting started (BACKEND)
 
 Install Go language: https://golang.org/doc/install (don't forget to set your GOPATH).
-
-Install postgresql client tools - will be required to run tests:
-
-    $ sudo apt-get install postgresql-client
-
-Install Go-lint - will be required for code formatting:
-
-    $ go get -u github.com/golang/lint/golint
-
 In order for backed to work you also need to have docker and docker-compose, see [Docker](https://github.com/VirrageS/chirp#docker)
 
 Now run
@@ -40,7 +31,6 @@ Now run
     $ $GOPATH/bin/backend
 
 Now you've got your chirp backend running on [localhost:8080](http://localhost:8080/)!
-
 
 
 ### Running backend easier
@@ -61,9 +51,11 @@ Now run
 
     $ npm install --global typescript webpack webpack-dev-server tslint
     $ npm install
+    $ npm rebuild node-sass
     $ npm start
 
 now open browser to [localhost:3000](http://localhost:3000/) and done! :)
+
 
 
 ## Docker
@@ -77,22 +69,45 @@ Then, depending on the services we want to start we have to type:
 
     $ docker-compose -f docker/backend.yml build && docker-compose -f docker/backend.yml up
 
+
 ### Frontend with services
 
     $ docker-compose -f docker/frontend.yml build && docker-compose -f docker/frontend.yml up
+
 
 ### Basic services
 
     $ docker-compose -f docker/core.yml build && docker-compose -f docker/core.yml up
 
+
 ### Production
 
     $ docker-compose -f docker/production.yml build && docker-compose -f docker/production.yml up
 
-### Testing
+If you want use production Docker you have to add this line to `/etc/hosts`:
 
-    $ docker-compose -f docker/test.yml build && docker-compose -f docker/test.yml up
+```
+127.0.0.1   backend.local frontend.local
+```
 
-To clean up volumes of test database run:
+It is because we are not using any external domains yet. Then you can just hit
+`frontend.local/` and now you are able to access fully working project ^^.
 
-    $ docker-compose -f docker/test.yml down -v
+
+
+## Contribution (BACKEND)
+
+To test or format code in backend you need to install some additional tools.
+To run tests you need to install:
+
+    (ubuntu)$ sudo apt-get install postgresql-client
+    (mac)$ brew install postgresql
+
+To be able to use full code formatting you need to install:
+
+    $ go get -u github.com/golang/lint/golint
+
+Then to test or format code run (**tip**: tests require Docker running!):
+
+    /backend$ make test
+    /backend$ make format
