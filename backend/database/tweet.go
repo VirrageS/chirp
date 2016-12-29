@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+
 	log "github.com/Sirupsen/logrus"
+
 	"github.com/VirrageS/chirp/backend/model"
 )
 
@@ -12,11 +14,6 @@ type TweetDAO interface {
 	GetTweetWithID(tweetID int64) (*model.Tweet, error)
 	InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error)
 	DeleteTweet(tweetID int64) error
-
-	LikeTweet(tweetID, userID int64) error
-	UnlikeTweet(tweetID, userID int64) error
-	LikeCount(tweetID int64) (int64, error)
-	IsLiked(tweetID, userID int64) (bool, error)
 }
 
 type tweetDB struct {
@@ -111,77 +108,6 @@ func (db *tweetDB) DeleteTweet(tweetID int64) error {
 	}
 
 	return nil
-}
-
-func (db *tweetDB) LikeTweet(tweetID, userID int64) error {
-	_, err := db.Exec(`
-		INSERT INTO likes (tweet_id, user_id)
-		VALUES ($1, $2)
-		ON CONFLICT (tweet_id, user_id) DO NOTHING`,
-		tweetID, userID)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"tweetID": tweetID,
-			"userID":  userID,
-		}).WithError(err).Error("LikeTweet query error.")
-		return err
-	}
-
-	return nil
-}
-
-func (db *tweetDB) UnlikeTweet(tweetID, userID int64) error {
-	_, err := db.Exec(`
-		DELETE FROM likes
-		WHERE tweet_id=$1 AND user_id=$2`,
-		tweetID, userID)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"tweetID": tweetID,
-			"userID":  userID,
-		}).WithError(err).Error("DeleteTweet query error.")
-		return err
-	}
-
-	return nil
-}
-
-func (db *tweetDB) LikeCount(tweetID int64) (int64, error) {
-	var likeCount int64
-
-	err := db.QueryRow(`
-		SELECT COUNT(*)
-		FROM likes
-		WHERE tweet_id = $1`,
-		tweetID).
-		Scan(&likeCount)
-	if err != nil {
-		log.WithField("tweetID", tweetID).WithError(err).Error("LikeCount query error.")
-		return 0, err
-	}
-
-	return likeCount, nil
-}
-
-func (db *tweetDB) IsLiked(tweetID, userID int64) (bool, error) {
-	var isLiked bool
-
-	err := db.QueryRow(`
-		SELECT exists
-			(SELECT true
-			FROM likes
-			WHERE tweet_id = $1 AND user_id = $2)`,
-		tweetID, userID).
-		Scan(&isLiked)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"tweetID": tweetID,
-			"userID":  userID,
-		}).WithError(err).Error("IsLiked query error.")
-		return false, err
-	}
-
-	return isLiked, nil
 }
 
 func readMultipleTweets(rows *sql.Rows) ([]*model.Tweet, error) {

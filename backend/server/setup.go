@@ -30,9 +30,11 @@ func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.Tok
 	CORSConfig := setupCORS()
 
 	userDAO := database.NewUserDAO(dbConnection)
+	followsDAO := database.NewFollowsDAO(dbConnection)
 	tweetDAO := database.NewTweetDAO(dbConnection)
+	likesDAO := database.NewLikesDAO(dbConnection)
 
-	db := storage.NewStorage(userDAO, tweetDAO, redis)
+	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis)
 	services := service.NewService(serverConfig, db, tokenManager)
 	APIs := api.NewAPI(services)
 

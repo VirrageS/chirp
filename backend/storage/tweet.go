@@ -11,15 +11,19 @@ import (
 
 // Struct that implements TweetDataAccessor using sql (postgres) database
 type TweetStorage struct {
-	DAO         database.TweetDAO
+	tweetDAO    database.TweetDAO
+	likesDAO    database.LikesDAO
 	cache       cache.CacheProvider
 	userStorage UserDataAccessor
 }
 
 // Constructs TweetDB that uses a given sql.DB connection and CacheProvider
-func NewTweetStorage(DAO database.TweetDAO, cache cache.CacheProvider, userStorage UserDataAccessor) *TweetStorage {
+func NewTweetStorage(tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
+	cache cache.CacheProvider, userStorage UserDataAccessor) *TweetStorage {
+
 	return &TweetStorage{
-		DAO:         DAO,
+		tweetDAO:    tweetDAO,
+		likesDAO:    likesDAO,
 		cache:       cache,
 		userStorage: userStorage,
 	}
@@ -31,7 +35,7 @@ func (db *TweetStorage) GetTweets(requestingUserID int64) ([]*model.Tweet, error
 		return tweets, nil
 	}
 
-	tweets, err := db.DAO.GetTweets()
+	tweets, err := db.tweetDAO.GetTweets()
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -41,11 +45,11 @@ func (db *TweetStorage) GetTweets(requestingUserID int64) ([]*model.Tweet, error
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
-		likeCount, err := db.DAO.LikeCount(tweet.ID)
+		likeCount, err := db.likesDAO.LikeCount(tweet.ID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
-		isLiked, err := db.DAO.IsLiked(tweet.ID, requestingUserID)
+		isLiked, err := db.likesDAO.IsLiked(tweet.ID, requestingUserID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -65,7 +69,7 @@ func (db *TweetStorage) GetTweetsOfUserWithID(userID, requestingUserID int64) ([
 		return tweets, nil
 	}
 
-	tweets, err := db.DAO.GetTweetsOfUserWithID(userID)
+	tweets, err := db.tweetDAO.GetTweetsOfUserWithID(userID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -75,11 +79,11 @@ func (db *TweetStorage) GetTweetsOfUserWithID(userID, requestingUserID int64) ([
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
-		likeCount, err := db.DAO.LikeCount(tweet.ID)
+		likeCount, err := db.likesDAO.LikeCount(tweet.ID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
-		isLiked, err := db.DAO.IsLiked(tweet.ID, requestingUserID)
+		isLiked, err := db.likesDAO.IsLiked(tweet.ID, requestingUserID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -99,7 +103,7 @@ func (db *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet,
 		return tweet, nil
 	}
 
-	tweet, err := db.DAO.GetTweetWithID(tweetID)
+	tweet, err := db.tweetDAO.GetTweetWithID(tweetID)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
@@ -112,11 +116,11 @@ func (db *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet,
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
-	likeCount, err := db.DAO.LikeCount(tweet.ID)
+	likeCount, err := db.likesDAO.LikeCount(tweet.ID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
-	isLiked, err := db.DAO.IsLiked(tweet.ID, requestingUserID)
+	isLiked, err := db.likesDAO.IsLiked(tweet.ID, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -130,7 +134,7 @@ func (db *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet,
 }
 
 func (db *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error) {
-	insertedTweet, err := db.DAO.InsertTweet(tweet)
+	insertedTweet, err := db.tweetDAO.InsertTweet(tweet)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -139,11 +143,11 @@ func (db *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int6
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
-	likeCount, err := db.DAO.LikeCount(insertedTweet.ID)
+	likeCount, err := db.likesDAO.LikeCount(insertedTweet.ID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
-	isLiked, err := db.DAO.IsLiked(insertedTweet.ID, requestingUserID)
+	isLiked, err := db.likesDAO.IsLiked(insertedTweet.ID, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -159,7 +163,7 @@ func (db *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int6
 }
 
 func (db *TweetStorage) DeleteTweet(tweetID int64) error {
-	err := db.DAO.DeleteTweet(tweetID)
+	err := db.tweetDAO.DeleteTweet(tweetID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
@@ -171,7 +175,7 @@ func (db *TweetStorage) DeleteTweet(tweetID int64) error {
 }
 
 func (db *TweetStorage) LikeTweet(tweetID, requestingUserID int64) error {
-	err := db.DAO.LikeTweet(tweetID, requestingUserID)
+	err := db.likesDAO.LikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
@@ -184,7 +188,7 @@ func (db *TweetStorage) LikeTweet(tweetID, requestingUserID int64) error {
 }
 
 func (db *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
-	err := db.DAO.UnlikeTweet(tweetID, requestingUserID)
+	err := db.likesDAO.UnlikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
