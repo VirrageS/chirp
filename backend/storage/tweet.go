@@ -11,15 +11,17 @@ import (
 
 // Struct that implements TweetDataAccessor using sql (postgres) database
 type TweetStorage struct {
-	DAO   database.TweetDAO
-	cache cache.CacheProvider
+	DAO         database.TweetDAO
+	cache       cache.CacheProvider
+	userStorage UserDataAccessor
 }
 
 // Constructs TweetDB that uses a given sql.DB connection and CacheProvider
-func NewTweetStorage(DAO database.TweetDAO, cache cache.CacheProvider) *TweetStorage {
+func NewTweetStorage(DAO database.TweetDAO, cache cache.CacheProvider, userStorage UserDataAccessor) *TweetStorage {
 	return &TweetStorage{
-		DAO,
-		cache,
+		DAO:         DAO,
+		cache:       cache,
+		userStorage: userStorage,
 	}
 }
 
@@ -29,9 +31,28 @@ func (db *TweetStorage) GetTweets(requestingUserID int64) ([]*model.Tweet, error
 		return tweets, nil
 	}
 
-	tweets, err := db.DAO.GetTweets(requestingUserID)
+	tweets, err := db.DAO.GetTweets()
 	if err != nil {
 		return nil, errors.UnexpectedError
+	}
+
+	for _, tweet := range tweets {
+		author, err := db.userStorage.GetUserByID(tweet.Author.ID, requestingUserID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		likeCount, err := db.DAO.LikeCount(tweet.ID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		isLiked, err := db.DAO.IsLiked(tweet.ID, requestingUserID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+
+		tweet.Author = author
+		tweet.LikeCount = likeCount
+		tweet.Liked = isLiked
 	}
 
 	db.cache.SetWithFields(cache.Fields{"tweets", requestingUserID}, tweets)
@@ -44,9 +65,28 @@ func (db *TweetStorage) GetTweetsOfUserWithID(userID, requestingUserID int64) ([
 		return tweets, nil
 	}
 
-	tweets, err := db.DAO.GetTweetsOfUserWithID(userID, requestingUserID)
+	tweets, err := db.DAO.GetTweetsOfUserWithID(userID)
 	if err != nil {
 		return nil, errors.UnexpectedError
+	}
+
+	for _, tweet := range tweets {
+		author, err := db.userStorage.GetUserByID(tweet.Author.ID, requestingUserID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		likeCount, err := db.DAO.LikeCount(tweet.ID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		isLiked, err := db.DAO.IsLiked(tweet.ID, requestingUserID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+
+		tweet.Author = author
+		tweet.LikeCount = likeCount
+		tweet.Liked = isLiked
 	}
 
 	db.cache.SetWithFields(cache.Fields{"tweets", userID, requestingUserID}, tweets)
@@ -59,18 +99,7 @@ func (db *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet,
 		return tweet, nil
 	}
 
-	tweet, err := db.DAO.GetTweetUsingQuery(`
-		SELECT tweets.id, tweets.created_at, tweets.content,
-		 	users.id, users.username, users.name, users.avatar_url,
-		 	COUNT(likes.tweet_id) as likes,
-		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
-		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND tweets.id=$2
-			LEFT JOIN likes ON tweets.id = likes.tweet_id
-		GROUP BY tweets.id, users.id
-		ORDER BY tweets.created_at DESC;`,
-		requestingUserID, tweetID)
-
+	tweet, err := db.DAO.GetTweetWithID(tweetID)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
@@ -79,42 +108,58 @@ func (db *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet,
 		return nil, errors.UnexpectedError
 	}
 
+	author, err := db.userStorage.GetUserByID(tweet.Author.ID, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+	likeCount, err := db.DAO.LikeCount(tweet.ID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+	isLiked, err := db.DAO.IsLiked(tweet.ID, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	tweet.Author = author
+	tweet.LikeCount = likeCount
+	tweet.Liked = isLiked
+
 	db.cache.SetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet)
 	return tweet, nil
 }
 
 func (db *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error) {
-	tweetID, err := db.DAO.InsertTweetToDatabase(tweet)
+	insertedTweet, err := db.DAO.InsertTweet(tweet)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
 
-	// TODO: this is probably super ugly. Maybe fetch user only?
-	// Probably could just fetch user from cache
-	newTweet, err := db.DAO.GetTweetUsingQuery(`
-		SELECT tweets.id, tweets.created_at, tweets.content,
-		 	users.id, users.username, users.name, users.avatar_url,
-		 	COUNT(likes.tweet_id) as likes,
-		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
-		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND tweets.id=$2
-			LEFT JOIN likes ON tweets.id = likes.tweet_id
-		GROUP BY tweets.id, users.id
-		ORDER BY tweets.created_at DESC;`,
-		requestingUserID, tweetID)
-
+	author, err := db.userStorage.GetUserByID(insertedTweet.Author.ID, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
+	likeCount, err := db.DAO.LikeCount(insertedTweet.ID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+	isLiked, err := db.DAO.IsLiked(insertedTweet.ID, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	insertedTweet.Author = author
+	insertedTweet.LikeCount = likeCount
+	insertedTweet.Liked = isLiked
 
 	// We don't flush cache on purpose. The data in cache can be not precise for some time.
-	db.cache.SetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet)
+	db.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, requestingUserID}, tweet)
 
-	return newTweet, nil
+	return insertedTweet, nil
 }
 
 func (db *TweetStorage) DeleteTweet(tweetID int64) error {
-	err := db.DAO.DeleteTweetWithID(tweetID)
+	err := db.DAO.DeleteTweet(tweetID)
 	if err != nil {
 		return errors.UnexpectedError
 	}

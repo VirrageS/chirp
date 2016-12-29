@@ -15,8 +15,11 @@ type Storage struct {
 
 // Constructs new Database that uses given sql.DB connection
 func NewStorage(userDAO database.UserDAO, tweetDAO database.TweetDAO, cache cache.CacheProvider) DatabaseAccessor {
+	userStorage := NewUserStorage(userDAO, cache)
+	tweetStorage := NewTweetStorage(tweetDAO, cache, userStorage)
+
 	return &Storage{
-		NewUserStorage(userDAO, cache),
-		NewTweetStorage(tweetDAO, cache),
+		UserDataAccessor:  userStorage,
+		TweetDataAccessor: tweetStorage,
 	}
 }
