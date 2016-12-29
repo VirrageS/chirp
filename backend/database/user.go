@@ -15,7 +15,7 @@ type UserDAO interface {
 	GetPublicUsersFromListOfIDs(usersToFindIDs []int64) ([]*model.PublicUser, error)
 	GetPublicUserWithID(userID int64) (*model.PublicUser, error)
 	GetUserWithEmail(userEmail string) (*model.User, error)
-	InsertUser(user *model.NewUserForm) (int64, error)
+	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 
 	FollowUser(followeeID, followerID int64) error
@@ -46,20 +46,9 @@ func (db *userDB) GetPublicUsers() ([]*model.PublicUser, error) {
 	}
 	defer rows.Close()
 
-	users := make([]*model.PublicUser, 0)
-	for rows.Next() {
-		var user model.PublicUser
-		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
-		if err != nil {
-			log.WithError(err).Error("GetPublicUsers row scan error.")
-			return nil, err
-		}
-
-		users = append(users, &user)
-	}
-	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("GetPublicUsers rows iteration error.")
-		return nil, err
+	users, err := readMultipleUsers(rows)
+	if err != nil {
+		log.WithError(err).Error("GetPublicUsers rows scan/iteration error.")
 	}
 
 	return users, nil
@@ -73,84 +62,68 @@ func (db *userDB) GetPublicUsersFromListOfIDs(usersToFindIDs []int64) ([]*model.
 		GROUP BY users.id`,
 		pq.Array(usersToFindIDs))
 	if err != nil {
-		log.WithError(err).Error("GetPublicUsersFromListOfIDs query error.")
+		log.WithField("usersToFindIDs", usersToFindIDs).WithError(err).Error("GetPublicUsersFromListOfIDs query error.")
 		return nil, err
 	}
 	defer rows.Close()
 
-	users := make([]*model.PublicUser, 0)
-	for rows.Next() {
-		var user model.PublicUser
-		err = rows.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
-		if err != nil {
-			log.WithError(err).Error("GetPublicUsersFromListOfIDs row scan error.")
-			return nil, err
-		}
-
-		users = append(users, &user)
-	}
-	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("GetPublicUsersFromListOfIDs rows iteration error.")
-		return nil, err
+	users, err := readMultipleUsers(rows)
+	if err != nil {
+		log.WithError(err).Error("GetPublicUsersFromListOfIDs rows scan/iteration error.")
 	}
 
 	return users, nil
 }
 
 func (db *userDB) GetPublicUserWithID(userID int64) (*model.PublicUser, error) {
-	var user model.PublicUser
-
-	err := db.QueryRow(`
+	row := db.QueryRow(`
 		SELECT id, username, name, avatar_url
 		FROM users
 		WHERE id = $1`,
-		userID).
-		Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
+		userID)
+
+	user, err := readPublicUser(row)
 	if err != nil && err != sql.ErrNoRows {
-		log.WithError(err).Error("GetPublicUserWithID database error.")
+		log.WithField("userID", userID).WithError(err).Error("GetPublicUserWithID query error.")
 		return nil, err
 	}
 
-	return &user, err
+	return user, err
 }
 
 func (db *userDB) GetUserWithEmail(userEmail string) (*model.User, error) {
-	var user model.User
-
-	err := db.QueryRow(`
+	row := db.QueryRow(`
 		SELECT id, username, password, email, name,
 			twitter_token, facebook_token, google_token,
 			created_at, last_login, active, avatar_url
 		FROM users
 		WHERE email = $1`,
-		userEmail).
-		Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.Name,
-			&user.TwitterToken, &user.FacebookToken, &user.GoogleToken,
-			&user.CreatedAt, &user.LastLogin, &user.Active, &user.AvatarUrl)
+		userEmail)
+
+	user, err := readUser(row)
 	if err != nil && err != sql.ErrNoRows {
-		log.WithError(err).Error("GetUserWithEmail database error.")
+		log.WithField("userEmail", userEmail).WithError(err).Error("GetUserWithEmail query error.")
 		return nil, err
 	}
 
-	return &user, err
+	return user, err
 }
 
-func (db *userDB) InsertUser(user *model.NewUserForm) (int64, error) {
-	var newID int64
-
+func (db *userDB) InsertUser(newUser *model.NewUserForm) (*model.PublicUser, error) {
 	// for Postgres we need to use query with RETURNING id to get the ID of the inserted user
-	err := db.QueryRow(`
+	row := db.QueryRow(`
 		INSERT INTO users (username, email, password, name)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id`,
-		user.Username, user.Email, user.Password, user.Name).
-		Scan(&newID)
+		RETURNING id, username, name, avatar_url`,
+		newUser.Username, newUser.Email, newUser.Password, newUser.Name)
+
+	insertedUser, err := readPublicUser(row)
 	if err != nil {
-		log.WithError(err).Error("InsertUser query execute error.")
-		return 0, err
+		log.WithField("user", *newUser).WithError(err).Error("InsertUser query error.")
+		return nil, err
 	}
 
-	return newID, nil
+	return insertedUser, nil
 }
 
 func (db *userDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
@@ -158,10 +131,13 @@ func (db *userDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time
 		UPDATE users
 		SET last_login = $1
 		WHERE id = $2`,
-		lastLoginTime, userID,
-	)
+		lastLoginTime, userID)
 	if err != nil {
-		log.WithError(err).Error("UpdateUserLastLoginTime query execute error.")
+		log.WithFields(log.Fields{
+			"userID":        userID,
+			"lastLoginTime": lastLoginTime,
+		}).WithError(err).Error("UpdateUserLastLoginTime query error.")
+
 		return err
 	}
 
@@ -179,7 +155,7 @@ func (db *userDB) FollowUser(followeeID, followerID int64) error {
 		log.WithFields(log.Fields{
 			"followeeID": followeeID,
 			"followerID": followerID,
-		}).WithError(err).Error("FollowUser query execute error.")
+		}).WithError(err).Error("FollowUser query error.")
 		return err
 	}
 
@@ -197,7 +173,7 @@ func (db *userDB) UnfollowUser(followeeID, followerID int64) error {
 		log.WithFields(log.Fields{
 			"followeeID": followeeID,
 			"followerID": followerID,
-		}).WithError(err).Error("UnfollowUser query execute error.")
+		}).WithError(err).Error("UnfollowUser query error.")
 		return err
 	}
 
@@ -249,6 +225,7 @@ func (db *userDB) IDsOfFollowees(userID int64) ([]int64, error) {
 	followeesIDs := make([]int64, 0)
 	for rows.Next() {
 		var followeeID int64
+
 		err = rows.Scan(&followeeID)
 		if err != nil {
 			log.WithError(err).Error("IDsOfFollowees row scan error.")
@@ -282,7 +259,6 @@ func (db *userDB) FollowerCount(userID int64) (int64, error) {
 	return followerCount, nil
 }
 
-// TODO: this is a copy paste of /\
 func (db *userDB) FolloweeCount(userID int64) (int64, error) {
 	var followeeCount int64
 
@@ -317,4 +293,52 @@ func (db *userDB) IsFollowing(followerID, followeeID int64) (bool, error) {
 	}
 
 	return isFollowing, nil
+}
+
+// Helper that wraps rows and row so they can be used in the same function
+type scannable interface {
+	Scan(dest ...interface{}) error
+}
+
+func readMultipleUsers(rows *sql.Rows) ([]*model.PublicUser, error) {
+	users := make([]*model.PublicUser, 0)
+
+	for rows.Next() {
+		user, err := readPublicUser(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func readPublicUser(row scannable) (*model.PublicUser, error) {
+	var user model.PublicUser
+
+	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.AvatarUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func readUser(row scannable) (*model.User, error) {
+	var user model.User
+
+	err := row.Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.Name,
+		&user.TwitterToken, &user.FacebookToken, &user.GoogleToken,
+		&user.CreatedAt, &user.LastLogin, &user.Active, &user.AvatarUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

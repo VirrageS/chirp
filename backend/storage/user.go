@@ -109,7 +109,7 @@ func (s *UserStorage) GetUserByEmail(email string) (*model.User, error) {
 }
 
 func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
-	userID, err := s.DAO.InsertUser(newUserForm)
+	insertedUser, err := s.DAO.InsertUser(newUserForm)
 
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == database.UniqueConstraintViolationCode {
@@ -118,20 +118,11 @@ func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicU
 		return nil, errors.UnexpectedError
 	}
 
-	// TODO: how bad is this? This is ugly, but saves a database query
-	newPublicUser := &model.PublicUser{
-		ID:        userID,
-		Username:  newUserForm.Username,
-		Name:      newUserForm.Name,
-		AvatarUrl: "",
-		Following: false,
-	}
-
 	// We don't flush cache on purpose. The data in cache can be not precise for some time.
 	// We also don't add the user to cache because this would not make sense, since we compute additional data
 	// for each user that depends on requesting user.
 
-	return newPublicUser, nil
+	return insertedUser, nil
 }
 
 func (s *UserStorage) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {

@@ -38,23 +38,9 @@ func (db *tweetDB) GetTweets() ([]*model.Tweet, error) {
 	}
 	defer rows.Close()
 
-	tweets := make([]*model.Tweet, 0)
-	for rows.Next() {
-		var tweet model.Tweet
-		var authorID int64
-
-		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content, &authorID)
-		if err != nil {
-			log.WithError(err).Error("GetTweets row scan error.")
-			return nil, err
-		}
-		tweet.Author = &model.PublicUser{ID: authorID}
-
-		tweets = append(tweets, &tweet)
-	}
-	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("GetTweets rows iteration error.")
-		return nil, err
+	tweets, err := readMultipleTweets(rows)
+	if err != nil {
+		log.WithError(err).Error("GetTweets rows scan/iteration error.")
 	}
 
 	return tweets, nil
@@ -68,72 +54,50 @@ func (db *tweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 		ORDER BY created_at DESC`,
 		userID)
 	if err != nil {
-		log.WithError(err).Error("GetTweetsOfUserWithID query error.")
+		log.WithField("userID", userID).WithError(err).Error("GetTweetsOfUserWithID query error.")
 		return nil, err
 	}
 	defer rows.Close()
 
-	tweets := make([]*model.Tweet, 0)
-	for rows.Next() {
-		var tweet model.Tweet
-		var authorID int64
-
-		err := rows.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content, &authorID)
-		if err != nil {
-			log.WithError(err).Error("GetTweetsOfUserWithID row scan error.")
-			return nil, err
-		}
-		tweet.Author = &model.PublicUser{ID: authorID}
-
-		tweets = append(tweets, &tweet)
-	}
-	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("GetTweetsOfUserWithID rows iteration error.")
-		return nil, err
+	tweets, err := readMultipleTweets(rows)
+	if err != nil {
+		log.WithError(err).Error("GetTweetsOfUserWithID rows scan/iteration error.")
 	}
 
 	return tweets, nil
 }
 
 func (db *tweetDB) GetTweetWithID(tweetID int64) (*model.Tweet, error) {
-	var tweet model.Tweet
-	var authorID int64
-
-	err := db.QueryRow(`
+	row := db.QueryRow(`
 		SELECT id, created_at, content, author_id
 		FROM tweets
 		WHERE id = $1
 		ORDER BY created_at DESC`,
-		tweetID).
-		Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content, &authorID)
+		tweetID)
+
+	tweet, err := readTweet(row)
 	if err != nil && err != sql.ErrNoRows {
-		log.WithError(err).Error("GetTweetWithID database error.")
+		log.WithField("tweetID", tweetID).WithError(err).Error("GetTweetWithID query error.")
 		return nil, err
 	}
 
-	tweet.Author = &model.PublicUser{ID: authorID}
-
-	return &tweet, err
+	return tweet, err
 }
 
 func (db *tweetDB) InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error) {
-	var insertedTweet model.Tweet
-	var authorID int64
-
-	err := db.QueryRow(`
+	row := db.QueryRow(`
 		INSERT INTO tweets (author_id, content)
 		VALUES ($1, $2)
 		RETURNING id, created_at, content, author_id`,
-		newTweet.AuthorID, newTweet.Content).
-		Scan(&insertedTweet.ID, &insertedTweet.CreatedAt, &insertedTweet.Content, &authorID)
+		newTweet.AuthorID, newTweet.Content)
+
+	insertedTweet, err := readTweet(row)
 	if err != nil {
-		log.WithError(err).Error("InsertTweet query execute error.")
+		log.WithField("newTweet", *newTweet).WithError(err).Error("InsertTweet query error.")
 		return nil, err
 	}
 
-	insertedTweet.Author = &model.PublicUser{ID: authorID}
-
-	return &insertedTweet, nil
+	return insertedTweet, nil
 }
 
 func (db *tweetDB) DeleteTweet(tweetID int64) error {
@@ -142,7 +106,7 @@ func (db *tweetDB) DeleteTweet(tweetID int64) error {
 		WHERE id=$1`,
 		tweetID)
 	if err != nil {
-		log.WithError(err).Error("DeleteTweet query execute error.")
+		log.WithField("tweetID", tweetID).WithError(err).Error("DeleteTweet query error.")
 		return err
 	}
 
@@ -159,7 +123,7 @@ func (db *tweetDB) LikeTweet(tweetID, userID int64) error {
 		log.WithFields(log.Fields{
 			"tweetID": tweetID,
 			"userID":  userID,
-		}).WithError(err).Error("LikeTweet query execute error.")
+		}).WithError(err).Error("LikeTweet query error.")
 		return err
 	}
 
@@ -175,7 +139,7 @@ func (db *tweetDB) UnlikeTweet(tweetID, userID int64) error {
 		log.WithFields(log.Fields{
 			"tweetID": tweetID,
 			"userID":  userID,
-		}).WithError(err).Error("DeleteTweet query execute error.")
+		}).WithError(err).Error("DeleteTweet query error.")
 		return err
 	}
 
@@ -192,7 +156,7 @@ func (db *tweetDB) LikeCount(tweetID int64) (int64, error) {
 		tweetID).
 		Scan(&likeCount)
 	if err != nil {
-		log.WithError(err).Error("LikeCount query error.")
+		log.WithField("tweetID", tweetID).WithError(err).Error("LikeCount query error.")
 		return 0, err
 	}
 
@@ -210,9 +174,44 @@ func (db *tweetDB) IsLiked(tweetID, userID int64) (bool, error) {
 		tweetID, userID).
 		Scan(&isLiked)
 	if err != nil {
-		log.WithError(err).Error("IsLiked query error.")
+		log.WithFields(log.Fields{
+			"tweetID": tweetID,
+			"userID":  userID,
+		}).WithError(err).Error("IsLiked query error.")
 		return false, err
 	}
 
 	return isLiked, nil
+}
+
+func readMultipleTweets(rows *sql.Rows) ([]*model.Tweet, error) {
+	tweets := make([]*model.Tweet, 0)
+	for rows.Next() {
+		tweet, err := readTweet(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		tweets = append(tweets, tweet)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tweets, nil
+}
+
+func readTweet(row scannable) (*model.Tweet, error) {
+	var tweet model.Tweet
+	var authorID int64
+
+	err := row.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content, &authorID)
+	if err != nil {
+		return nil, err
+	}
+
+	tweet.Author = &model.PublicUser{ID: authorID}
+
+	return &tweet, nil
 }
