@@ -6,11 +6,12 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
-	"github.com/lib/pq"
 )
 
 // Struct that implements UserDataAcessor using given DAO and cache
@@ -33,9 +34,24 @@ func (s *UserStorage) GetUsers(requestingUserID int64) ([]*model.PublicUser, err
 		return users, nil
 	}
 
-	users, err := s.DAO.GetPublicUsers(requestingUserID)
+	users, err := s.DAO.GetPublicUsers()
 	if err != nil {
 		return nil, errors.UnexpectedError
+	}
+
+	// TODO: this could be done in parallel by a few goroutines...
+	for _, user := range users {
+		followerCount, err := s.DAO.FollowerCount(user.ID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		following, err := s.DAO.IsFollowing(requestingUserID, user.ID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+
+		user.FollowerCount = followerCount
+		user.Following = following
 	}
 
 	s.cache.SetWithFields(cache.Fields{"users", requestingUserID}, users)
@@ -48,16 +64,7 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 		return user, nil
 	}
 
-	user, err := s.DAO.GetPublicUserUsingQuery(`
-		SELECT id, username, name, avatar_url,
-			COUNT(follows.follower_id) AS follow_count,
-			SUM(CASE WHEN follows.follower_id=$2 THEN 1 ELSE 0 END) > 0 AS following
-		FROM users
-			LEFT JOIN follows
-			ON users.id = follows.followee_id
-		WHERE users.id = $1
-		GROUP BY users.id;`,
-		userID, requestingUserID)
+	user, err := s.DAO.GetPublicUserWithID(userID)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
@@ -66,6 +73,18 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
+
+	followerCount, err := s.DAO.FollowerCount(user.ID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+	following, err := s.DAO.IsFollowing(requestingUserID, user.ID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	user.FollowerCount = followerCount
+	user.Following = following
 
 	s.cache.SetWithFields(cache.Fields{"user", "id", userID, requestingUserID}, user)
 	return user, nil
@@ -77,7 +96,7 @@ func (s *UserStorage) GetUserByEmail(email string) (*model.User, error) {
 		return user, nil
 	}
 
-	user, err := s.DAO.GetUserUsingQuery("SELECT * FROM users WHERE email=$1", email)
+	user, err := s.DAO.GetUserWithEmail(email)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
@@ -90,7 +109,7 @@ func (s *UserStorage) GetUserByEmail(email string) (*model.User, error) {
 }
 
 func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
-	userID, err := s.DAO.InsertUserToDatabase(newUserForm)
+	userID, err := s.DAO.InsertUser(newUserForm)
 
 	if err != nil {
 		if err, ok := err.(*pq.Error); ok && err.Code == database.UniqueConstraintViolationCode {
@@ -154,7 +173,7 @@ func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
 }
 
 func (s *UserStorage) Followers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
-	followersIDs, err := s.DAO.Followers(userID)
+	followersIDs, err := s.DAO.IDsOfFollowers(userID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -173,7 +192,7 @@ func (s *UserStorage) Followers(userID, requestingUserID int64) ([]*model.Public
 	}
 
 	if len(followersIDs) > 0 {
-		dbFollowers, err := s.DAO.GetPublicUsersFromListOfIDs(requestingUserID, followersIDs)
+		dbFollowers, err := s.DAO.GetPublicUsersFromListOfIDs(followersIDs)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -184,7 +203,7 @@ func (s *UserStorage) Followers(userID, requestingUserID int64) ([]*model.Public
 }
 
 func (s *UserStorage) Followees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
-	followeesIDs, err := s.DAO.Followees(userID)
+	followeesIDs, err := s.DAO.IDsOfFollowees(userID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -203,10 +222,25 @@ func (s *UserStorage) Followees(userID, requestingUserID int64) ([]*model.Public
 	}
 
 	if len(followeesIDs) > 0 {
-		dbFollowees, err := s.DAO.GetPublicUsersFromListOfIDs(requestingUserID, followeesIDs)
+		dbFollowees, err := s.DAO.GetPublicUsersFromListOfIDs(followeesIDs)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
+
+		for _, user := range dbFollowees {
+			followerCount, err := s.DAO.FollowerCount(user.ID)
+			if err != nil {
+				return nil, errors.UnexpectedError
+			}
+			following, err := s.DAO.IsFollowing(requestingUserID, user.ID)
+			if err != nil {
+				return nil, errors.UnexpectedError
+			}
+
+			user.FollowerCount = followerCount
+			user.Following = following
+		}
+
 		followees = append(followees, dbFollowees...)
 	}
 
