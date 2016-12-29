@@ -14,6 +14,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/service"
+	"github.com/VirrageS/chirp/backend/storage"
 	"github.com/VirrageS/chirp/backend/token"
 )
 
@@ -28,7 +29,10 @@ func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.Tok
 	// api dependencies
 	CORSConfig := setupCORS()
 
-	db := database.NewDatabase(dbConnection, redis)
+	userDAO := database.NewUserDAO(dbConnection)
+	tweetDAO := database.NewTweetDAO(dbConnection)
+
+	db := storage.NewStorage(userDAO, tweetDAO, redis)
 	services := service.NewService(serverConfig, db, tokenManager)
 	APIs := api.NewAPI(services)
 

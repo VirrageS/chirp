@@ -2,158 +2,30 @@ package database
 
 import (
 	"database/sql"
-
 	log "github.com/Sirupsen/logrus"
-
-	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/model"
-	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
-// Struct that implements TweetDataAccessor using sql (postgres) database
-type TweetDB struct {
+type TweetDAO interface {
+	GetTweetUsingQuery(query string, args ...interface{}) (*model.Tweet, error)
+	InsertTweetToDatabase(tweet *model.NewTweet) (int64, error)
+	DeleteTweetWithID(tweetID int64) error
+	GetTweets(requestingUserID int64) ([]*model.Tweet, error)
+	GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error)
+	LikeTweet(tweetID, userID int64) error
+	UnlikeTweet(tweetID, userID int64) error
+}
+
+type tweetDB struct {
 	*sql.DB
-	cache cache.CacheProvider
 }
 
-// Constructs TweetDB that uses a given sql.DB connection and CacheProvider
-func NewTweetDB(databaseConnection *sql.DB, cache cache.CacheProvider) *TweetDB {
-	return &TweetDB{
-		databaseConnection,
-		cache,
-	}
-}
-
-func (db *TweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
-	tweets := make([]*model.Tweet, 0)
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", requestingUserID}, &tweets); exists {
-		return tweets, nil
-	}
-
-	tweets, err := db.getTweets(requestingUserID)
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	db.cache.SetWithFields(cache.Fields{"tweets", requestingUserID}, tweets)
-	return tweets, nil
-}
-
-func (db *TweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	tweets := make([]*model.Tweet, 0)
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweets", userID, requestingUserID}, &tweets); exists {
-		return tweets, nil
-	}
-
-	tweets, err := db.getTweetsOfUserWithID(userID, requestingUserID)
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	db.cache.SetWithFields(cache.Fields{"tweets", userID, requestingUserID}, tweets)
-	return tweets, nil
-}
-
-func (db *TweetDB) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
-	var tweet *model.Tweet
-	if exists, _ := db.cache.GetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet); exists {
-		return tweet, nil
-	}
-
-	tweet, err := db.getTweetUsingQuery(`
-		SELECT tweets.id, tweets.created_at, tweets.content,
-		 	users.id, users.username, users.name, users.avatar_url,
-		 	COUNT(likes.tweet_id) as likes,
-		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
-		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND tweets.id=$2
-			LEFT JOIN likes ON tweets.id = likes.tweet_id
-		GROUP BY tweets.id, users.id
-		ORDER BY tweets.created_at DESC;`,
-		requestingUserID, tweetID)
-
-	if err == sql.ErrNoRows {
-		return nil, errors.NoResultsError
-	}
-
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	db.cache.SetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet)
-	return tweet, nil
-}
-
-func (db *TweetDB) InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error) {
-	tweetID, err := db.insertTweetToDatabase(tweet)
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	// TODO: this is probably super ugly. Maybe fetch user only?
-	// Probably could just fetch user from cache
-	newTweet, err := db.getTweetUsingQuery(`
-		SELECT tweets.id, tweets.created_at, tweets.content,
-		 	users.id, users.username, users.name, users.avatar_url,
-		 	COUNT(likes.tweet_id) as likes,
-		 	SUM(case when likes.user_id=$1 then 1 else 0 end) > 0 as liked
-		FROM tweets
-			JOIN users ON tweets.author_id = users.id AND tweets.id=$2
-			LEFT JOIN likes ON tweets.id = likes.tweet_id
-		GROUP BY tweets.id, users.id
-		ORDER BY tweets.created_at DESC;`,
-		requestingUserID, tweetID)
-
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	// We don't flush cache on purpose. The data in cache can be not precise for some time.
-	db.cache.SetWithFields(cache.Fields{"tweet", tweetID, requestingUserID}, tweet)
-
-	return newTweet, nil
-}
-
-func (db *TweetDB) DeleteTweet(tweetID int64) error {
-	err := db.deleteTweetWithID(tweetID)
-	if err != nil {
-		return errors.UnexpectedError
-	}
-
-	// Its better to just flush the cache here, because almost everything changes.
-	db.cache.Flush()
-
-	return nil
-}
-
-func (db *TweetDB) LikeTweet(tweetID, requestingUserID int64) error {
-	err := db.likeTweet(tweetID, requestingUserID)
-	if err != nil {
-		return errors.UnexpectedError
-	}
-
-	// TODO: Maybe a smarter way: don't delete, but just update cache with likeCount++ and liked=true,
-	// Just delete from cache for the requesting user, it will be fetched back in next GET query
-	db.cache.DeleteWithFields(cache.Fields{"tweet", tweetID, requestingUserID})
-
-	return nil
-}
-
-func (db *TweetDB) UnlikeTweet(tweetID, requestingUserID int64) error {
-	err := db.unlikeTweet(tweetID, requestingUserID)
-	if err != nil {
-		return errors.UnexpectedError
-	}
-
-	// TODO: Maybe a smarter way: don't delete, but just update cache with likeCount-- and liked=false
-	// Just delete from cache for the requesting user, it will be fetched back in next GET query
-	db.cache.DeleteWithFields(cache.Fields{"tweet", tweetID, requestingUserID})
-
-	return nil
+func NewTweetDAO(dbConnection *sql.DB) TweetDAO {
+	return &tweetDB{dbConnection}
 }
 
 // TODO: Maybe it should also fetch tweet's User and embed it inside the returned object
-func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model.Tweet, error) {
+func (db *tweetDB) GetTweetUsingQuery(query string, args ...interface{}) (*model.Tweet, error) {
 	row := db.QueryRow(query, args...)
 
 	var tweet model.Tweet
@@ -174,7 +46,7 @@ func (db *TweetDB) getTweetUsingQuery(query string, args ...interface{}) (*model
 }
 
 // TODO: maybe return whole Tweet struct instead of just ID
-func (db *TweetDB) insertTweetToDatabase(tweet *model.NewTweet) (int64, error) {
+func (db *tweetDB) InsertTweetToDatabase(tweet *model.NewTweet) (int64, error) {
 	query, err := db.Prepare(`
 		INSERT INTO tweets (author_id, content) VALUES ($1, $2) RETURNING id;
 	`)
@@ -195,7 +67,7 @@ func (db *TweetDB) insertTweetToDatabase(tweet *model.NewTweet) (int64, error) {
 	return newID, nil
 }
 
-func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
+func (db *tweetDB) DeleteTweetWithID(tweetID int64) error {
 	statement, err := db.Prepare("DELETE FROM tweets WHERE id=$1")
 	if err != nil {
 		log.WithError(err).Error("deleteTweetWithID query prepare error.")
@@ -212,7 +84,7 @@ func (db *TweetDB) deleteTweetWithID(tweetID int64) error {
 	return nil
 }
 
-func (db *TweetDB) getTweets(requestingUserID int64) ([]*model.Tweet, error) {
+func (db *tweetDB) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
 	rows, err := db.Query(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
 		 	users.id, users.username, users.name, users.avatar_url,
@@ -254,7 +126,7 @@ func (db *TweetDB) getTweets(requestingUserID int64) ([]*model.Tweet, error) {
 }
 
 // TODO: almost the same as getTweets()...
-func (db *TweetDB) getTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
+func (db *tweetDB) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
 	rows, err := db.Query(`
 		SELECT tweets.id, tweets.created_at, tweets.content,
 		 	users.id, users.username, users.name, users.avatar_url,
@@ -295,7 +167,7 @@ func (db *TweetDB) getTweetsOfUserWithID(userID, requestingUserID int64) ([]*mod
 	return tweets, nil
 }
 
-func (db *TweetDB) likeTweet(tweetID, userID int64) error {
+func (db *tweetDB) LikeTweet(tweetID, userID int64) error {
 	query, err := db.Prepare(`
 		INSERT INTO likes (tweet_id, user_id)
 		VALUES ($1, $2)
@@ -320,7 +192,7 @@ func (db *TweetDB) likeTweet(tweetID, userID int64) error {
 	return nil
 }
 
-func (db *TweetDB) unlikeTweet(tweetID, userID int64) error {
+func (db *tweetDB) UnlikeTweet(tweetID, userID int64) error {
 	query, err := db.Prepare(`
 		DELETE FROM likes
 		WHERE tweet_id=$1 AND user_id=$2;

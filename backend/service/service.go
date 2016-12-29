@@ -6,9 +6,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
+	"github.com/VirrageS/chirp/backend/storage"
 	"github.com/VirrageS/chirp/backend/token"
 )
 
@@ -16,12 +16,12 @@ import (
 type Service struct {
 	// logger?
 	config       config.ServiceConfigProvider
-	db           database.DatabaseAccessor
+	db           storage.DatabaseAccessor
 	tokenManager token.TokenManagerProvider
 }
 
 // Constructs a Service that uses provided objects
-func NewService(config config.ServiceConfigProvider, database database.DatabaseAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
+func NewService(config config.ServiceConfigProvider, database storage.DatabaseAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
 	return &Service{
 		config:       config,
 		db:           database,
