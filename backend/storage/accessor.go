@@ -7,8 +7,7 @@ import (
 )
 
 type TweetDataAccessor interface {
-	GetTweets(requestingUserID int64) ([]*model.Tweet, error)
-	GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error)
+	GetUsersTweets(userID, requestingUserID int64) ([]*model.Tweet, error)
 	GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
 	InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error)
 	DeleteTweet(tweetID, requestingUserID int64) error
@@ -17,18 +16,17 @@ type TweetDataAccessor interface {
 }
 
 type UserDataAccessor interface {
-	GetUsers(requestingUserID int64) ([]*model.PublicUser, error)
 	GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error)
-	GetAuthDataOfUserWithEmail(email string) (*model.User, error)
+	GetUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 	FollowUser(followeeID, followerID int64) error
 	UnfollowUser(followeeID, followerID int64) error
-	Followers(userID, requestingUserID int64) ([]*model.PublicUser, error)
-	Followees(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
 }
 
-type DatabaseAccessor interface {
+type StorageAccessor interface {
 	UserDataAccessor
 	TweetDataAccessor
 }

@@ -21,7 +21,7 @@ type UserStorage struct {
 	cache      cache.CacheProvider
 }
 
-// Constructs UserDB that uses a DAO and CacheProvider
+// Constructs UserStorage that uses given userDAO, followsDAO and CacheProvider
 func NewUserStorage(userDAO database.UserDAO, followsDAO database.FollowsDAO, cache cache.CacheProvider) *UserStorage {
 	return &UserStorage{
 		userDAO:    userDAO,
@@ -47,7 +47,7 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 		s.cache.SetWithFields(cache.Fields{"user", userID}, user)
 	}
 
-	err := s.collectAllPublicUserData(user, requestingUserID)
+	err := s.collectPublicUserData(user, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -55,14 +55,14 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 	return user, nil
 }
 
-func (s *UserStorage) GetAuthDataOfUserWithEmail(email string) (*model.User, error) {
+func (s *UserStorage) GetUserByEmail(email string) (*model.User, error) {
 	var user *model.User
 
 	// Here we don't need any additional data other than what we fetched from database.
 	// Dont use cache here, since this function will be used only for authentication users and we want
 	// 100% real data for this.
 
-	user, err := s.userDAO.GetUserWithEmail(email)
+	user, err := s.userDAO.GetUserByEmail(email)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
 	}
@@ -84,7 +84,7 @@ func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicU
 	}
 
 	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID}, insertedUser.ID)
-	s.cache.SetIntWithFields(cache.Fields{"user", insertedUser.ID, "followerCount"}, 0)
+	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID, "followerCount"}, 0)
 
 	return insertedUser, nil
 }
@@ -131,97 +131,54 @@ func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
 }
 
 // TODO: this all could be done nicely in paralell
-func (s *UserStorage) Followers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
-	var followersIDs []int64
-	followers := make([]*model.PublicUser, 0)
+func (s *UserStorage) GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followersIDs := make([]int64, 0)
 
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followers"}, &followers); !exists {
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followersIDs"}, &followersIDs); !exists {
 		var err error
 
-		followersIDs, err = s.followsDAO.IDsOfFollowers(userID)
+		followersIDs, err = s.followsDAO.FollowersIDs(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
-
-		followers, err = s.collectUsersFromListOfIDs(followersIDs)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-
-		s.cache.SetWithFields(cache.Fields{"user", userID, "followers"}, &followers)
+		s.cache.SetWithFields(cache.Fields{"user", userID, "followersIDs"}, followersIDs)
 	}
 
-	for _, user := range followers {
-		err := s.collectAllPublicUserData(user, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
+	followers, err := s.getUsersByIDs(followersIDs, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
 	}
 
 	return followers, nil
 }
 
-// TODO: those to functions /\ and \/ are almost identical. It might be able to refactor them
+// TODO: those to functions /\ and \/ are almost identical. It might be possible to refactor them
 
 // TODO: this all could be done nicely in paralell
-func (s *UserStorage) Followees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
-	var followeesIDs []int64
-	followees := make([]*model.PublicUser, 0)
+func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followeesIDs := make([]int64, 0)
 
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followees"}, &followees); !exists {
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followeesIDs"}, &followeesIDs); !exists {
 		var err error
 
-		followeesIDs, err = s.followsDAO.IDsOfFollowees(userID)
+		followeesIDs, err = s.followsDAO.FolloweesIDs(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
 
-		followees, err = s.collectUsersFromListOfIDs(followeesIDs)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-
-		s.cache.SetWithFields(cache.Fields{"user", userID, "followees"}, &followees)
+		s.cache.SetWithFields(cache.Fields{"user", userID, "followeesIDs"}, followeesIDs)
 	}
 
-	for _, user := range followees {
-		err := s.collectAllPublicUserData(user, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
+	followees, err := s.getUsersByIDs(followeesIDs, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
 	}
 
 	return followees, nil
 }
 
-// This is useful only for testing/debugging, skip cache here
-func (s *UserStorage) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
-	users := make([]*model.PublicUser, 0)
-
-	users, err := s.userDAO.GetPublicUsers()
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	for _, user := range users {
-		followerCount, err := s.followsDAO.FollowerCount(user.ID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-		following, err := s.followsDAO.IsFollowing(requestingUserID, user.ID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-
-		user.FollowerCount = followerCount
-		user.Following = following
-	}
-
-	return users, nil
-}
-
 // Be careful - this is function does SIDE EFFECTS only
-func (s *UserStorage) collectAllPublicUserData(user *model.PublicUser, requestingUserID int64) error {
+func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUserID int64) error {
 	var followerCount int64
 	var following bool
 
@@ -253,7 +210,7 @@ func (s *UserStorage) collectAllPublicUserData(user *model.PublicUser, requestin
 	return nil
 }
 
-func (s *UserStorage) collectUsersFromListOfIDs(usersIDs []int64) ([]*model.PublicUser, error) {
+func (s *UserStorage) getUsersByIDs(usersIDs []int64, requestingUserID int64) ([]*model.PublicUser, error) {
 	users := make([]*model.PublicUser, 0)
 
 	// get users from cache
@@ -276,6 +233,14 @@ func (s *UserStorage) collectUsersFromListOfIDs(usersIDs []int64) ([]*model.Publ
 			return nil, err
 		}
 		users = append(users, dbFollowers...)
+	}
+
+	// fill users with missing data
+	for _, user := range users {
+		err := s.collectPublicUserData(user, requestingUserID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
 	}
 
 	return users, nil

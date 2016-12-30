@@ -14,14 +14,6 @@ func (cache *DummyCache) SetWithFields(fields Fields, value interface{}) error {
 	return nil
 }
 
-func (cache *DummyCache) SetInt(key string, value int64) error {
-	return nil
-}
-
-func (cache *DummyCache) SetIntWithFields(fields Fields, value int64) error {
-	return nil
-}
-
 func (cache *DummyCache) Increment(key string) error {
 	return nil
 }
@@ -43,14 +35,6 @@ func (cache *DummyCache) Get(key string, value interface{}) (bool, error) {
 }
 
 func (cache *DummyCache) GetWithFields(fields Fields, value interface{}) (bool, error) {
-	return false, nil
-}
-
-func (cache *DummyCache) GetInt(key string, value *int64) (bool, error) {
-	return false, nil
-}
-
-func (cache *DummyCache) GetIntWithFields(fields Fields, value *int64) (bool, error) {
 	return false, nil
 }
 

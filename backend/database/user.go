@@ -10,11 +10,12 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
+// User Data Access Object - provides operations on User database table
 type UserDAO interface {
 	GetPublicUsers() ([]*model.PublicUser, error)
 	GetPublicUsersFromListOfIDs(usersToFindIDs []int64) ([]*model.PublicUser, error)
 	GetPublicUserWithID(userID int64) (*model.PublicUser, error)
-	GetUserWithEmail(userEmail string) (*model.User, error)
+	GetUserByEmail(userEmail string) (*model.User, error)
 	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 }
@@ -28,10 +29,7 @@ func NewUserDAO(dbConnection *sql.DB) UserDAO {
 }
 
 func (db *userDB) GetPublicUsers() ([]*model.PublicUser, error) {
-	rows, err := db.Query(`
-		SELECT id, username, name, avatarl_url
-		FROM users
-		ORDER BY id DESC`)
+	rows, err := db.Query(`SELECT id, username, name, avatarl_url FROM users ORDER BY id DESC`)
 	if err != nil {
 		log.WithError(err).Error("GetPublicUsers query error.")
 		return nil, err
@@ -83,7 +81,7 @@ func (db *userDB) GetPublicUserWithID(userID int64) (*model.PublicUser, error) {
 	return user, err
 }
 
-func (db *userDB) GetUserWithEmail(userEmail string) (*model.User, error) {
+func (db *userDB) GetUserByEmail(userEmail string) (*model.User, error) {
 	row := db.QueryRow(`
 		SELECT id, username, password, email, name,
 			twitter_token, facebook_token, google_token,

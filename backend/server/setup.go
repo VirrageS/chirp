@@ -66,7 +66,6 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		homeFeed.GET("", api.HomeFeed)
 
 		users := authorizedRoutes.Group("users")
-		users.GET("", api.GetUsers)
 		users.GET("/:id", api.GetUser)
 		users.POST(":id/follow", api.FollowUser)
 		users.POST(":id/unfollow", api.UnfollowUser)

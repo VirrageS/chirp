@@ -17,7 +17,7 @@ type TweetStorage struct {
 	userStorage UserDataAccessor
 }
 
-// Constructs TweetDB that uses a given sql.DB connection and CacheProvider
+// Constructs TweetStorage that uses given likesDAO, tweetDAO, CacheProvider and UserStorage
 func NewTweetStorage(tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
 	cache cache.CacheProvider, userStorage UserDataAccessor) *TweetStorage {
 
@@ -29,7 +29,7 @@ func NewTweetStorage(tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
 	}
 }
 
-func (s *TweetStorage) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
+func (s *TweetStorage) GetUsersTweets(userID, requestingUserID int64) ([]*model.Tweet, error) {
 	tweets := make([]*model.Tweet, 0)
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweets", userID}, &tweets); !exists {
@@ -45,7 +45,7 @@ func (s *TweetStorage) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]
 
 	for _, tweet := range tweets {
 		// TODO: This could be done by a set of goroutines in parallel
-		err := s.collectAllTweetData(tweet, requestingUserID)
+		err := s.collectTweetData(tweet, requestingUserID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -60,7 +60,7 @@ func (s *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweetID}, tweet); !exists {
 		var err error
 
-		tweet, err = s.tweetDAO.GetTweetWithID(tweetID)
+		tweet, err = s.tweetDAO.GetTweetByID(tweetID)
 		if err == sql.ErrNoRows {
 			return nil, errors.NoResultsError
 		}
@@ -71,7 +71,7 @@ func (s *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, 
 		s.cache.SetWithFields(cache.Fields{"tweet", tweetID}, tweet)
 	}
 
-	err := s.collectAllTweetData(tweet, requestingUserID)
+	err := s.collectTweetData(tweet, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
 	}
@@ -94,7 +94,7 @@ func (s *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int64
 
 	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID}, tweet)
 	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "liked_by", requestingUserID}, false)
-	s.cache.SetIntWithFields(cache.Fields{"tweet", insertedTweet.ID, "like_count"}, 0)
+	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "like_count"}, 0)
 	s.cache.DeleteWithFields(cache.Fields{"tweets", requestingUserID})
 
 	return insertedTweet, nil
@@ -137,39 +137,8 @@ func (s *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
 	return nil
 }
 
-// skip cache here, this is just for test/debugging
-func (s *TweetStorage) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
-	tweets := make([]*model.Tweet, 0)
-
-	tweets, err := s.tweetDAO.GetTweets()
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	for _, tweet := range tweets {
-		author, err := s.userStorage.GetUserByID(tweet.Author.ID, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-		likeCount, err := s.likesDAO.LikeCount(tweet.ID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-		isLiked, err := s.likesDAO.IsLiked(tweet.ID, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-
-		tweet.Author = author
-		tweet.LikeCount = likeCount
-		tweet.Liked = isLiked
-	}
-
-	return tweets, nil
-}
-
 // Be careful - this is function does SIDE EFFECTS only
-func (s *TweetStorage) collectAllTweetData(tweet *model.Tweet, requestingUserID int64) error {
+func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int64) error {
 	var author *model.PublicUser
 	var likeCount int64
 	var isLiked bool
@@ -186,7 +155,7 @@ func (s *TweetStorage) collectAllTweetData(tweet *model.Tweet, requestingUserID 
 			return err
 		}
 
-		s.cache.SetIntWithFields(cache.Fields{"tweet", tweet.ID, "like_count"}, likeCount)
+		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "like_count"}, likeCount)
 	}
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "is_liked_by", requestingUserID}, &isLiked); !exists {

@@ -8,10 +8,10 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
+// Tweet Data Access Object - provides operations on Tweet database table
 type TweetDAO interface {
-	GetTweets() ([]*model.Tweet, error)
 	GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error)
-	GetTweetWithID(tweetID int64) (*model.Tweet, error)
+	GetTweetByID(tweetID int64) (*model.Tweet, error)
 	InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error)
 	DeleteTweet(tweetID int64) error
 }
@@ -22,25 +22,6 @@ type tweetDB struct {
 
 func NewTweetDAO(dbConnection *sql.DB) TweetDAO {
 	return &tweetDB{dbConnection}
-}
-
-func (db *tweetDB) GetTweets() ([]*model.Tweet, error) {
-	rows, err := db.Query(`
-		SELECT id, created_at, content, author_id
-		FROM tweets
-		ORDER BY tweets.created_at DESC`)
-	if err != nil {
-		log.WithError(err).Error("GetTweets query error.")
-		return nil, err
-	}
-	defer rows.Close()
-
-	tweets, err := readMultipleTweets(rows)
-	if err != nil {
-		log.WithError(err).Error("GetTweets rows scan/iteration error.")
-	}
-
-	return tweets, nil
 }
 
 func (db *tweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
@@ -64,7 +45,7 @@ func (db *tweetDB) GetTweetsOfUserWithID(userID int64) ([]*model.Tweet, error) {
 	return tweets, nil
 }
 
-func (db *tweetDB) GetTweetWithID(tweetID int64) (*model.Tweet, error) {
+func (db *tweetDB) GetTweetByID(tweetID int64) (*model.Tweet, error) {
 	row := db.QueryRow(`
 		SELECT id, created_at, content, author_id
 		FROM tweets
@@ -98,10 +79,7 @@ func (db *tweetDB) InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error) {
 }
 
 func (db *tweetDB) DeleteTweet(tweetID int64) error {
-	_, err := db.Exec(`
-		DELETE FROM tweets
-		WHERE id=$1`,
-		tweetID)
+	_, err := db.Exec(`DELETE FROM tweets WHERE id=$1`, tweetID)
 	if err != nil {
 		log.WithField("tweetID", tweetID).WithError(err).Error("DeleteTweet query error.")
 		return err

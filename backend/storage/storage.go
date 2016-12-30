@@ -7,15 +7,15 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 )
 
-// Struct that implements DatabaseAccessor
+// Struct that implements StorageAcessor
 type Storage struct {
 	UserDataAccessor
 	TweetDataAccessor
 }
 
-// Constructs new Database that uses given sql.DB connection
+// Constructs new Storage that uses given DAOs and cache
 func NewStorage(userDAO database.UserDAO, followsDAO database.FollowsDAO, tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
-	cache cache.CacheProvider) DatabaseAccessor {
+	cache cache.CacheProvider) StorageAccessor {
 	userStorage := NewUserStorage(userDAO, followsDAO, cache)
 	tweetStorage := NewTweetStorage(tweetDAO, likesDAO, cache, userStorage)
 

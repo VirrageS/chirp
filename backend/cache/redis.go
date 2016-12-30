@@ -7,6 +7,7 @@ import (
 
 	"fmt"
 	"github.com/VirrageS/chirp/backend/config"
+	"strconv"
 )
 
 type RedisCache struct {
@@ -39,16 +40,32 @@ func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
 
 // Set `value` for specified `key`
 func (cache *RedisCache) Set(key string, value interface{}) error {
-	bytes, err := msgpack.Marshal(value)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"key":   key,
-			"value": value,
-		}).WithError(err).Error("set: failed to marshal value")
-		return err
+	var data interface{}
+
+	switch value.(type) {
+	case int64:
+		data = value
+	case int32:
+		data = value
+	case int16:
+		data = value
+	case int8:
+		data = value
+	case int:
+		data = value
+	default:
+		var err error
+		data, err = msgpack.Marshal(value)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"key":   key,
+				"value": value,
+			}).WithError(err).Error("set: failed to marshal value")
+			return err
+		}
 	}
 
-	err = cache.client.Set(key, bytes, cache.config.GetCacheExpirationTime()).Err()
+	err := cache.client.Set(key, data, cache.config.GetCacheExpirationTime()).Err()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"key":   key,
@@ -63,25 +80,6 @@ func (cache *RedisCache) Set(key string, value interface{}) error {
 // Set `value` for specified key where key is created by hashing `fields`
 func (cache *RedisCache) SetWithFields(fields Fields, value interface{}) error {
 	return cache.Set(convertFieldsToKey(fields), value)
-}
-
-// Set integer `value` for a specified `key`
-func (cache *RedisCache) SetInt(key string, value int64) error {
-	err := cache.client.Set(key, value, cache.config.GetCacheExpirationTime()).Err()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"key":   key,
-			"value": value,
-		}).WithError(err).Error("setInt: failed to set key and value in cache")
-		return err
-	}
-
-	return nil
-}
-
-// Set integer `value` for specified key where key is created by hashing `fields`
-func (cache *RedisCache) SetIntWithFields(fields Fields, value int64) error {
-	return cache.SetInt(convertFieldsToKey(fields), value)
 }
 
 // Atomic increment of a value for specified `key`
@@ -118,20 +116,41 @@ func (cache *RedisCache) DecrementWithFields(fields Fields) error {
 
 // Get value for specified `key`
 func (cache *RedisCache) Get(key string, value interface{}) (bool, error) {
-	bytes, err := cache.client.Get(key).Result()
+	var err error
+	var val int64
+
+	result, err := cache.client.Get(key).Result()
 	if err == redis.Nil {
 		return false, nil
 	} else if err != nil {
-		log.WithField("key", key).WithError(err).Error("Get: failed to get key from cache")
+		log.WithField("key", key).WithError(err).Error("get: failed to get key from cache")
 		return false, err
 	}
 
-	err = msgpack.Unmarshal([]byte(bytes), value)
+	switch v := value.(type) {
+	case *int64:
+		*v, err = strconv.ParseInt(result, 10, 64)
+	case *int32:
+		val, err = strconv.ParseInt(result, 10, 32)
+		*v = int32(val) // We can just cast it here, because on error val will be = 0
+	case *int16:
+		val, err = strconv.ParseInt(result, 10, 16)
+		*v = int16(val)
+	case *int8:
+		val, err = strconv.ParseInt(result, 10, 8)
+		*v = int8(val)
+	case *int:
+		val, err = strconv.ParseInt(result, 10, 0)
+		*v = int(val)
+	default:
+		err = msgpack.Unmarshal([]byte(result), value)
+	}
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"key":   key,
-			"value": value,
-		}).WithError(err).Error("set: failed to marshal value")
+			"value": result,
+		}).WithError(err).Error("get: failed to marshal value")
 		return false, err
 	}
 
@@ -141,27 +160,6 @@ func (cache *RedisCache) Get(key string, value interface{}) (bool, error) {
 // Get value for specified key where key is created by hashing `fields`
 func (cache *RedisCache) GetWithFields(fields Fields, value interface{}) (bool, error) {
 	return cache.Get(convertFieldsToKey(fields), value)
-}
-
-// Get integer value for specified `key`
-func (cache *RedisCache) GetInt(key string, value *int64) (bool, error) {
-	val, err := cache.client.Get(key).Int64()
-	if err == redis.Nil {
-		*value = int64(0)
-		return false, nil
-	} else if err != nil {
-		log.WithField("key", key).WithError(err).Error("GetInt: failed to get key from cache")
-		*value = int64(0)
-		return false, err
-	}
-
-	*value = val
-	return true, nil
-}
-
-// Get integer value for specified where key is created by hashing `fields`
-func (cache *RedisCache) GetIntWithFields(fields Fields, value *int64) (bool, error) {
-	return cache.GetInt(convertFieldsToKey(fields), value)
 }
 
 // Delete value for specific `key`

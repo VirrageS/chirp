@@ -74,6 +74,44 @@ var _ = Describe("RedisCache", func() {
 				},
 				&model.PublicUser{},
 			},
+			// {
+			// 	&model.Tweet{
+			// 		ID: 2,
+			// 		Author: &model.PublicUser {
+			// 			ID: 1,
+			// 			Username: "wtf",
+			// 		},
+			// 		LikeCount: 10,
+			// 		RetweetCount: 200,
+			// 		Retweeted: true,
+			// 	},
+			// 	&model.Tweet{},
+			// },
+			// {
+			// 	&[]*model.Tweet{
+			// 		{
+			// 			ID: 2,
+			// 			Author: &model.PublicUser {
+			// 				ID: 1,
+			// 				Username: "wtf",
+			// 			},
+			// 			LikeCount: 10,
+			// 			RetweetCount: 200,
+			// 			Retweeted: true,
+			// 		},
+			// 		{
+			// 			ID: 10,
+			// 			Author: &model.PublicUser {
+			// 				ID: 10,
+			// 				Username: "lolek",
+			// 			},
+			// 			LikeCount: 0,
+			// 			RetweetCount: 1010101010,
+			// 			Retweeted: false,
+			// 		},
+			// 	},
+			// 	&[]*model.Tweet{},
+			// },
 		}
 
 		fieldsTests = []Fields{
@@ -97,24 +135,12 @@ var _ = Describe("RedisCache", func() {
 			}
 		})
 
-		It("should set integer value without error", func() {
-			err := redisCache.SetInt("key", 0)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		It("should not find elements when trying to get without setting", func() {
 			for _, test := range objectTests {
 				exists, err := redisCache.Get("key", test.out)
 				Expect(exists).Should(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			}
-		})
-
-		It("should not find integer element when trying to get without setting", func() {
-			var integer int64
-			exists, err := redisCache.GetInt("key", &integer)
-			Expect(exists).Should(BeFalse())
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should find elements when trying to get after set", func() {
@@ -129,25 +155,12 @@ var _ = Describe("RedisCache", func() {
 			}
 		})
 
-		It("should find integer element when trying to get after set", func() {
-			input := int64(10)
-
-			err := redisCache.SetInt("key", input)
-			Expect(err).NotTo(HaveOccurred())
-
-			var output int64
-			exists, err := redisCache.GetInt("key", &output)
-			Expect(exists).Should(BeTrue())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(input).To(Equal(output))
-		})
-
 		It("should set value of a non-existing key to 0 and then increment it", func() {
 			err := redisCache.Increment("key")
 			Expect(err).NotTo(HaveOccurred())
 
 			var v int64
-			exists, err := redisCache.GetInt("key", &v)
+			exists, err := redisCache.Get("key", &v)
 			Expect(exists).Should(BeTrue())
 			Expect(int64(1)).To(Equal(v))
 		})
@@ -157,7 +170,7 @@ var _ = Describe("RedisCache", func() {
 
 			By("Setting key")
 
-			err := redisCache.SetInt("key", input)
+			err := redisCache.Set("key", input)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Incrementing key")
@@ -168,7 +181,7 @@ var _ = Describe("RedisCache", func() {
 			By("Getting key")
 
 			var v int64
-			exists, err := redisCache.GetInt("key", &v)
+			exists, err := redisCache.Get("key", &v)
 			Expect(exists).Should(BeTrue())
 			Expect((input + 1)).To(Equal(v))
 		})
@@ -178,7 +191,7 @@ var _ = Describe("RedisCache", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var v int64
-			exists, err := redisCache.GetInt("key", &v)
+			exists, err := redisCache.Get("key", &v)
 			Expect(exists).Should(BeTrue())
 			Expect(int64(-1)).To(Equal(v))
 		})
@@ -188,7 +201,7 @@ var _ = Describe("RedisCache", func() {
 
 			By("Setting key")
 
-			err := redisCache.SetInt("key", input)
+			err := redisCache.Set("key", input)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Decrementing key")
@@ -199,7 +212,7 @@ var _ = Describe("RedisCache", func() {
 			By("Getting key")
 
 			var v int64
-			exists, err := redisCache.GetInt("key", &v)
+			exists, err := redisCache.Get("key", &v)
 			Expect(exists).Should(BeTrue())
 			Expect((input - 1)).To(Equal(v))
 		})
@@ -253,13 +266,6 @@ var _ = Describe("RedisCache", func() {
 			}
 		})
 
-		It("should set integer values without error", func() {
-			for _, fields := range fieldsTests {
-				err := redisCache.SetIntWithFields(fields, int64(0))
-				Expect(err).NotTo(HaveOccurred())
-			}
-		})
-
 		It("should not find elements when trying to get without setting", func() {
 			for _, test := range objectTests {
 				for _, fields := range fieldsTests {
@@ -267,15 +273,6 @@ var _ = Describe("RedisCache", func() {
 					Expect(exists).Should(BeFalse())
 					Expect(err).NotTo(HaveOccurred())
 				}
-			}
-		})
-
-		It("should not find integer elements when trying to get without setting", func() {
-			var integer int64
-			for _, fields := range fieldsTests {
-				exists, err := redisCache.GetIntWithFields(fields, &integer)
-				Expect(exists).Should(BeFalse())
-				Expect(err).NotTo(HaveOccurred())
 			}
 		})
 
@@ -293,28 +290,13 @@ var _ = Describe("RedisCache", func() {
 			}
 		})
 
-		It("should find integer elements when trying to get after set", func() {
-			input := int64(10)
-			var output int64
-
-			for _, fields := range fieldsTests {
-				err := redisCache.SetIntWithFields(fields, input)
-				Expect(err).NotTo(HaveOccurred())
-
-				exists, err := redisCache.GetIntWithFields(fields, &output)
-				Expect(exists).Should(BeTrue())
-				Expect(err).NotTo(HaveOccurred())
-				Expect(input).To(Equal(output))
-			}
-		})
-
 		It("should set value of a non-existing key to 0 and then increment it", func() {
 			for _, fields := range fieldsTests {
 				err := redisCache.IncrementWithFields(fields)
 				Expect(err).NotTo(HaveOccurred())
 
 				var v int64
-				exists, err := redisCache.GetIntWithFields(fields, &v)
+				exists, err := redisCache.GetWithFields(fields, &v)
 				Expect(exists).Should(BeTrue())
 				Expect(int64(1)).To(Equal(v))
 			}
@@ -327,7 +309,7 @@ var _ = Describe("RedisCache", func() {
 
 				By("Setting key")
 
-				err := redisCache.SetIntWithFields(fields, input)
+				err := redisCache.SetWithFields(fields, input)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Incrementing key")
@@ -337,7 +319,7 @@ var _ = Describe("RedisCache", func() {
 
 				By("Getting key")
 
-				exists, err := redisCache.GetIntWithFields(fields, &output)
+				exists, err := redisCache.GetWithFields(fields, &output)
 				Expect(exists).Should(BeTrue())
 				Expect((input + 1)).To(Equal(output))
 			}
@@ -349,7 +331,7 @@ var _ = Describe("RedisCache", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var v int64
-				exists, err := redisCache.GetIntWithFields(fields, &v)
+				exists, err := redisCache.GetWithFields(fields, &v)
 				Expect(exists).Should(BeTrue())
 				Expect(int64(-1)).To(Equal(v))
 			}
@@ -362,7 +344,7 @@ var _ = Describe("RedisCache", func() {
 
 				By("Setting key")
 
-				err := redisCache.SetIntWithFields(fields, input)
+				err := redisCache.SetWithFields(fields, input)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Decrementing key")
@@ -372,7 +354,7 @@ var _ = Describe("RedisCache", func() {
 
 				By("Getting key")
 
-				exists, err := redisCache.GetIntWithFields(fields, &output)
+				exists, err := redisCache.GetWithFields(fields, &output)
 				Expect(exists).Should(BeTrue())
 				Expect((input - 1)).To(Equal(output))
 			}

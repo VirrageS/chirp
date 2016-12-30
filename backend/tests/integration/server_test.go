@@ -446,17 +446,6 @@ var _ = Describe("ServerTest", func() {
 	Describe("Get tweets", func() {
 		BeforeEach(func() {})
 
-		It("should get tweets after creation", func() {
-			expectedTweets := []*model.Tweet{
-				createTweet(router, "new tweet1", alaToken),
-				createTweet(router, "new tweet2", alaToken),
-			}
-
-			actualTweets := retrieveTweets(router, alaToken)
-
-			Expect(*actualTweets).To(ConsistOf(expectedTweets))
-		})
-
 		It(`should only get tweets created by specified user
 				when providing user in query parameter`, func() {
 			alaExpectedTweets := []*model.Tweet{
