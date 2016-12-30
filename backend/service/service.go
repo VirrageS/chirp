@@ -192,12 +192,11 @@ func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.Pub
 	return newUser, nil
 }
 
-// TODO: fix this - maybe service should fetch only 'auth' data and then get fetch user data and return it
 func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
 	email := loginForm.Email
 	password := loginForm.Password
 
-	user, databaseError := service.db.GetUserByEmail(email)
+	userAuthData, databaseError := service.db.GetAuthDataOfUserWithEmail(email)
 	if databaseError == errors.NoResultsError {
 		return nil, errors.InvalidCredentialsError // return 401 when user with given email is not found
 	} else if databaseError != nil {
@@ -205,22 +204,27 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	}
 
 	// TODO: hash the password before comparing
-	if user.Password != password {
+	if userAuthData.Password != password {
 		return nil, errors.InvalidCredentialsError
 	}
 
 	loginTime := time.Now()
-	updateError := service.db.UpdateUserLastLoginTime(user.ID, &loginTime)
+	updateError := service.db.UpdateUserLastLoginTime(userAuthData.ID, &loginTime)
 	if updateError != nil {
 		return nil, updateError
 	}
 
-	authToken, err := service.createAuthToken(user.ID)
+	authToken, err := service.createAuthToken(userAuthData.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := service.createRefreshToken(user.ID)
+	refreshToken, err := service.createRefreshToken(userAuthData.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := service.db.GetUserByID(userAuthData.ID, userAuthData.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,14 +232,7 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	response := &model.LoginResponse{
 		AuthToken:    authToken,
 		RefreshToken: refreshToken,
-		User: &model.PublicUser{
-			ID:            user.ID,
-			Username:      user.Username,
-			Name:          user.Name,
-			AvatarUrl:     user.AvatarUrl.String,
-			Following:     false, // should always be false since user can't follow himself
-			FollowerCount: user.FollowerCount,
-		},
+		User:         user,
 	}
 
 	return response, nil

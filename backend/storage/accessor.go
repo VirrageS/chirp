@@ -19,7 +19,7 @@ type TweetDataAccessor interface {
 type UserDataAccessor interface {
 	GetUsers(requestingUserID int64) ([]*model.PublicUser, error)
 	GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error)
-	GetUserByEmail(email string) (*model.User, error)
+	GetAuthDataOfUserWithEmail(email string) (*model.User, error)
 	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
 	UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error
 	FollowUser(followeeID, followerID int64) error
