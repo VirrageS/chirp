@@ -14,8 +14,9 @@ var _ = Describe("DummyCache", func() {
 	var (
 		dummyCache CacheProvider = NewDummyCache()
 
-		objectTest *object
-		fieldTest  Fields
+		objectTest  *object
+		integerTest int64
+		fieldTest   Fields
 	)
 
 	BeforeEach(func() {
@@ -23,6 +24,8 @@ var _ = Describe("DummyCache", func() {
 			Str: "wtf",
 			Num: 12,
 		}
+
+		integerTest = 0
 
 		fieldTest = Fields{"key", "super", 1}
 	})
@@ -33,8 +36,19 @@ var _ = Describe("DummyCache", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should set integer values without error", func() {
+			err := dummyCache.SetInt("key", integerTest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should not find elements when trying to get without setting", func() {
 			exists, err := dummyCache.Get("key", &objectTest)
+			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not find integer elements when trying to get without setting", func() {
+			exists, err := dummyCache.GetInt("key", &integerTest)
 			Expect(exists).Should(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -46,6 +60,26 @@ var _ = Describe("DummyCache", func() {
 			var obj object
 			exists, err := dummyCache.Get("key", &obj)
 			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not find integer elements when trying to get after set", func() {
+			err := dummyCache.SetInt("key", integerTest)
+			Expect(err).NotTo(HaveOccurred())
+
+			var integer int64
+			exists, err := dummyCache.GetInt("key", &integer)
+			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should increment without error", func() {
+			err := dummyCache.Increment("key")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should decrement without error", func() {
+			err := dummyCache.Decrement("key")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -74,8 +108,19 @@ var _ = Describe("DummyCache", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should set integer values without error", func() {
+			err := dummyCache.SetIntWithFields(fieldTest, integerTest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should not find elements when trying to get without setting", func() {
 			exists, err := dummyCache.GetWithFields(fieldTest, objectTest)
+			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not find integer elements when trying to get without setting", func() {
+			exists, err := dummyCache.GetIntWithFields(fieldTest, &integerTest)
 			Expect(exists).Should(BeFalse())
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -87,6 +132,26 @@ var _ = Describe("DummyCache", func() {
 			var obj object
 			exists, err := dummyCache.GetWithFields(fieldTest, &obj)
 			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not find integer elements when trying to get after set", func() {
+			err := dummyCache.SetIntWithFields(fieldTest, integerTest)
+			Expect(err).NotTo(HaveOccurred())
+
+			var integer int64
+			exists, err := dummyCache.GetIntWithFields(fieldTest, &integer)
+			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should increment without error", func() {
+			err := dummyCache.IncrementWithFields(fieldTest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should decrement without error", func() {
+			err := dummyCache.DecrementWithFields(fieldTest)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
