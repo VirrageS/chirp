@@ -80,7 +80,7 @@ func (service *Service) DeleteTweet(tweetID, requestingUserID int64) error {
 		return errors.ForbiddenError
 	}
 
-	err = service.db.DeleteTweet(tweetID)
+	err = service.db.DeleteTweet(tweetID, requestingUserID)
 	if err != nil {
 		return err
 	}
