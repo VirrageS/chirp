@@ -1,16 +1,16 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"io/ioutil"
-	"encoding/json"
+	"net/http"
 
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/config"
+	"github.com/VirrageS/chirp/backend/model"
 	"golang.org/x/oauth2"
 )
 
@@ -76,7 +76,7 @@ func (api *API) RefreshAuthToken(context *gin.Context) {
 }
 
 func GetoAuth2ConfigGoogle() *oauth2.Config {
-	_,_,_, authorizationGoogleConfig := config.GetConfig("config")
+	_, _, _, authorizationGoogleConfig := config.GetConfig("config")
 
 	return &oauth2.Config{
 		ClientID:     authorizationGoogleConfig.GetClientId(),
@@ -86,8 +86,8 @@ func GetoAuth2ConfigGoogle() *oauth2.Config {
 			"https://www.googleapis.com/auth/userinfo.email",
 		},
 		Endpoint: oauth2.Endpoint{
-				AuthURL:  authorizationGoogleConfig.GetAuthURL(),
-				TokenURL: authorizationGoogleConfig.GetTokenURL(),
+			AuthURL:  authorizationGoogleConfig.GetAuthURL(),
+			TokenURL: authorizationGoogleConfig.GetTokenURL(),
 		},
 	}
 }
