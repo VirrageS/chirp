@@ -16,12 +16,12 @@ import (
 )
 
 func main() {
-	serverConfig, databaseConfig, redisConfig := config.GetConfig("config")
+	serverConfig, databaseConfig, redisConfig, authorizationGoogleConfig := config.GetConfig("config")
 
 	db := database.NewConnection(databaseConfig)
 	redis := cache.NewRedisCache(redisConfig)
 	tokenManager := token.NewTokenManager(serverConfig)
 
-	s := server.New(db, redis, tokenManager, serverConfig)
+	s := server.New(db, redis, tokenManager, serverConfig, authorizationGoogleConfig)
 	s.Run(":8080")
 }

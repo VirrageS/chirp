@@ -37,3 +37,10 @@ type RedisConfigProvider interface {
 	CacheConfigProvider
 	GetDB() int
 }
+
+type AuthorizationGoogleConfigurationProvider interface {
+	GetClientId() string
+	GetClientSecret() string
+	GetAuthURL() string
+	GetTokenURL() string
+}

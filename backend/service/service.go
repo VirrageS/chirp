@@ -17,14 +17,21 @@ type Service struct {
 	config       config.ServiceConfigProvider
 	storage      storage.StorageAccessor
 	tokenManager token.TokenManagerProvider
+	authorizationGoogle config.AuthorizationGoogleConfigurationProvider
 }
 
 // Constructs a Service that uses provided objects
-func NewService(config config.ServiceConfigProvider, storage storage.StorageAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
+func NewService(
+	config config.ServiceConfigProvider,
+	database database.DatabaseAccessor,
+	tokenManager token.TokenManagerProvider,
+	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider
+) ServiceProvider {
 	return &Service{
 		config:       config,
 		storage:      storage,
 		tokenManager: tokenManager,
+		authorizationGoogle : authorizationGoogleConfig,
 	}
 }
 
@@ -217,6 +224,26 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	return response, nil
 }
 
+// TODO: fix this - maybe service should fetch only 'auth' data and then get fetch user data and return it
+func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
+	email := loginForm.Email
+	password := loginForm.Password
+
+	user, databaseError := service.db.GetUserByEmail(email)
+	if databaseError == errors.NoResultsError {
+		return nil, errors.InvalidCredentialsError // return 401 when user with given email is not found
+	} else if databaseError != nil {
+		return nil, databaseError
+	}
+
+	// TODO: hash the password before comparing
+	if user.Password != password {
+		return nil, errors.InvalidCredentialsError
+	}
+
+	return service.Login(user)
+}
+
 func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error) {
 	userID, err := service.tokenManager.ValidateToken(request.RefreshToken)
 	if err != nil {
@@ -258,4 +285,21 @@ func (service *Service) createRefreshToken(userID int64) (string, error) {
 		userID,
 		service.config.GetRefreshTokenValidityPeriod(),
 	)
+}
+
+func (service *Service) CreateOrLoginUserWithGoogle(userGoogle *model.UserGoogle) (*model.LoginResponse, error) {
+	email := userGoogle.Email
+
+	user, databaseError := service.db.GetUserByEmail(email)
+	if databaseError == errors.NoResultsError {
+		userNew, databaseError := service.db.InsertUserWithGoogle(userGoogle)
+		user = userNew
+		if databaseError != nil {
+			return nil, databaseError
+		}
+	} else if databaseError != nil {
+		return nil, databaseError
+	}
+
+	return service.Login(user)
 }
