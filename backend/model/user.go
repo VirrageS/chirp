@@ -32,3 +32,13 @@ type PublicUser struct {
 	FolloweeCount int64  `json:"followee_count"`
 	Following     bool   `json:"following"`
 }
+
+type UserGoogle struct {
+    Sub string `json:"sub"`
+    Name string `json:"name"`
+    GivenName string `json:"given_name"`
+    FamilyName string `json:"family_name"`
+    Picture string `json:"picture"`
+    Email string `json:"email"`
+    EmailVerified string `json:"email_verified"`
+}

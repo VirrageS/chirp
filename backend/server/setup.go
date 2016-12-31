@@ -25,7 +25,7 @@ func init() {
 // Handles all dependencies and creates a new server.
 // Takes a DB connection parameter in order to support test database.
 func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.TokenManagerProvider,
-	serverConfig config.ServiceConfigProvider) *gin.Engine {
+	serverConfig config.ServiceConfigProvider, authorizationGoogle config.AuthorizationGoogleConfigurationProvider) *gin.Engine {
 	// api dependencies
 	CORSConfig := setupCORS()
 
@@ -35,7 +35,7 @@ func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.Tok
 	likesDAO := database.NewLikesDAO(dbConnection)
 
 	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis)
-	services := service.NewService(serverConfig, db, tokenManager)
+	services := service.NewService(serverConfig, db, tokenManager, authorizationGoogle)
 	APIs := api.NewAPI(services)
 
 	return setupRouter(APIs, tokenManager, CORSConfig)
@@ -78,6 +78,8 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		auth.POST("/signup", contentTypeChecker, api.RegisterUser)
 		auth.POST("/login", contentTypeChecker, api.LoginUser)
 		auth.POST("/token", contentTypeChecker, api.RefreshAuthToken)
+		auth.GET("/authorize/google", api.AddressAuthorizationGoogle)
+		auth.GET("/login/google", api.CreateOrLoginUserWithGoogle)
 	}
 
 	return router
