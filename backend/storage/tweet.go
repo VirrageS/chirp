@@ -30,25 +30,21 @@ func NewTweetStorage(tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
 }
 
 func (s *TweetStorage) GetUsersTweets(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	tweets := make([]*model.Tweet, 0)
+	tweetsIDs := make([]int64, 0)
 
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweets", userID}, &tweets); !exists {
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweetsIDs", userID}, &tweetsIDs); !exists {
 		var err error
 
-		tweets, err = s.tweetDAO.GetTweetsOfUserWithID(userID)
+		tweetsIDs, err = s.tweetDAO.GetTweetsIDsOfUserWithID(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
-
-		s.cache.SetWithFields(cache.Fields{"tweets", userID}, tweets)
+		s.cache.SetWithFields(cache.Fields{"tweetsIDs", userID}, tweetsIDs)
 	}
 
-	for _, tweet := range tweets {
-		// TODO: This could be done by a set of goroutines in parallel
-		err := s.collectTweetData(tweet, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
+	tweets, err := s.getTweetsByIDs(tweetsIDs, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
 	}
 
 	return tweets, nil
@@ -172,4 +168,40 @@ func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int
 	tweet.Liked = isLiked
 
 	return nil
+}
+
+func (s *TweetStorage) getTweetsByIDs(tweetsIDs []int64, requestingUserID int64) ([]*model.Tweet, error) {
+	tweets := make([]*model.Tweet, 0)
+
+	// get tweets from cache
+	for i, id := range tweetsIDs {
+		var tweet model.Tweet
+
+		if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", id}, &tweet); exists {
+			tweets = append(tweets, &tweet)
+
+			// remove ID from tweetsIDs
+			tweetsIDs[i] = tweetsIDs[len(tweetsIDs)-1]
+			tweetsIDs = tweetsIDs[:len(tweetsIDs)-1]
+		}
+	}
+
+	// get tweets that are not in cache from database
+	if len(tweetsIDs) > 0 {
+		dbTweets, err := s.tweetDAO.GetTweetsFromListOfIDs(tweetsIDs)
+		if err != nil {
+			return nil, err
+		}
+		tweets = append(tweets, dbTweets...)
+	}
+
+	// fill tweets with missing data
+	for _, tweet := range tweets {
+		err := s.collectTweetData(tweet, requestingUserID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+	}
+
+	return tweets, nil
 }

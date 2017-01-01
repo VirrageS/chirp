@@ -46,11 +46,7 @@ func (db *userDB) GetPublicUsers() ([]*model.PublicUser, error) {
 
 func (db *userDB) GetPublicUsersFromListOfIDs(usersToFindIDs []int64) ([]*model.PublicUser, error) {
 	// TODO: be careful - this ANY query is said to be super inefficient
-	rows, err := db.Query(`SELECT id, username, name, avatar_url
-		FROM users
-		WHERE users.id = ANY($1)
-		GROUP BY users.id`,
-		pq.Array(usersToFindIDs))
+	rows, err := db.Query(`SELECT id, username, name, avatar_url FROM users WHERE users.id = ANY($1)`, pq.Array(usersToFindIDs))
 	if err != nil {
 		log.WithField("usersToFindIDs", usersToFindIDs).WithError(err).Error("GetPublicUsersFromListOfIDs query error.")
 		return nil, err
