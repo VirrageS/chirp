@@ -204,6 +204,7 @@ var _ = Describe("ServerTest", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(1))
+			Expect(actualUser.FolloweeCount).To(BeEquivalentTo(0))
 			Expect(actualUser.Following).To(BeTrue())
 		})
 
@@ -214,7 +215,16 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualUser).To(Equal(expectedUser))
 		})
 
-		It("should not update follow user nor unfollow when following user twice", func() {
+		It("should return proper folowee count after following another user", func() {
+			followUser(router, toor.ID, alaToken)
+			expectedUser := publicUser(*ala).followeeCount(1).build()
+
+			actualUser := retrieveUser(router, ala.ID, alaToken)
+
+			Expect(actualUser).To(Equal(expectedUser))
+		})
+
+		It("should not follow user nor unfollow when following user twice", func() {
 			followUser(router, toor.ID, alaToken)
 			followUser(router, toor.ID, alaToken)
 
@@ -222,6 +232,16 @@ var _ = Describe("ServerTest", func() {
 
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(1))
 			Expect(actualUser.Following).To(BeTrue())
+		})
+
+		It("should not update folowee count after following another user twice", func() {
+			followUser(router, toor.ID, alaToken)
+			followUser(router, toor.ID, alaToken)
+			expectedUser := publicUser(*ala).followeeCount(1).build()
+
+			actualUser := retrieveUser(router, ala.ID, alaToken)
+
+			Expect(actualUser).To(Equal(expectedUser))
 		})
 
 		It("should update follower count when two different user follow other user", func() {
@@ -232,6 +252,19 @@ var _ = Describe("ServerTest", func() {
 
 			Expect(actualUser.FollowerCount).To(BeEquivalentTo(2))
 			Expect(actualUser.Following).To(BeTrue())
+		})
+
+		It("should update folowee count of both users when two users follow the same one", func() {
+			followUser(router, toor.ID, alaToken)
+			followUser(router, toor.ID, bobToken)
+			expectedUser1 := publicUser(*ala).followeeCount(1).build()
+			expectedUser2 := publicUser(*bob).followeeCount(1).build()
+
+			actualUser1 := retrieveUser(router, ala.ID, bobToken)
+			actualUser2 := retrieveUser(router, bob.ID, alaToken)
+
+			Expect(actualUser1).To(Equal(expectedUser1))
+			Expect(actualUser2).To(Equal(expectedUser2))
 		})
 	})
 
@@ -265,6 +298,16 @@ var _ = Describe("ServerTest", func() {
 			Expect(actualUser).To(Equal(expectedUser))
 		})
 
+		It("should reduce folowee count after unfollowing a followed user", func() {
+			followUser(router, toor.ID, alaToken)
+			unfollowUser(router, toor.ID, alaToken)
+			expectedUser := alaPublic
+
+			actualUser := retrieveUser(router, ala.ID, alaToken)
+
+			Expect(actualUser).To(Equal(expectedUser))
+		})
+
 		It(`should not perform any operation (but should return user)
 				when trying to unfollow not followed user`, func() {
 			unfollowUser(router, toor.ID, alaToken)
@@ -295,7 +338,7 @@ var _ = Describe("ServerTest", func() {
 
 		It("should get followers of followed user", func() {
 			expectedFollowers := []*model.PublicUser{
-				alaPublic,
+				publicUser(*ala).followeeCount(1).build(),
 			}
 
 			followUser(router, toor.ID, alaToken)
@@ -307,8 +350,8 @@ var _ = Describe("ServerTest", func() {
 
 		It("should get followers of user followed by multiple users", func() {
 			expectedFollowers := []*model.PublicUser{
-				alaPublic,
-				bobPublic,
+				publicUser(*ala).followeeCount(1).build(),
+				publicUser(*bob).followeeCount(1).build(),
 			}
 
 			followUser(router, toor.ID, alaToken)
@@ -326,7 +369,9 @@ var _ = Describe("ServerTest", func() {
 		})
 
 		It("should get followers of user followed by someone else", func() {
-			expectedFollowers := []*model.PublicUser{bobPublic}
+			expectedFollowers := []*model.PublicUser{
+				publicUser(*bob).followeeCount(1).build(),
+			}
 
 			followUser(router, toor.ID, bobToken)
 

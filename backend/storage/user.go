@@ -85,6 +85,7 @@ func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicU
 
 	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID}, insertedUser.ID)
 	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID, "followerCount"}, 0)
+	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID, "followeeCount"}, 0)
 
 	return insertedUser, nil
 }
@@ -114,6 +115,7 @@ func (s *UserStorage) FollowUser(followeeID, followerID int64) error {
 
 	s.cache.SetWithFields(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, true)
 	s.cache.IncrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
+	s.cache.IncrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
 
 	return nil
 }
@@ -126,6 +128,7 @@ func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
 
 	s.cache.SetWithFields(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, false)
 	s.cache.DecrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
+	s.cache.DecrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
 
 	return nil
 }
@@ -151,8 +154,6 @@ func (s *UserStorage) GetFollowers(userID, requestingUserID int64) ([]*model.Pub
 
 	return followers, nil
 }
-
-// TODO: those to functions /\ and \/ are almost identical. It might be possible to refactor them
 
 // TODO: this all could be done nicely in paralell
 func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
@@ -180,6 +181,7 @@ func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.Pub
 // Be careful - this is function does SIDE EFFECTS only
 func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUserID int64) error {
 	var followerCount int64
+	var followeeCount int64
 	var following bool
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "followerCount"}, &followerCount); !exists {
@@ -191,6 +193,17 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 		}
 
 		s.cache.SetWithFields(cache.Fields{"user", user.ID, "followerCount"}, followerCount)
+	}
+
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "followeeCount"}, &followeeCount); !exists {
+		var err error
+
+		followeeCount, err = s.followsDAO.FolloweeCount(user.ID)
+		if err != nil {
+			return errors.UnexpectedError
+		}
+
+		s.cache.SetWithFields(cache.Fields{"user", user.ID, "followeeCount"}, followeeCount)
 	}
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "isFollowedBy", requestingUserID}, &following); !exists {
@@ -205,6 +218,7 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 	}
 
 	user.FollowerCount = followerCount
+	user.FolloweeCount = followeeCount
 	user.Following = following
 
 	return nil

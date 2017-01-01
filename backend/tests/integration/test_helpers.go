@@ -306,6 +306,7 @@ func publicUser(user model.User) *publicUserBuilder {
 			Username:      user.Username,
 			Name:          user.Name,
 			FollowerCount: 0,
+			FolloweeCount: 0,
 			Following:     false,
 		},
 	}
@@ -313,6 +314,11 @@ func publicUser(user model.User) *publicUserBuilder {
 
 func (pu *publicUserBuilder) followerCount(followerCount int64) *publicUserBuilder {
 	pu.user.FollowerCount = followerCount
+	return pu
+}
+
+func (pu *publicUserBuilder) followeeCount(followeeCount int64) *publicUserBuilder {
+	pu.user.FolloweeCount = followeeCount
 	return pu
 }
 
