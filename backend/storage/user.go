@@ -36,7 +36,7 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID}, &user); !exists {
 		var err error
 
-		user, err = s.userDAO.GetPublicUserWithID(userID)
+		user, err = s.userDAO.GetPublicUserByID(userID)
 		if err == sql.ErrNoRows {
 			return nil, errors.NoResultsError
 		}
@@ -140,7 +140,7 @@ func (s *UserStorage) GetFollowers(userID, requestingUserID int64) ([]*model.Pub
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followersIDs"}, &followersIDs); !exists {
 		var err error
 
-		followersIDs, err = s.followsDAO.FollowersIDs(userID)
+		followersIDs, err = s.followsDAO.GetFollowersIDs(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -162,7 +162,7 @@ func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.Pub
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followeesIDs"}, &followeesIDs); !exists {
 		var err error
 
-		followeesIDs, err = s.followsDAO.FolloweesIDs(userID)
+		followeesIDs, err = s.followsDAO.GetFolloweesIDs(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -187,7 +187,7 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "followerCount"}, &followerCount); !exists {
 		var err error
 
-		followerCount, err = s.followsDAO.FollowerCount(user.ID)
+		followerCount, err = s.followsDAO.GetFollowerCount(user.ID)
 		if err != nil {
 			return errors.UnexpectedError
 		}
@@ -198,7 +198,7 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "followeeCount"}, &followeeCount); !exists {
 		var err error
 
-		followeeCount, err = s.followsDAO.FolloweeCount(user.ID)
+		followeeCount, err = s.followsDAO.GetFolloweeCount(user.ID)
 		if err != nil {
 			return errors.UnexpectedError
 		}
@@ -242,7 +242,7 @@ func (s *UserStorage) getUsersByIDs(usersIDs []int64, requestingUserID int64) ([
 
 	// get users that are not in cache from database
 	if len(usersIDs) > 0 {
-		dbFollowers, err := s.userDAO.GetPublicUsersFromListOfIDs(usersIDs)
+		dbFollowers, err := s.userDAO.GetPublicUsersByIDs(usersIDs)
 		if err != nil {
 			return nil, err
 		}

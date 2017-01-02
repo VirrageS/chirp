@@ -162,7 +162,7 @@ var _ = Describe("RedisCache", func() {
 			var v int64
 			exists, err := redisCache.Get("key", &v)
 			Expect(exists).Should(BeTrue())
-			Expect(int64(1)).To(Equal(v))
+			Expect(v).To(Equal(int64(1)))
 		})
 
 		It("should increment a value after set", func() {
@@ -180,20 +180,20 @@ var _ = Describe("RedisCache", func() {
 
 			By("Getting key")
 
-			var v int64
-			exists, err := redisCache.Get("key", &v)
+			var output int64
+			exists, err := redisCache.Get("key", &output)
 			Expect(exists).Should(BeTrue())
-			Expect((input + 1)).To(Equal(v))
+			Expect(output).To(Equal(input + 1))
 		})
 
 		It("should set value of a non-existing key to 0 and then decrement it", func() {
 			err := redisCache.Decrement("key")
 			Expect(err).NotTo(HaveOccurred())
 
-			var v int64
-			exists, err := redisCache.Get("key", &v)
+			var output int64
+			exists, err := redisCache.Get("key", &output)
 			Expect(exists).Should(BeTrue())
-			Expect(int64(-1)).To(Equal(v))
+			Expect(output).To(Equal(int64(-1)))
 		})
 
 		It("should decrement a value after set", func() {
@@ -211,10 +211,10 @@ var _ = Describe("RedisCache", func() {
 
 			By("Getting key")
 
-			var v int64
-			exists, err := redisCache.Get("key", &v)
+			var output int64
+			exists, err := redisCache.Get("key", &output)
 			Expect(exists).Should(BeTrue())
-			Expect((input - 1)).To(Equal(v))
+			Expect(output).To(Equal((input - 1)))
 		})
 
 		It("should delete without errors when key does not exist", func() {
@@ -295,17 +295,16 @@ var _ = Describe("RedisCache", func() {
 				err := redisCache.IncrementWithFields(fields)
 				Expect(err).NotTo(HaveOccurred())
 
-				var v int64
-				exists, err := redisCache.GetWithFields(fields, &v)
+				var output int64
+				exists, err := redisCache.GetWithFields(fields, &output)
 				Expect(exists).Should(BeTrue())
-				Expect(int64(1)).To(Equal(v))
+				Expect(output).To(Equal(int64(1)))
 			}
 		})
 
 		It("should increment a value after set", func() {
 			for _, fields := range fieldsTests {
 				input := int64(10)
-				var output int64
 
 				By("Setting key")
 
@@ -319,9 +318,10 @@ var _ = Describe("RedisCache", func() {
 
 				By("Getting key")
 
+				var output int64
 				exists, err := redisCache.GetWithFields(fields, &output)
 				Expect(exists).Should(BeTrue())
-				Expect((input + 1)).To(Equal(output))
+				Expect((output)).To(Equal(input + 1))
 			}
 		})
 
@@ -330,17 +330,16 @@ var _ = Describe("RedisCache", func() {
 				err := redisCache.DecrementWithFields(fields)
 				Expect(err).NotTo(HaveOccurred())
 
-				var v int64
-				exists, err := redisCache.GetWithFields(fields, &v)
+				var output int64
+				exists, err := redisCache.GetWithFields(fields, &output)
 				Expect(exists).Should(BeTrue())
-				Expect(int64(-1)).To(Equal(v))
+				Expect(output).To(Equal(int64(-1)))
 			}
 		})
 
 		It("should decrement a value after set", func() {
 			for _, fields := range fieldsTests {
 				input := int64(10)
-				var output int64
 
 				By("Setting key")
 
@@ -354,9 +353,10 @@ var _ = Describe("RedisCache", func() {
 
 				By("Getting key")
 
+				var output int64
 				exists, err := redisCache.GetWithFields(fields, &output)
 				Expect(exists).Should(BeTrue())
-				Expect((input - 1)).To(Equal(output))
+				Expect(output).To(Equal(input - 1))
 			}
 		})
 

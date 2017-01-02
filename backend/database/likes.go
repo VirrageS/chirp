@@ -10,7 +10,7 @@ import (
 type LikesDAO interface {
 	LikeTweet(tweetID, userID int64) error
 	UnlikeTweet(tweetID, userID int64) error
-	LikeCount(tweetID int64) (int64, error)
+	GetLikeCount(tweetID int64) (int64, error)
 	IsLiked(tweetID, userID int64) (bool, error)
 }
 
@@ -52,12 +52,12 @@ func (db *likesDB) UnlikeTweet(tweetID, userID int64) error {
 	return nil
 }
 
-func (db *likesDB) LikeCount(tweetID int64) (int64, error) {
+func (db *likesDB) GetLikeCount(tweetID int64) (int64, error) {
 	var likeCount int64
 
 	err := db.QueryRow(`SELECT COUNT(*) FROM likes WHERE tweet_id = $1`, tweetID).Scan(&likeCount)
 	if err != nil {
-		log.WithField("tweetID", tweetID).WithError(err).Error("LikeCount query error.")
+		log.WithField("tweetID", tweetID).WithError(err).Error("GetLikeCount query error.")
 		return 0, err
 	}
 

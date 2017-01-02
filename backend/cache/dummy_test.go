@@ -14,9 +14,8 @@ var _ = Describe("DummyCache", func() {
 	var (
 		dummyCache CacheProvider = NewDummyCache()
 
-		objectTest  *object
-		integerTest int64
-		fieldTest   Fields
+		objectTest *object
+		fieldTest  Fields
 	)
 
 	BeforeEach(func() {
@@ -24,8 +23,6 @@ var _ = Describe("DummyCache", func() {
 			Str: "wtf",
 			Num: 12,
 		}
-
-		integerTest = 0
 
 		fieldTest = Fields{"key", "super", 1}
 	})

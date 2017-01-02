@@ -257,14 +257,14 @@ var _ = Describe("ServerTest", func() {
 		It("should update folowee count of both users when two users follow the same one", func() {
 			followUser(router, toor.ID, alaToken)
 			followUser(router, toor.ID, bobToken)
-			expectedUser1 := publicUser(*ala).followeeCount(1).build()
-			expectedUser2 := publicUser(*bob).followeeCount(1).build()
+			expectedUserAla := publicUser(*ala).followeeCount(1).build()
+			expectedUserBob := publicUser(*bob).followeeCount(1).build()
 
 			actualUser1 := retrieveUser(router, ala.ID, bobToken)
 			actualUser2 := retrieveUser(router, bob.ID, alaToken)
 
-			Expect(actualUser1).To(Equal(expectedUser1))
-			Expect(actualUser2).To(Equal(expectedUser2))
+			Expect(actualUser1).To(Equal(expectedUserAla))
+			Expect(actualUser2).To(Equal(expectedUserBob))
 		})
 	})
 

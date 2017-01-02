@@ -10,10 +10,10 @@ import (
 type FollowsDAO interface {
 	FollowUser(followeeID, followerID int64) error
 	UnfollowUser(followeeID, followerID int64) error
-	FollowersIDs(userID int64) ([]int64, error)
-	FolloweesIDs(userID int64) ([]int64, error)
-	FollowerCount(userID int64) (int64, error)
-	FolloweeCount(userID int64) (int64, error)
+	GetFollowersIDs(userID int64) ([]int64, error)
+	GetFolloweesIDs(userID int64) ([]int64, error)
+	GetFollowerCount(userID int64) (int64, error)
+	GetFolloweeCount(userID int64) (int64, error)
 	IsFollowing(followerID, followeeID int64) (bool, error)
 }
 
@@ -61,10 +61,10 @@ func (db *followsDB) UnfollowUser(followeeID, followerID int64) error {
 	return nil
 }
 
-func (db *followsDB) FollowersIDs(userID int64) ([]int64, error) {
+func (db *followsDB) GetFollowersIDs(userID int64) ([]int64, error) {
 	rows, err := db.Query(`SELECT follower_id FROM follows WHERE followee_id = $1`, userID)
 	if err != nil {
-		log.WithError(err).Error("IDsOfFollowers query error")
+		log.WithError(err).Error("GetFollowersIDs query error")
 	}
 	defer rows.Close()
 
@@ -73,24 +73,24 @@ func (db *followsDB) FollowersIDs(userID int64) ([]int64, error) {
 		var followerID int64
 		err = rows.Scan(&followerID)
 		if err != nil {
-			log.WithError(err).Error("IDsOfFollowers row scan error.")
+			log.WithError(err).Error("GetFollowersIDs row scan error.")
 			return nil, err
 		}
 
 		followersIDs = append(followersIDs, followerID)
 	}
 	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("IDsOfFollowers rows iteration error.")
+		log.WithError(err).Error("GetFollowersIDs rows iteration error.")
 		return nil, err
 	}
 
 	return followersIDs, nil
 }
 
-func (db *followsDB) FolloweesIDs(userID int64) ([]int64, error) {
+func (db *followsDB) GetFolloweesIDs(userID int64) ([]int64, error) {
 	rows, err := db.Query(`SELECT followee_id FROM follows WHERE follower_id = $1`, userID)
 	if err != nil {
-		log.WithError(err).Error("IDsOfFollowees query error")
+		log.WithError(err).Error("GetFolloweesIDs query error")
 	}
 	defer rows.Close()
 
@@ -100,38 +100,38 @@ func (db *followsDB) FolloweesIDs(userID int64) ([]int64, error) {
 
 		err = rows.Scan(&followeeID)
 		if err != nil {
-			log.WithError(err).Error("IDsOfFollowees row scan error.")
+			log.WithError(err).Error("GetFolloweesIDs row scan error.")
 			return nil, err
 		}
 
 		followeesIDs = append(followeesIDs, followeeID)
 	}
 	if err = rows.Err(); err != nil {
-		log.WithError(err).Error("IDsOfFollowees rows iteration error.")
+		log.WithError(err).Error("GetFolloweesIDs rows iteration error.")
 		return nil, err
 	}
 
 	return followeesIDs, nil
 }
 
-func (db *followsDB) FollowerCount(userID int64) (int64, error) {
+func (db *followsDB) GetFollowerCount(userID int64) (int64, error) {
 	var followerCount int64
 
 	err := db.QueryRow(`SELECT COUNT(*) FROM follows WHERE followee_id = $1`, userID).Scan(&followerCount)
 	if err != nil {
-		log.WithError(err).Error("FollowerCount query error.")
+		log.WithError(err).Error("GetFollowerCount query error.")
 		return 0, err
 	}
 
 	return followerCount, nil
 }
 
-func (db *followsDB) FolloweeCount(userID int64) (int64, error) {
+func (db *followsDB) GetFolloweeCount(userID int64) (int64, error) {
 	var followeeCount int64
 
 	err := db.QueryRow(`SELECT COUNT(*) FROM follows WHERE follower_id = $1`, userID).Scan(&followeeCount)
 	if err != nil {
-		log.WithError(err).Error("FolloweeCount query error.")
+		log.WithError(err).Error("GetFolloweeCount query error.")
 		return 0, err
 	}
 

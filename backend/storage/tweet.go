@@ -35,7 +35,7 @@ func (s *TweetStorage) GetUsersTweets(userID, requestingUserID int64) ([]*model.
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweetsIDs", userID}, &tweetsIDs); !exists {
 		var err error
 
-		tweetsIDs, err = s.tweetDAO.GetTweetsIDsOfUserWithID(userID)
+		tweetsIDs, err = s.tweetDAO.GetTweetsIDsByUserID(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}
@@ -146,7 +146,7 @@ func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int
 	}
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "like_count"}, &likeCount); !exists {
-		likeCount, err = s.likesDAO.LikeCount(tweet.ID)
+		likeCount, err = s.likesDAO.GetLikeCount(tweet.ID)
 		if err != nil {
 			return err
 		}
@@ -188,7 +188,7 @@ func (s *TweetStorage) getTweetsByIDs(tweetsIDs []int64, requestingUserID int64)
 
 	// get tweets that are not in cache from database
 	if len(tweetsIDs) > 0 {
-		dbTweets, err := s.tweetDAO.GetTweetsFromListOfIDs(tweetsIDs)
+		dbTweets, err := s.tweetDAO.GetTweetsByIDs(tweetsIDs)
 		if err != nil {
 			return nil, err
 		}

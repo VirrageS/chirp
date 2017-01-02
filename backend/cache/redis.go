@@ -42,16 +42,8 @@ func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
 func (cache *RedisCache) Set(key string, value interface{}) error {
 	var data interface{}
 
-	switch value.(type) {
-	case int64:
-		data = value
-	case int32:
-		data = value
-	case int16:
-		data = value
-	case int8:
-		data = value
-	case int:
+	switch value := value.(type) {
+	case int64, int32, int16, int8, int:
 		data = value
 	default:
 		var err error
@@ -127,21 +119,21 @@ func (cache *RedisCache) Get(key string, value interface{}) (bool, error) {
 		return false, err
 	}
 
-	switch v := value.(type) {
+	switch value := value.(type) {
 	case *int64:
-		*v, err = strconv.ParseInt(result, 10, 64)
+		*value, err = strconv.ParseInt(result, 10, 64)
 	case *int32:
 		val, err = strconv.ParseInt(result, 10, 32)
-		*v = int32(val) // We can just cast it here, because on error val will be = 0
+		*value = int32(val) // We can just cast it here, because on error val will be = 0
 	case *int16:
 		val, err = strconv.ParseInt(result, 10, 16)
-		*v = int16(val)
+		*value = int16(val)
 	case *int8:
 		val, err = strconv.ParseInt(result, 10, 8)
-		*v = int8(val)
+		*value = int8(val)
 	case *int:
 		val, err = strconv.ParseInt(result, 10, 0)
-		*v = int(val)
+		*value = int(val)
 	default:
 		err = msgpack.Unmarshal([]byte(result), value)
 	}
