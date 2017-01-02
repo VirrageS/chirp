@@ -6,41 +6,30 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
+	"github.com/VirrageS/chirp/backend/storage"
 	"github.com/VirrageS/chirp/backend/token"
 )
 
 // Struct that implements APIProvider
 type Service struct {
-	// logger?
 	config       config.ServiceConfigProvider
-	db           database.DatabaseAccessor
+	storage      storage.StorageAccessor
 	tokenManager token.TokenManagerProvider
 }
 
 // Constructs a Service that uses provided objects
-func NewService(config config.ServiceConfigProvider, database database.DatabaseAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
+func NewService(config config.ServiceConfigProvider, storage storage.StorageAccessor, tokenManager token.TokenManagerProvider) ServiceProvider {
 	return &Service{
 		config:       config,
-		db:           database,
+		storage:      storage,
 		tokenManager: tokenManager,
 	}
 }
 
-func (service *Service) GetTweets(requestingUserID int64) ([]*model.Tweet, error) {
-	tweets, err := service.db.GetTweets(requestingUserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return tweets, nil
-}
-
-// Use GetTweets() with filtering parameters instead, when filtering will be supported
 func (service *Service) GetTweetsOfUserWithID(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	tweets, err := service.db.GetTweetsOfUserWithID(userID, requestingUserID)
+	tweets, err := service.storage.GetUsersTweets(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +38,7 @@ func (service *Service) GetTweetsOfUserWithID(userID, requestingUserID int64) ([
 }
 
 func (service *Service) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
-	tweet, err := service.db.GetTweet(tweetID, requestingUserID)
+	tweet, err := service.storage.GetTweet(tweetID, requestingUserID)
 
 	if err != nil {
 		return nil, err
@@ -60,7 +49,7 @@ func (service *Service) GetTweet(tweetID, requestingUserID int64) (*model.Tweet,
 
 func (service *Service) PostTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error) {
 	// TODO: reject if content is empty or when user submitted the same tweet more than once
-	newTweet, err := service.db.InsertTweet(tweet, requestingUserID)
+	newTweet, err := service.storage.InsertTweet(tweet, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +59,7 @@ func (service *Service) PostTweet(tweet *model.NewTweet, requestingUserID int64)
 
 func (service *Service) DeleteTweet(tweetID, requestingUserID int64) error {
 	// TODO: Maybe fetch Tweet not TweetWithAuthor
-	databaseTweet, err := service.db.GetTweet(tweetID, requestingUserID)
+	databaseTweet, err := service.storage.GetTweet(tweetID, requestingUserID)
 
 	if err != nil {
 		return err
@@ -80,7 +69,7 @@ func (service *Service) DeleteTweet(tweetID, requestingUserID int64) error {
 		return errors.ForbiddenError
 	}
 
-	err = service.db.DeleteTweet(tweetID)
+	err = service.storage.DeleteTweet(tweetID, requestingUserID)
 	if err != nil {
 		return err
 	}
@@ -89,7 +78,7 @@ func (service *Service) DeleteTweet(tweetID, requestingUserID int64) error {
 }
 
 func (service *Service) LikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
-	err := service.db.LikeTweet(tweetID, requestingUserID)
+	err := service.storage.LikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +92,7 @@ func (service *Service) LikeTweet(tweetID, requestingUserID int64) (*model.Tweet
 }
 
 func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
-	err := service.db.UnlikeTweet(tweetID, requestingUserID)
+	err := service.storage.UnlikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,18 +105,8 @@ func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Twe
 	return tweet, nil
 }
 
-func (service *Service) GetUsers(requestingUserID int64) ([]*model.PublicUser, error) {
-	users, err := service.db.GetUsers(requestingUserID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return users, nil
-}
-
 func (service *Service) GetUser(userID, requestingUserID int64) (*model.PublicUser, error) {
-	user, err := service.db.GetUserByID(userID, requestingUserID)
+	user, err := service.storage.GetUserByID(userID, requestingUserID)
 
 	if err != nil {
 		return nil, err
@@ -137,12 +116,12 @@ func (service *Service) GetUser(userID, requestingUserID int64) (*model.PublicUs
 }
 
 func (service *Service) FollowUser(userID, requestingUserID int64) (*model.PublicUser, error) {
-	err := service.db.FollowUser(userID, requestingUserID)
+	err := service.storage.FollowUser(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := service.db.GetUserByID(userID, requestingUserID)
+	user, err := service.storage.GetUserByID(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,12 +130,12 @@ func (service *Service) FollowUser(userID, requestingUserID int64) (*model.Publi
 }
 
 func (service *Service) UnfollowUser(userID, requestingUserID int64) (*model.PublicUser, error) {
-	err := service.db.UnfollowUser(userID, requestingUserID)
+	err := service.storage.UnfollowUser(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := service.db.GetUserByID(userID, requestingUserID)
+	user, err := service.storage.GetUserByID(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +144,7 @@ func (service *Service) UnfollowUser(userID, requestingUserID int64) (*model.Pub
 }
 
 func (service *Service) UserFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
-	followers, err := service.db.Followers(userID, requestingUserID)
+	followers, err := service.storage.GetFollowers(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +153,7 @@ func (service *Service) UserFollowers(userID, requestingUserID int64) ([]*model.
 }
 
 func (service *Service) UserFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
-	followers, err := service.db.Followees(userID, requestingUserID)
+	followers, err := service.storage.GetFollowees(userID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +162,7 @@ func (service *Service) UserFollowees(userID, requestingUserID int64) ([]*model.
 }
 
 func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
-	newUser, err := service.db.InsertUser(newUserForm)
+	newUser, err := service.storage.InsertUser(newUserForm)
 
 	if err != nil {
 		return nil, err
@@ -192,12 +171,11 @@ func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.Pub
 	return newUser, nil
 }
 
-// TODO: fix this - maybe service should fetch only 'auth' data and then get fetch user data and return it
 func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
 	email := loginForm.Email
 	password := loginForm.Password
 
-	user, databaseError := service.db.GetUserByEmail(email)
+	userAuthData, databaseError := service.storage.GetUserByEmail(email)
 	if databaseError == errors.NoResultsError {
 		return nil, errors.InvalidCredentialsError // return 401 when user with given email is not found
 	} else if databaseError != nil {
@@ -205,22 +183,27 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	}
 
 	// TODO: hash the password before comparing
-	if user.Password != password {
+	if userAuthData.Password != password {
 		return nil, errors.InvalidCredentialsError
 	}
 
 	loginTime := time.Now()
-	updateError := service.db.UpdateUserLastLoginTime(user.ID, &loginTime)
+	updateError := service.storage.UpdateUserLastLoginTime(userAuthData.ID, &loginTime)
 	if updateError != nil {
 		return nil, updateError
 	}
 
-	authToken, err := service.createAuthToken(user.ID)
+	authToken, err := service.createAuthToken(userAuthData.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := service.createRefreshToken(user.ID)
+	refreshToken, err := service.createRefreshToken(userAuthData.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := service.storage.GetUserByID(userAuthData.ID, userAuthData.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,14 +211,7 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	response := &model.LoginResponse{
 		AuthToken:    authToken,
 		RefreshToken: refreshToken,
-		User: &model.PublicUser{
-			ID:            user.ID,
-			Username:      user.Username,
-			Name:          user.Name,
-			AvatarUrl:     user.AvatarUrl.String,
-			Following:     false, // should always be false since user can't follow himself
-			FollowerCount: user.FollowerCount,
-		},
+		User:         user,
 	}
 
 	return response, nil
@@ -249,7 +225,7 @@ func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest)
 	}
 
 	// check if authenticating user exists
-	_, err = service.db.GetUserByID(userID, userID)
+	_, err = service.storage.GetUserByID(userID, userID)
 	if err == errors.NoResultsError {
 		return nil, errors.NotExistingUserAuthenticatingError
 	}

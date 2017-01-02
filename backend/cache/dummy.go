@@ -14,6 +14,22 @@ func (cache *DummyCache) SetWithFields(fields Fields, value interface{}) error {
 	return nil
 }
 
+func (cache *DummyCache) Increment(key string) error {
+	return nil
+}
+
+func (cache *DummyCache) IncrementWithFields(fields Fields) error {
+	return nil
+}
+
+func (cache *DummyCache) Decrement(key string) error {
+	return nil
+}
+
+func (cache *DummyCache) DecrementWithFields(fields Fields) error {
+	return nil
+}
+
 func (cache *DummyCache) Get(key string, value interface{}) (bool, error) {
 	return false, nil
 }

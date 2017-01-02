@@ -8,19 +8,6 @@ import (
 	"gopkg.in/gin-gonic/gin.v1"
 )
 
-func (api *API) GetUsers(context *gin.Context) {
-	requestingUserID := (context.MustGet("userID").(int64))
-
-	users, err := api.Service.GetUsers(requestingUserID)
-	if err != nil {
-		statusCode := getStatusCodeFromError(err)
-		context.AbortWithError(statusCode, err)
-		return
-	}
-
-	context.IndentedJSON(http.StatusOK, users)
-}
-
 func (api *API) GetUser(context *gin.Context) {
 	requestingUserID := (context.MustGet("userID").(int64))
 	parameterID := context.Param("id")

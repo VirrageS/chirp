@@ -49,6 +49,16 @@ var _ = Describe("DummyCache", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should increment without error", func() {
+			err := dummyCache.Increment("key")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should decrement without error", func() {
+			err := dummyCache.Decrement("key")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should delete without errors when key does not exist", func() {
 			err := dummyCache.Delete("key")
 			Expect(err).NotTo(HaveOccurred())
@@ -87,6 +97,16 @@ var _ = Describe("DummyCache", func() {
 			var obj object
 			exists, err := dummyCache.GetWithFields(fieldTest, &obj)
 			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should increment without error", func() {
+			err := dummyCache.IncrementWithFields(fieldTest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should decrement without error", func() {
+			err := dummyCache.DecrementWithFields(fieldTest)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

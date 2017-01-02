@@ -14,6 +14,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/service"
+	"github.com/VirrageS/chirp/backend/storage"
 	"github.com/VirrageS/chirp/backend/token"
 )
 
@@ -28,7 +29,12 @@ func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.Tok
 	// api dependencies
 	CORSConfig := setupCORS()
 
-	db := database.NewDatabase(dbConnection, redis)
+	userDAO := database.NewUserDAO(dbConnection)
+	followsDAO := database.NewFollowsDAO(dbConnection)
+	tweetDAO := database.NewTweetDAO(dbConnection)
+	likesDAO := database.NewLikesDAO(dbConnection)
+
+	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis)
 	services := service.NewService(serverConfig, db, tokenManager)
 	APIs := api.NewAPI(services)
 
@@ -60,7 +66,6 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		homeFeed.GET("", api.HomeFeed)
 
 		users := authorizedRoutes.Group("users")
-		users.GET("", api.GetUsers)
 		users.GET("/:id", api.GetUser)
 		users.POST(":id/follow", api.FollowUser)
 		users.POST(":id/unfollow", api.UnfollowUser)

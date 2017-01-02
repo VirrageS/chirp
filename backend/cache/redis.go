@@ -7,6 +7,7 @@ import (
 
 	"fmt"
 	"github.com/VirrageS/chirp/backend/config"
+	"strconv"
 )
 
 type RedisCache struct {
@@ -39,16 +40,24 @@ func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
 
 // Set `value` for specified `key`
 func (cache *RedisCache) Set(key string, value interface{}) error {
-	bytes, err := msgpack.Marshal(value)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"key":   key,
-			"value": value,
-		}).WithError(err).Error("set: failed to marshal value")
-		return err
+	var data interface{}
+
+	switch value := value.(type) {
+	case int64, int32, int16, int8, int:
+		data = value
+	default:
+		var err error
+		data, err = msgpack.Marshal(value)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"key":   key,
+				"value": value,
+			}).WithError(err).Error("set: failed to marshal value")
+			return err
+		}
 	}
 
-	err = cache.client.Set(key, bytes, cache.config.GetCacheExpirationTime()).Err()
+	err := cache.client.Set(key, data, cache.config.GetCacheExpirationTime()).Err()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"key":   key,
@@ -65,22 +74,75 @@ func (cache *RedisCache) SetWithFields(fields Fields, value interface{}) error {
 	return cache.Set(convertFieldsToKey(fields), value)
 }
 
+// Atomic increment of a value for specified `key`
+func (cache *RedisCache) Increment(key string) error {
+	err := cache.client.Incr(key).Err()
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("increment: failed to increment key in cache")
+		return err
+	}
+
+	return nil
+}
+
+// Increment value for specified key where key is created by hashing `fields`
+func (cache *RedisCache) IncrementWithFields(fields Fields) error {
+	return cache.Increment(convertFieldsToKey(fields))
+}
+
+// Atomic decrement of a value for specified `key`
+func (cache *RedisCache) Decrement(key string) error {
+	err := cache.client.Decr(key).Err()
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("decrement: failed to decrement key in cache")
+		return err
+	}
+
+	return nil
+}
+
+// Decrement value for specified key where key is created by hashing `fields`
+func (cache *RedisCache) DecrementWithFields(fields Fields) error {
+	return cache.Decrement(convertFieldsToKey(fields))
+}
+
 // Get value for specified `key`
 func (cache *RedisCache) Get(key string, value interface{}) (bool, error) {
-	bytes, err := cache.client.Get(key).Result()
+	var err error
+	var val int64
+
+	result, err := cache.client.Get(key).Result()
 	if err == redis.Nil {
 		return false, nil
 	} else if err != nil {
-		log.WithField("key", key).WithError(err).Error("Get: failed to get key from cache")
+		log.WithField("key", key).WithError(err).Error("get: failed to get key from cache")
 		return false, err
 	}
 
-	err = msgpack.Unmarshal([]byte(bytes), value)
+	switch value := value.(type) {
+	case *int64:
+		*value, err = strconv.ParseInt(result, 10, 64)
+	case *int32:
+		val, err = strconv.ParseInt(result, 10, 32)
+		*value = int32(val) // We can just cast it here, because on error val will be = 0
+	case *int16:
+		val, err = strconv.ParseInt(result, 10, 16)
+		*value = int16(val)
+	case *int8:
+		val, err = strconv.ParseInt(result, 10, 8)
+		*value = int8(val)
+	case *int:
+		val, err = strconv.ParseInt(result, 10, 0)
+		*value = int(val)
+	default:
+		err = msgpack.Unmarshal([]byte(result), value)
+	}
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"key":   key,
-			"value": value,
-		}).WithError(err).Error("set: failed to marshal value")
+			"value": result,
+		}).WithError(err).Error("get: failed to marshal value")
 		return false, err
 	}
 

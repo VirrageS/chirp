@@ -15,7 +15,6 @@ type APIProvider interface {
 	UnlikeTweet(context *gin.Context)
 	HomeFeed(context *gin.Context)
 
-	GetUsers(context *gin.Context)
 	GetUser(context *gin.Context)
 	FollowUser(context *gin.Context)
 	UnfollowUser(context *gin.Context)

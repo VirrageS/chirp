@@ -26,7 +26,8 @@ func (api *API) GetTweets(context *gin.Context) {
 		}
 		tweets, err = api.Service.GetTweetsOfUserWithID(userID, requestingUserID)
 	} else {
-		tweets, err = api.Service.GetTweets(requestingUserID)
+		context.AbortWithError(http.StatusBadRequest, errors.New("Required userID query parameter was not provided."))
+		return
 	}
 
 	if err != nil {
