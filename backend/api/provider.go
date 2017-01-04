@@ -20,6 +20,6 @@ type APIProvider interface {
 	UnfollowUser(context *gin.Context)
 	UserFollowers(context *gin.Context)
 	UserFollowees(context *gin.Context)
-	AddressAuthorizationGoogle(context *gin.Context)
+	GetGoogleAutorizationURL(context *gin.Context)
 	CreateOrLoginUserWithGoogle(context *gin.Context)
 }

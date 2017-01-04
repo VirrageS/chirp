@@ -24,7 +24,6 @@ type UserDataAccessor interface {
 	UnfollowUser(followeeID, followerID int64) error
 	GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
 	GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
-	InsertUserWithGoogle(newUser *model.UserGoogle) (*model.User, error)
 }
 
 type StorageAccessor interface {

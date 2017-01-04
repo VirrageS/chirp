@@ -80,18 +80,23 @@ func (cacheConfig *RedisCacheConfiguration) GetCacheExpirationTime() time.Durati
 }
 
 type AuthorizationGoogleConfiguration struct {
-	clientId     string
+	clientID     string
 	clientSecret string
+	callbackURI  string
 	authURL      string
 	tokenURL     string
 }
 
-func (config *AuthorizationGoogleConfiguration) GetClientId() string {
-	return config.clientId
+func (config *AuthorizationGoogleConfiguration) GetClientID() string {
+	return config.clientID
 }
 
 func (config *AuthorizationGoogleConfiguration) GetClientSecret() string {
 	return config.clientSecret
+}
+
+func (config *AuthorizationGoogleConfiguration) GetCallbackURI() string {
+	return config.callbackURI
 }
 
 func (config *AuthorizationGoogleConfiguration) GetAuthURL() string {
@@ -103,8 +108,12 @@ func (config *AuthorizationGoogleConfiguration) GetTokenURL() string {
 }
 
 // TODO: Maybe read the config only once on init() or something and then return the global object?
-func GetConfig(fileName string) (ServiceConfigProvider, DBConfigProvider, RedisConfigProvider,
-	AuthorizationGoogleConfigurationProvider) {
+func GetConfig(fileName string) (
+	ServiceConfigProvider,
+	DBConfigProvider,
+	RedisConfigProvider,
+	AuthorizationGoogleConfigurationProvider,
+) {
 	viper.AddConfigPath("$GOPATH/src/github.com/VirrageS/chirp/backend")
 	viper.SetConfigName(fileName)
 
@@ -116,8 +125,8 @@ func GetConfig(fileName string) (ServiceConfigProvider, DBConfigProvider, RedisC
 	serviceConfig := readServiceConfig()
 	databaseConfig := readDatabaseConfig()
 	cacheConfig := readCacheConfig()
-	authorizationgGogle := readAuthorizationGoogle()
-	return serviceConfig, databaseConfig, cacheConfig, authorizationgGogle
+	authorizationConfig := readAuthorizationConfig()
+	return serviceConfig, databaseConfig, cacheConfig, authorizationConfig
 }
 
 func readServiceConfig() *ServerConfiguration {
@@ -167,15 +176,15 @@ func readCacheConfig() *RedisCacheConfiguration {
 	password := viper.GetString("redis.password")
 	host := viper.GetString("redis.host")
 	port := viper.GetString("redis.port")
-	DB := viper.GetInt("redis.db")
+	db := viper.GetInt("redis.db")
 	cacheExpirationTime := viper.GetDuration("redis.cache_expiration_time")
 
-	if host == "" || port == "" || DB < 0 || cacheExpirationTime < 0 {
+	if host == "" || port == "" || db < 0 || cacheExpirationTime < 0 {
 		log.WithFields(log.Fields{
 			"password":        password,
 			"host":            host,
 			"port":            port,
-			"db":              DB,
+			"db":              db,
 			"expiration time": cacheExpirationTime,
 		}).Fatal("Config file doesn't contain valid redis access data.")
 	}
@@ -184,30 +193,33 @@ func readCacheConfig() *RedisCacheConfiguration {
 		password:            password,
 		host:                host,
 		port:                port,
-		db:                  DB,
+		db:                  db,
 		cacheExpirationTime: cacheExpirationTime,
 	}
 }
 
-func readAuthorizationGoogle() *AuthorizationGoogleConfiguration {
-	configClientId := viper.GetString("authorizationgoogle.client_id")
-	configClientSecret := viper.GetString("authorizationgoogle.client_secret")
-	configAuthUri := viper.GetString("authorizationgoogle.auth_uri")
-	configTokenUri := viper.GetString("authorizationgoogle.token_uri")
+func readAuthorizationConfig() *AuthorizationGoogleConfiguration {
+	configClientID := viper.GetString("authorization_google.client_id")
+	configClientSecret := viper.GetString("authorization_google.client_secret")
+	configCallbackURI := viper.GetString("authorization_google.callback_uri")
+	configAuthURL := viper.GetString("authorization_google.auth_url")
+	configTokenURL := viper.GetString("authorization_google.token_url")
 
-	if configClientId == "" || configClientSecret == "" {
+	if configClientID == "" || configClientSecret == "" {
 		log.WithFields(log.Fields{
-			"client_id":     configClientId,
+			"client_id":     configClientID,
 			"client_secret": configClientSecret,
-			"auth_uri":      configAuthUri,
-			"token_uri":     configTokenUri,
+			"callback_uri":  configCallbackURI,
+			"auth_url":      configAuthURL,
+			"token_url":     configTokenURL,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
 	return &AuthorizationGoogleConfiguration{
-		clientId:     configClientId,
+		clientID:     configClientID,
 		clientSecret: configClientSecret,
-		authURL:      configAuthUri,
-		tokenURL:     configTokenUri,
+		callbackURI:  configCallbackURI,
+		authURL:      configAuthURL,
+		tokenURL:     configTokenURL,
 	}
 }

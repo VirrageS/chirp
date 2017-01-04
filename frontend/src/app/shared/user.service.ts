@@ -61,6 +61,16 @@ export class UserService {
     return this._apiService.post(this.user_path + "/" + user_id + "/unfollow", {})
   }
 
+  authorizeWithGoogle() {
+    return this._apiService.get("/authorize/google")
+  }
+
+  loginWithGoogle(code, state) {
+    // TODO: should this be POST instead of GET?
+    return this._apiService.get("/login/google?code=" + code + "&state=" + state)
+      .do((res: any) => this._authService.setAuthorization(res.user, res.auth_token, res.refresh_token))
+  }
+
   signup(body) {
     return this._apiService.post("/signup", body)
   }

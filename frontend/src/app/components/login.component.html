@@ -1,5 +1,15 @@
 <div class="form">
   <div class="form__title">Login</div>
+
+  <div class="form__social">
+    <div (click)="loginWithGoogle()" class="btn-social btn-social--google">
+      <i class="fa fa-google"></i>
+      <span>Log in using Google</span>
+    </div>
+  </div>
+
+  <div class="form__separator">or</div>
+
   <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
     <div class="form-group">
       <label for="email">Email</label>

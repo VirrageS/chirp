@@ -1,0 +1,27 @@
+$google-color: #f44336;
+
+.btn-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+
+  border: 2px solid $TEXT-DIVIDER-COLOR;
+  border-radius: 0.3em;
+
+  i {
+    padding: 0px 20px;
+    font-size: 1.2em;
+  }
+
+  &--google {
+    border-color: $google-color;
+    color: $google-color;
+
+    &:hover {
+      background-color: $google-color;
+      color: $WHITE-COLOR;
+    }
+  }
+}

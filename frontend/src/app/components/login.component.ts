@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { User, UserService } from '../shared';
 
@@ -19,7 +19,17 @@ export class LoginComponent {
     }
   }
 
-  onSubmit() {
+  private loginWithGoogle() {
+    this._userService.authorizeWithGoogle() // firstly we have to authorize then login
+      .subscribe(
+        result => { window.location.href = result }, // redirect to Google AUTH
+        error => {
+          // console.log("error")
+        }
+      )
+  }
+
+  private onSubmit() {
     this._userService.login(this.user)
       .subscribe(
         result => {

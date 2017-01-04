@@ -24,7 +24,7 @@ func (api *API) GetTweets(context *gin.Context) {
 			context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
 			return
 		}
-		tweets, err = api.Service.GetTweetsOfUserWithID(userID, requestingUserID)
+		tweets, err = api.service.GetTweetsOfUserWithID(userID, requestingUserID)
 	} else {
 		context.AbortWithError(http.StatusBadRequest, errors.New("Required userID query parameter was not provided."))
 		return
@@ -49,7 +49,7 @@ func (api *API) GetTweet(context *gin.Context) {
 		return
 	}
 
-	responseTweet, err := api.Service.GetTweet(tweetID, requestingUserID)
+	responseTweet, err := api.service.GetTweet(tweetID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -71,7 +71,7 @@ func (api *API) PostTweet(context *gin.Context) {
 
 	newTweet.AuthorID = requestingUserID
 
-	responseTweet, err := api.Service.PostTweet(&newTweet, requestingUserID)
+	responseTweet, err := api.service.PostTweet(&newTweet, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -93,7 +93,7 @@ func (api *API) DeleteTweet(context *gin.Context) {
 		return
 	}
 
-	err = api.Service.DeleteTweet(tweetID, requestingUserID)
+	err = api.service.DeleteTweet(tweetID, requestingUserID)
 
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
@@ -115,7 +115,7 @@ func (api *API) LikeTweet(context *gin.Context) {
 		return
 	}
 
-	tweet, err := api.Service.LikeTweet(tweetID, requestingUserID)
+	tweet, err := api.service.LikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -136,7 +136,7 @@ func (api *API) UnlikeTweet(context *gin.Context) {
 		return
 	}
 
-	tweet, err := api.Service.UnlikeTweet(tweetID, requestingUserID)
+	tweet, err := api.service.UnlikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -150,7 +150,7 @@ func (api *API) HomeFeed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	requestingUserID := (context.MustGet("userID").(int64))
 
-	tweets, err := api.Service.GetTweetsOfUserWithID(requestingUserID, requestingUserID)
+	tweets, err := api.service.GetTweetsOfUserWithID(requestingUserID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)

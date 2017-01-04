@@ -39,8 +39,9 @@ type RedisConfigProvider interface {
 }
 
 type AuthorizationGoogleConfigurationProvider interface {
-	GetClientId() string
+	GetClientID() string
 	GetClientSecret() string
+	GetCallbackURI() string
 	GetAuthURL() string
 	GetTokenURL() string
 }

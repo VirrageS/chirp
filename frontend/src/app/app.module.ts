@@ -16,7 +16,7 @@ import { Store } from './store';
 import { NavigationBarComponent } from './layout';
 import {
   HomeComponent, SearchComponent,
-  SignupComponent, LoginComponent, LogoutComponent,
+  SignupComponent, LoginComponent, LoginGoogleCallbackComponent, LogoutComponent,
   TweetsModule, UsersModule,
 } from './components';
 
@@ -35,6 +35,7 @@ import { MeModule } from './me'
 
       { path: 'signup', component: SignupComponent },
       { path: 'login', component: LoginComponent },
+      { path: 'login/google/callback', component: LoginGoogleCallbackComponent },
       { path: 'logout', component: LogoutComponent, canActivate: [AuthService] },
     ]),
 
@@ -50,6 +51,7 @@ import { MeModule } from './me'
 
     SignupComponent,
     LoginComponent,
+    LoginGoogleCallbackComponent,
     LogoutComponent,
   ],
   providers: [
