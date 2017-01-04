@@ -5,27 +5,30 @@ import (
 
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/database"
+	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
-// Struct that implements TweetDataAccessor using given DAO and cache
+// Struct that implements TweetDataAccessor using given DAO, cache and full text search provider
 type TweetStorage struct {
 	tweetDAO    database.TweetDAO
 	likesDAO    database.LikesDAO
 	cache       cache.CacheProvider
 	userStorage UserDataAccessor
+	fts         fulltextsearch.TweetSearcher
 }
 
-// Constructs TweetStorage that uses given likesDAO, tweetDAO, CacheProvider and UserStorage
+// Constructs TweetStorage that uses given likesDAO, tweetDAO, CacheProvider, UserStorage and TweetSearcher
 func NewTweetStorage(tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
-	cache cache.CacheProvider, userStorage UserDataAccessor) *TweetStorage {
+	cache cache.CacheProvider, userStorage UserDataAccessor, fts fulltextsearch.TweetSearcher) *TweetStorage {
 
 	return &TweetStorage{
 		tweetDAO:    tweetDAO,
 		likesDAO:    likesDAO,
 		cache:       cache,
 		userStorage: userStorage,
+		fts:         fts,
 	}
 }
 
@@ -131,6 +134,15 @@ func (s *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
 	s.cache.DecrementWithFields(cache.Fields{"tweet", tweetID, "like_count"})
 
 	return nil
+}
+
+func (s *TweetStorage) GetTweetsUsingQuerystring(querystring string, requestingUserID int64) ([]*model.Tweet, error) {
+	tweetIDs, err := s.fts.GetTweetsIDs(querystring)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	return s.getTweetsByIDs(tweetIDs, requestingUserID)
 }
 
 // Be careful - this is function does SIDE EFFECTS only

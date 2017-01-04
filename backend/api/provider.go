@@ -22,4 +22,6 @@ type APIProvider interface {
 	UserFollowees(context *gin.Context)
 	GetGoogleAutorizationURL(context *gin.Context)
 	CreateOrLoginUserWithGoogle(context *gin.Context)
+
+	Search(context *gin.Context)
 }

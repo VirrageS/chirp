@@ -12,6 +12,7 @@ import (
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
+	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/service"
 	"github.com/VirrageS/chirp/backend/storage"
@@ -27,6 +28,7 @@ func init() {
 func New(
 	dbConnection *sql.DB,
 	redis cache.CacheProvider,
+	elasticsearch fulltextsearch.Searcher,
 	tokenManager token.TokenManagerProvider,
 	serverConfig config.ServiceConfigProvider,
 	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
@@ -39,7 +41,7 @@ func New(
 	tweetDAO := database.NewTweetDAO(dbConnection)
 	likesDAO := database.NewLikesDAO(dbConnection)
 
-	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis)
+	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis, elasticsearch)
 	services := service.NewService(serverConfig, db, tokenManager)
 	apis := api.NewAPI(services, authorizationGoogleConfig)
 
@@ -76,6 +78,9 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		users.POST(":id/unfollow", api.UnfollowUser)
 		users.GET(":id/followers", api.UserFollowers)
 		users.GET(":id/followees", api.UserFollowees)
+
+		search := authorizedRoutes.Group("search")
+		search.GET("", api.Search)
 	}
 
 	auth := router.Group("")

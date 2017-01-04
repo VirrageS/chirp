@@ -11,6 +11,7 @@ import (
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
+	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/server"
 	"github.com/VirrageS/chirp/backend/token"
 )
@@ -20,8 +21,9 @@ func main() {
 
 	db := database.NewConnection(databaseConfig)
 	redis := cache.NewRedisCache(redisConfig)
+	elasticsearch := fulltextsearch.NewElasticsearch()
 	tokenManager := token.NewTokenManager(serverConfig)
 
-	s := server.New(db, redis, tokenManager, serverConfig, authorizationGoogleConfig)
+	s := server.New(db, redis, elasticsearch, tokenManager, serverConfig, authorizationGoogleConfig)
 	s.Run(":8080")
 }
