@@ -112,23 +112,6 @@ func (db *userDB) InsertUser(newUser *model.NewUserForm) (*model.PublicUser, err
 	return insertedUser, nil
 }
 
-func (db *UserDB) InsertUserWithGoogle(newUser *model.UserGoogle) (*model.User, error) {
-	row := db.QueryRow(
-		`INSERT INTO users (username, email, avatar_url, name, google_token, password)
-		VALUES ($1, $2, $3, $4, $5, 'noPassword')
-		RETURNING id`,
-		user.GivenName, user.Email, user.Picture, user.Name, user.Email
-	)
-
-	insertedUser, err := readPublicUser(row)
-	if err != nil {
-		log.WithField("user", *newUser).WithError(err).Error("InsertUserWithGoogle query error.")
-		return nil, err
-	}
-
-	return insertedUser, nil
-}
-
 func (db *userDB) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.Time) error {
 	_, err := db.Exec(`
 		UPDATE users

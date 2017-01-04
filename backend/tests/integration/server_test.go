@@ -45,11 +45,11 @@ var _ = Describe("ServerTest", func() {
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
 
-		testConfig, databaseConfig, _ := config.GetConfig("test_config")
+		testConfig, databaseConfig, _, authorizationGoogleConfig := config.GetConfig("test_config")
 		db = database.NewConnection(databaseConfig)
 		dummyCache := cache.NewDummyCache()
 		tokenManager = token.NewTokenManager(testConfig)
-		router = server.New(db, dummyCache, tokenManager, testConfig)
+		router = server.New(db, dummyCache, tokenManager, testConfig, authorizationGoogleConfig)
 
 		// create users
 		ala = createUser(router, "ala")
@@ -186,6 +186,21 @@ var _ = Describe("ServerTest", func() {
 			Expect(w.Code).To(Equal(http.StatusUnauthorized))
 			Expect(w.Body.Len()).NotTo(BeEquivalentTo(0))
 		})
+	})
+
+	Describe("Login or create user with Google", func() {
+		BeforeEach(func() {})
+
+		It("should return google api auth url", func() {
+			req := request("GET", "/authorize/google", nil).json().build()
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, req)
+
+			Expect(w.Body.Bytes()).NotTo(BeEmpty())
+		})
+
+		// TODO: make actual google api tests
 	})
 
 	Describe("Follow user", func() {

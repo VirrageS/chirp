@@ -15,9 +15,10 @@ redis:
   db: 0
   cache_expiration_time: 1m
 
-authorizationgoogle:
+authorization_google:
   client_id: "248788072320-cgap8rml3940qugk1u1i1c77onukabnn.apps.googleusercontent.com"
-  project_id: "chirp-mimuw"
-  auth_uri: "https://accounts.google.com/o/oauth2/auth"
-  token_uri: "https://accounts.google.com/o/oauth2/token"
   client_secret: "V4lFJ6QWLP117cNN9Y2O3wGj"
+  callback_uri: "http://localhost:3000/login/google/callback"
+  project_id: "chirp-mimuw"
+  auth_url: "https://accounts.google.com/o/oauth2/auth"
+  token_url: "https://accounts.google.com/o/oauth2/token"

@@ -24,8 +24,13 @@ func init() {
 
 // Handles all dependencies and creates a new server.
 // Takes a DB connection parameter in order to support test database.
-func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.TokenManagerProvider,
-	serverConfig config.ServiceConfigProvider, authorizationGoogle config.AuthorizationGoogleConfigurationProvider) *gin.Engine {
+func New(
+	dbConnection *sql.DB,
+	redis cache.CacheProvider,
+	tokenManager token.TokenManagerProvider,
+	serverConfig config.ServiceConfigProvider,
+	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
+) *gin.Engine {
 	// api dependencies
 	CORSConfig := setupCORS()
 
@@ -35,10 +40,10 @@ func New(dbConnection *sql.DB, redis cache.CacheProvider, tokenManager token.Tok
 	likesDAO := database.NewLikesDAO(dbConnection)
 
 	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis)
-	services := service.NewService(serverConfig, db, tokenManager, authorizationGoogle)
-	APIs := api.NewAPI(services)
+	services := service.NewService(serverConfig, db, tokenManager)
+	apis := api.NewAPI(services, authorizationGoogleConfig)
 
-	return setupRouter(APIs, tokenManager, CORSConfig)
+	return setupRouter(apis, tokenManager, CORSConfig)
 }
 
 // TODO: Maybe middlewares should also be dependencies
@@ -78,7 +83,7 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		auth.POST("/signup", contentTypeChecker, api.RegisterUser)
 		auth.POST("/login", contentTypeChecker, api.LoginUser)
 		auth.POST("/token", contentTypeChecker, api.RefreshAuthToken)
-		auth.GET("/authorize/google", api.AddressAuthorizationGoogle)
+		auth.GET("/authorize/google", api.GetGoogleAutorizationURL)
 		auth.GET("/login/google", api.CreateOrLoginUserWithGoogle)
 	}
 

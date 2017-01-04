@@ -5,7 +5,6 @@ import { Tweet, UserService } from '../shared';
 
 @Component({
   template: `
-    <h2>HomeComponent</h2>
     <tweets [tweets]="tweets"></tweets>
   `
 })

@@ -17,21 +17,18 @@ type Service struct {
 	config       config.ServiceConfigProvider
 	storage      storage.StorageAccessor
 	tokenManager token.TokenManagerProvider
-	authorizationGoogle config.AuthorizationGoogleConfigurationProvider
 }
 
 // Constructs a Service that uses provided objects
 func NewService(
 	config config.ServiceConfigProvider,
-	database database.DatabaseAccessor,
+	storage storage.StorageAccessor,
 	tokenManager token.TokenManagerProvider,
-	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider
 ) ServiceProvider {
 	return &Service{
 		config:       config,
 		storage:      storage,
 		tokenManager: tokenManager,
-		authorizationGoogle : authorizationGoogleConfig,
 	}
 }
 
@@ -224,24 +221,37 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 	return response, nil
 }
 
-// TODO: fix this - maybe service should fetch only 'auth' data and then get fetch user data and return it
-func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
-	email := loginForm.Email
-	password := loginForm.Password
+func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoogle) (*model.LoginResponse, error) {
+	user, err := service.storage.GetUserByEmail(newUserGoogle.Email)
+	if err == errors.NoResultsError {
+		// TODO: add picture field and mark that this user is connected to google
+		newUserForm := &model.NewUserForm{
+			Username: newUserGoogle.GivenName,
+			Password: "superwierdhash", // TODO: change this (this should be super unhackable some kind of 128 char hash)
+			Email:    newUserGoogle.Email,
+			Name:     newUserGoogle.Name,
+		}
 
-	user, databaseError := service.db.GetUserByEmail(email)
-	if databaseError == errors.NoResultsError {
-		return nil, errors.InvalidCredentialsError // return 401 when user with given email is not found
-	} else if databaseError != nil {
-		return nil, databaseError
+		_, err := service.storage.InsertUser(newUserForm)
+		if err != nil {
+			return nil, err
+		}
+
+		// get user after creating it (now we should be able to do it...)
+		user, err = service.storage.GetUserByEmail(newUserGoogle.Email)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
 	}
 
-	// TODO: hash the password before comparing
-	if user.Password != password {
-		return nil, errors.InvalidCredentialsError
+	loginForm := &model.LoginForm{
+		Email:    user.Email,
+		Password: user.Password,
 	}
 
-	return service.Login(user)
+	return service.LoginUser(loginForm)
 }
 
 func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error) {
@@ -285,21 +295,4 @@ func (service *Service) createRefreshToken(userID int64) (string, error) {
 		userID,
 		service.config.GetRefreshTokenValidityPeriod(),
 	)
-}
-
-func (service *Service) CreateOrLoginUserWithGoogle(userGoogle *model.UserGoogle) (*model.LoginResponse, error) {
-	email := userGoogle.Email
-
-	user, databaseError := service.db.GetUserByEmail(email)
-	if databaseError == errors.NoResultsError {
-		userNew, databaseError := service.db.InsertUserWithGoogle(userGoogle)
-		user = userNew
-		if databaseError != nil {
-			return nil, databaseError
-		}
-	} else if databaseError != nil {
-		return nil, databaseError
-	}
-
-	return service.Login(user)
 }

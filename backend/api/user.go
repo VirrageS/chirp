@@ -18,7 +18,7 @@ func (api *API) GetUser(context *gin.Context) {
 		return
 	}
 
-	user, err := api.Service.GetUser(userID, requestingUserID)
+	user, err := api.service.GetUser(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -42,7 +42,7 @@ func (api *API) FollowUser(context *gin.Context) {
 		return
 	}
 
-	user, err := api.Service.FollowUser(userID, requestingUserID)
+	user, err := api.service.FollowUser(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -62,7 +62,7 @@ func (api *API) UnfollowUser(context *gin.Context) {
 		return
 	}
 
-	user, err := api.Service.UnfollowUser(userID, requestingUserID)
+	user, err := api.service.UnfollowUser(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -82,7 +82,7 @@ func (api *API) UserFollowers(context *gin.Context) {
 		return
 	}
 
-	user, err := api.Service.UserFollowers(userID, requestingUserID)
+	user, err := api.service.UserFollowers(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -102,7 +102,7 @@ func (api *API) UserFollowees(context *gin.Context) {
 		return
 	}
 
-	user, err := api.Service.UserFollowees(userID, requestingUserID)
+	user, err := api.service.UserFollowees(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)

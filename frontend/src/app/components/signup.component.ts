@@ -21,15 +21,11 @@ export class SignupComponent {
     }
   }
 
-  onSubmit() {
+  private onSubmit() {
     this._userService.signup(this.user)
       .subscribe(
-        result => {
-          this._router.navigateByUrl('login')
-        },
-        error => {
-          this.errors = error["errors"]
-        }
+        result => this._router.navigate(['', 'login']),
+        error => this.errors = error["errors"]
       )
   }
 }

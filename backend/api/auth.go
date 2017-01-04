@@ -9,7 +9,6 @@ import (
 
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/model"
 	"golang.org/x/oauth2"
 )
@@ -24,7 +23,7 @@ func (api *API) RegisterUser(context *gin.Context) {
 		return
 	}
 
-	newUser, err := api.Service.RegisterUser(&newUserForm)
+	newUser, err := api.service.RegisterUser(&newUserForm)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -45,7 +44,7 @@ func (api *API) LoginUser(context *gin.Context) {
 		return
 	}
 
-	loginResponse, err := api.Service.LoginUser(&loginForm)
+	loginResponse, err := api.service.LoginUser(&loginForm)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -65,7 +64,7 @@ func (api *API) RefreshAuthToken(context *gin.Context) {
 		return
 	}
 
-	response, err := api.Service.RefreshAuthToken(&request)
+	response, err := api.service.RefreshAuthToken(&request)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -75,41 +74,24 @@ func (api *API) RefreshAuthToken(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, response)
 }
 
-func GetoAuth2ConfigGoogle() *oauth2.Config {
-	_, _, _, authorizationGoogleConfig := config.GetConfig("config")
-
-	return &oauth2.Config{
-		ClientID:     authorizationGoogleConfig.GetClientId(),
-		ClientSecret: authorizationGoogleConfig.GetClientSecret(),
-		RedirectURL:  "http://127.0.0.1:8080/createOrLoginUserWithGoogle",
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-		},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  authorizationGoogleConfig.GetAuthURL(),
-			TokenURL: authorizationGoogleConfig.GetTokenURL(),
-		},
-	}
-}
-
-func (api *API) AddressAuthorizationGoogle(context *gin.Context) {
-	conf := GetoAuth2ConfigGoogle()
-	token := "TODO"
-	context.IndentedJSON(http.StatusOK, conf.AuthCodeURL(token))
+func (api *API) GetGoogleAutorizationURL(context *gin.Context) {
+	token := "TODO" // TODO: this should be generated hash from IP Address and browser name / browser_id
+	context.IndentedJSON(http.StatusOK, api.googleOAuth2.AuthCodeURL(token, oauth2.AccessTypeOffline))
 }
 
 func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
-	if "TODO" != context.Query("state") {
+	if context.Query("state") != "TODO" {
 		context.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state"))
 		return
 	}
-	conf := GetoAuth2ConfigGoogle()
-	token, err := conf.Exchange(oauth2.NoContext, context.Query("code"))
+
+	token, err := api.googleOAuth2.Exchange(oauth2.NoContext, context.Query("code"))
 	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	client := conf.Client(oauth2.NoContext, token)
+
+	client := api.googleOAuth2.Client(oauth2.NoContext, token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, err)
@@ -121,7 +103,7 @@ func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
 	user := model.UserGoogle{}
 	json.Unmarshal([]byte(data), &user)
 
-	loginResponse, err := api.Service.CreateOrLoginUserWithGoogle(&user)
+	loginResponse, err := api.service.CreateOrLoginUserWithGoogle(&user)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
