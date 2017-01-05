@@ -137,12 +137,20 @@ func (s *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
 }
 
 func (s *TweetStorage) GetTweetsUsingQuerystring(querystring string, requestingUserID int64) ([]*model.Tweet, error) {
-	tweetIDs, err := s.fts.GetTweetsIDs(querystring)
-	if err != nil {
-		return nil, errors.UnexpectedError
+	tweetsIDs := make([]int64, 0)
+
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweets", "querystring", querystring}, &tweetsIDs); !exists {
+		var err error
+
+		tweetsIDs, err = s.fts.GetTweetsIDs(querystring)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+
+		s.cache.SetWithFields(cache.Fields{"tweets", "querystring", querystring}, tweetsIDs)
 	}
 
-	return s.getTweetsByIDs(tweetIDs, requestingUserID)
+	return s.getTweetsByIDs(tweetsIDs, requestingUserID)
 }
 
 // Be careful - this is function does SIDE EFFECTS only

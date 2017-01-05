@@ -15,6 +15,7 @@ import (
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/database"
+	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"
 	"github.com/VirrageS/chirp/backend/token"
@@ -48,8 +49,9 @@ var _ = Describe("ServerTest", func() {
 		testConfig, databaseConfig, _, authorizationGoogleConfig := config.GetConfig("test_config")
 		db = database.NewConnection(databaseConfig)
 		dummyCache := cache.NewDummyCache()
+		dummySearch := fulltextsearch.NewDummySearch()
 		tokenManager = token.NewTokenManager(testConfig)
-		router = server.New(db, dummyCache, tokenManager, testConfig, authorizationGoogleConfig)
+		router = server.New(db, dummyCache, dummySearch, tokenManager, testConfig, authorizationGoogleConfig)
 
 		// create users
 		ala = createUser(router, "ala")

@@ -183,12 +183,20 @@ func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.Pub
 }
 
 func (s *UserStorage) GetUsersUsingQuerystring(querystring string, requestingUserID int64) ([]*model.PublicUser, error) {
-	userIDs, err := s.fts.GetUsersIDs(querystring)
-	if err != nil {
-		return nil, errors.UnexpectedError
+	usersIDs := make([]int64, 0)
+
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"users", "querystring", querystring}, &usersIDs); !exists {
+		var err error
+
+		usersIDs, err = s.fts.GetUsersIDs(querystring)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+
+		s.cache.SetWithFields(cache.Fields{"users", "querystring", querystring}, usersIDs)
 	}
 
-	return s.getUsersByIDs(userIDs, requestingUserID)
+	return s.getUsersByIDs(usersIDs, requestingUserID)
 }
 
 // Be careful - this is function does SIDE EFFECTS only
