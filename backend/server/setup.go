@@ -84,7 +84,7 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		auth.POST("/login", contentTypeChecker, api.LoginUser)
 		auth.POST("/token", contentTypeChecker, api.RefreshAuthToken)
 		auth.GET("/authorize/google", api.GetGoogleAutorizationURL)
-		auth.GET("/login/google", api.CreateOrLoginUserWithGoogle)
+		auth.POST("/login/google", api.CreateOrLoginUserWithGoogle)
 	}
 
 	return router

@@ -66,8 +66,7 @@ export class UserService {
   }
 
   loginWithGoogle(code, state) {
-    // TODO: should this be POST instead of GET?
-    return this._apiService.get("/login/google?code=" + code + "&state=" + state)
+    return this._apiService.post("/login/google", {code: code, state: state})
       .do((res: any) => this._authService.setAuthorization(res.user, res.auth_token, res.refresh_token))
   }
 

@@ -40,5 +40,5 @@ type UserGoogle struct {
 	FamilyName    string `json:"family_name"`
 	Picture       string `json:"picture"`
 	Email         string `json:"email"`
-	EmailVerified string `json:"email_verified"`
+	EmailVerified bool   `json:"email_verified"`
 }

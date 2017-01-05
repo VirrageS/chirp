@@ -80,12 +80,21 @@ func (api *API) GetGoogleAutorizationURL(context *gin.Context) {
 }
 
 func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
-	if context.Query("state") != "TODO" {
+	var form model.GoogleLoginForm
+	if err := context.BindJSON(&form); err != nil {
+		context.AbortWithError(
+			http.StatusBadRequest,
+			errors.New("Fields: `code` and `state` are required."),
+		)
+		return
+	}
+
+	if form.State != "TODO" {
 		context.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state"))
 		return
 	}
 
-	token, err := api.googleOAuth2.Exchange(oauth2.NoContext, context.Query("code"))
+	token, err := api.googleOAuth2.Exchange(oauth2.NoContext, form.Code)
 	if err != nil {
 		context.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -101,7 +110,11 @@ func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
 	data, _ := ioutil.ReadAll(resp.Body)
 
 	user := model.UserGoogle{}
-	json.Unmarshal([]byte(data), &user)
+	err = json.Unmarshal([]byte(data), &user)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 
 	loginResponse, err := api.service.CreateOrLoginUserWithGoogle(&user)
 	if err != nil {
