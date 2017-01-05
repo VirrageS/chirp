@@ -26,12 +26,29 @@ services:
     depends_on:
       - postgres
       - redis
+      - elasticsearch
     volumes:
       - ../backend:/backend
     links:
       - postgres:database
       - redis:cache
+      - elasticsearch:elasticsearch
     command: /go/bin/backend
+
+  elasticsearch:
+    extends:
+      file: core.yml
+      service: elasitcsearch
+
+  logstash:
+    restart: always
+    build: ../logstash
+    depends_on:
+      - postgres
+      - elasticsearch
+    links:
+      - postgres:database
+      - elasticsearch:elasticsearch
 
   nginx:
     restart: always

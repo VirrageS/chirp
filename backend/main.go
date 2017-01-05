@@ -17,11 +17,11 @@ import (
 )
 
 func main() {
-	serverConfig, databaseConfig, redisConfig, authorizationGoogleConfig := config.GetConfig("config")
+	serverConfig, databaseConfig, redisConfig, authorizationGoogleConfig, elasticsearchConfig := config.GetConfig("config")
 
 	db := database.NewConnection(databaseConfig)
 	redis := cache.NewRedisCache(redisConfig)
-	elasticsearch := fulltextsearch.NewElasticsearch()
+	elasticsearch := fulltextsearch.NewElasticsearch(elasticsearchConfig)
 	tokenManager := token.NewTokenManager(serverConfig)
 
 	s := server.New(db, redis, elasticsearch, tokenManager, serverConfig, authorizationGoogleConfig)

@@ -46,7 +46,7 @@ var _ = Describe("ServerTest", func() {
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
 
-		testConfig, databaseConfig, _, authorizationGoogleConfig := config.GetConfig("test_config")
+		testConfig, databaseConfig, _, authorizationGoogleConfig, _ := config.GetConfig("test_config")
 		db = database.NewConnection(databaseConfig)
 		dummyCache := cache.NewDummyCache()
 		dummySearch := fulltextsearch.NewDummySearch()

@@ -25,6 +25,7 @@ type UserDataAccessor interface {
 	UnfollowUser(followeeID, followerID int64) error
 	GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
 	GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	GetUsersUsingQuerystring(querystring string, requestingUserID int64) ([]*model.PublicUser, error)
 }
 
 type StorageAccessor interface {

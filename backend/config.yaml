@@ -22,3 +22,10 @@ authorization_google:
   project_id: "chirp-mimuw"
   auth_url: "https://accounts.google.com/o/oauth2/auth"
   token_url: "https://accounts.google.com/o/oauth2/token"
+
+
+elasticsearch:
+  username: "elastic"
+  password: "changeme"
+  host: "localhost"
+  port: "9200"

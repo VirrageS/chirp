@@ -171,8 +171,13 @@ func (service *Service) FullTextSearch(queryString string, requestingUserID int6
 		return nil, err
 	}
 
+	users, err := service.storage.GetUsersUsingQuerystring(queryString, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
 	result := &model.FullTextSearchResponse{
-		Users:  make([]*model.PublicUser, 0),
+		Users:  users,
 		Tweets: tweets,
 	}
 

@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 
+	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/VirrageS/chirp/backend/config"
 	"gopkg.in/olivere/elastic.v5"
 )
 
-const tweetIndex = "tweets"
+const indexName = "fts"
+
 const tweetType = "tweet"
 const tweetContentField = "content"
 
-const userIndex = "users"
 const userType = "user"
 const userNameField = "name"
 const userUsernameField = "username"
@@ -21,8 +23,16 @@ type ElasticsearchClient struct {
 	*elastic.Client
 }
 
-func NewElasticsearch() *ElasticsearchClient {
-	client, err := elastic.NewClient()
+func NewElasticsearch(config config.ElasticsearchConfigProvider) *ElasticsearchClient {
+	username := config.GetUsername()
+	password := config.GetPassword()
+	url := fmt.Sprintf("http://%v:%v", config.GetHost(), config.GetPort())
+
+	client, err := elastic.NewClient(
+		elastic.SetURL(url),
+		elastic.SetBasicAuth(username, password),
+		elastic.SetSniff(false),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("Error connecting to elasticsearch.")
 	}
@@ -31,14 +41,14 @@ func NewElasticsearch() *ElasticsearchClient {
 }
 
 func (e *ElasticsearchClient) GetTweetsIDs(querystring string) ([]int64, error) {
-	return e.getIDsFromIndex(querystring, tweetIndex, tweetType, tweetContentField)
+	return e.getIDsFromIndex(querystring, tweetType, tweetContentField)
 }
 
 func (e *ElasticsearchClient) GetUsersIDs(querystring string) ([]int64, error) {
-	return e.getIDsFromIndex(querystring, userIndex, userType, userUsernameField, userNameField)
+	return e.getIDsFromIndex(querystring, userType, userUsernameField, userNameField)
 }
 
-func (e *ElasticsearchClient) getIDsFromIndex(querystring, indexName, typeName string, fields ...string) ([]int64, error) {
+func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fields ...string) ([]int64, error) {
 	// Create a MatchQuery with "and" operator - a query that will require each word in `querystring` to be matched
 	// in one of the `fields`.
 	query := elastic.NewMultiMatchQuery(querystring, fields...).Operator("and")

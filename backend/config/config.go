@@ -29,26 +29,26 @@ func (config *ServerConfiguration) GetRefreshTokenValidityPeriod() int {
 }
 
 type DatabaseConfiguration struct {
-	Username string
-	Password string
-	Host     string
-	Port     string
+	username string
+	password string
+	host     string
+	port     string
 }
 
 func (dbConfig *DatabaseConfiguration) GetUsername() string {
-	return dbConfig.Username
+	return dbConfig.username
 }
 
 func (dbConfig *DatabaseConfiguration) GetPassword() string {
-	return dbConfig.Password
+	return dbConfig.password
 }
 
 func (dbConfig *DatabaseConfiguration) GetHost() string {
-	return dbConfig.Host
+	return dbConfig.host
 }
 
 func (dbConfig *DatabaseConfiguration) GetPort() string {
-	return dbConfig.Port
+	return dbConfig.port
 }
 
 type RedisCacheConfiguration struct {
@@ -107,12 +107,36 @@ func (config *AuthorizationGoogleConfiguration) GetTokenURL() string {
 	return config.tokenURL
 }
 
+type ElasticSearchConfiguration struct {
+	username string
+	password string
+	host     string
+	port     string
+}
+
+func (esConfig *ElasticSearchConfiguration) GetUsername() string {
+	return esConfig.username
+}
+
+func (esConfig *ElasticSearchConfiguration) GetPassword() string {
+	return esConfig.password
+}
+
+func (esConfig *ElasticSearchConfiguration) GetHost() string {
+	return esConfig.host
+}
+
+func (esConfig *ElasticSearchConfiguration) GetPort() string {
+	return esConfig.port
+}
+
 // TODO: Maybe read the config only once on init() or something and then return the global object?
 func GetConfig(fileName string) (
 	ServiceConfigProvider,
 	DBConfigProvider,
 	RedisConfigProvider,
 	AuthorizationGoogleConfigurationProvider,
+	ElasticsearchConfigProvider,
 ) {
 	viper.AddConfigPath("$GOPATH/src/github.com/VirrageS/chirp/backend")
 	viper.SetConfigName(fileName)
@@ -126,7 +150,9 @@ func GetConfig(fileName string) (
 	databaseConfig := readDatabaseConfig()
 	cacheConfig := readCacheConfig()
 	authorizationConfig := readAuthorizationConfig()
-	return serviceConfig, databaseConfig, cacheConfig, authorizationConfig
+	elasticsearchConfig := readElasticsearchConfig()
+
+	return serviceConfig, databaseConfig, cacheConfig, authorizationConfig, elasticsearchConfig
 }
 
 func readServiceConfig() *ServerConfiguration {
@@ -165,10 +191,10 @@ func readDatabaseConfig() *DatabaseConfiguration {
 	}
 
 	return &DatabaseConfiguration{
-		Username: configDBUsername,
-		Password: configDBPassword,
-		Host:     configDBHost,
-		Port:     configDBPort,
+		username: configDBUsername,
+		password: configDBPassword,
+		host:     configDBHost,
+		port:     configDBPort,
 	}
 }
 
@@ -221,5 +247,28 @@ func readAuthorizationConfig() *AuthorizationGoogleConfiguration {
 		callbackURI:  configCallbackURI,
 		authURL:      configAuthURL,
 		tokenURL:     configTokenURL,
+	}
+}
+
+func readElasticsearchConfig() *ElasticSearchConfiguration {
+	configESUsername := viper.GetString("elasticsearch.username")
+	configESPassword := viper.GetString("elasticsearch.password")
+	configESHost := viper.GetString("elasticsearch.host")
+	configESPort := viper.GetString("elasticsearch.port")
+
+	if configESUsername == "" || configESPassword == "" || configESHost == "" || configESPort == "" {
+		log.WithFields(log.Fields{
+			"username": configESUsername,
+			"password": configESPassword,
+			"host":     configESHost,
+			"port":     configESPort,
+		}).Fatal("Config file doesn't contain valid elasticsearch access data.")
+	}
+
+	return &ElasticSearchConfiguration{
+		username: configESUsername,
+		password: configESPassword,
+		host:     configESHost,
+		port:     configESPort,
 	}
 }
