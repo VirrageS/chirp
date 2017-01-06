@@ -13,7 +13,7 @@ type TweetDataAccessor interface {
 	DeleteTweet(tweetID, requestingUserID int64) error
 	LikeTweet(tweetID, userID int64) error
 	UnlikeTweet(tweetID, userID int64) error
-	GetTweetsUsingQuerystring(querystring string, requestingUserID int64) ([]*model.Tweet, error)
+	GetTweetsUsingQueryString(querystring string, requestingUserID int64) ([]*model.Tweet, error)
 }
 
 type UserDataAccessor interface {
@@ -25,7 +25,7 @@ type UserDataAccessor interface {
 	UnfollowUser(followeeID, followerID int64) error
 	GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
 	GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
-	GetUsersUsingQuerystring(querystring string, requestingUserID int64) ([]*model.PublicUser, error)
+	GetUsersUsingQueryString(querystring string, requestingUserID int64) ([]*model.PublicUser, error)
 }
 
 type StorageAccessor interface {

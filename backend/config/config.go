@@ -107,26 +107,26 @@ func (config *AuthorizationGoogleConfiguration) GetTokenURL() string {
 	return config.tokenURL
 }
 
-type ElasticSearchConfiguration struct {
+type ElasticsearchConfiguration struct {
 	username string
 	password string
 	host     string
 	port     string
 }
 
-func (esConfig *ElasticSearchConfiguration) GetUsername() string {
+func (esConfig *ElasticsearchConfiguration) GetUsername() string {
 	return esConfig.username
 }
 
-func (esConfig *ElasticSearchConfiguration) GetPassword() string {
+func (esConfig *ElasticsearchConfiguration) GetPassword() string {
 	return esConfig.password
 }
 
-func (esConfig *ElasticSearchConfiguration) GetHost() string {
+func (esConfig *ElasticsearchConfiguration) GetHost() string {
 	return esConfig.host
 }
 
-func (esConfig *ElasticSearchConfiguration) GetPort() string {
+func (esConfig *ElasticsearchConfiguration) GetPort() string {
 	return esConfig.port
 }
 
@@ -156,45 +156,45 @@ func GetConfig(fileName string) (
 }
 
 func readServiceConfig() *ServerConfiguration {
-	configSecretKey := viper.GetString("secret_key")
-	configAuthTokenValidityPeriod := viper.GetInt("auth_token_validity_period")
-	configRefreshTokenValidityPeriod := viper.GetInt("refresh_token_validity_period")
+	secretKey := viper.GetString("secret_key")
+	authTokenValidityPeriod := viper.GetInt("auth_token_validity_period")
+	refreshTokenValidityPeriod := viper.GetInt("refresh_token_validity_period")
 
-	if configSecretKey == "" || configAuthTokenValidityPeriod <= 0 || configRefreshTokenValidityPeriod <= 0 {
+	if secretKey == "" || authTokenValidityPeriod <= 0 || refreshTokenValidityPeriod <= 0 {
 		log.WithFields(log.Fields{
-			"secret key":              configSecretKey,
-			"auth validity period":    configAuthTokenValidityPeriod,
-			"refresh validity period": configRefreshTokenValidityPeriod,
+			"secret key":              secretKey,
+			"auth validity period":    authTokenValidityPeriod,
+			"refresh validity period": refreshTokenValidityPeriod,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
 	return &ServerConfiguration{
-		secretKey:                  []byte(configSecretKey),
-		authTokenValidityPeriod:    configAuthTokenValidityPeriod,
-		refreshTokenValidityPeriod: configRefreshTokenValidityPeriod,
+		secretKey:                  []byte(secretKey),
+		authTokenValidityPeriod:    authTokenValidityPeriod,
+		refreshTokenValidityPeriod: refreshTokenValidityPeriod,
 	}
 }
 
 func readDatabaseConfig() *DatabaseConfiguration {
-	configDBUsername := viper.GetString("database.username")
-	configDBPassword := viper.GetString("database.password")
-	configDBHost := viper.GetString("database.host")
-	configDBPort := viper.GetString("database.port")
+	username := viper.GetString("database.username")
+	password := viper.GetString("database.password")
+	host := viper.GetString("database.host")
+	port := viper.GetString("database.port")
 
-	if configDBUsername == "" || configDBPassword == "" || configDBHost == "" || configDBPort == "" {
+	if username == "" || password == "" || host == "" || port == "" {
 		log.WithFields(log.Fields{
-			"username": configDBUsername,
-			"password": configDBPassword,
-			"host":     configDBHost,
-			"port":     configDBPort,
+			"username": username,
+			"password": password,
+			"host":     host,
+			"port":     port,
 		}).Fatal("Config file doesn't contain valid database access data.")
 	}
 
 	return &DatabaseConfiguration{
-		username: configDBUsername,
-		password: configDBPassword,
-		host:     configDBHost,
-		port:     configDBPort,
+		username: username,
+		password: password,
+		host:     host,
+		port:     port,
 	}
 }
 
@@ -225,50 +225,50 @@ func readCacheConfig() *RedisCacheConfiguration {
 }
 
 func readAuthorizationConfig() *AuthorizationGoogleConfiguration {
-	configClientID := viper.GetString("authorization_google.client_id")
-	configClientSecret := viper.GetString("authorization_google.client_secret")
-	configCallbackURI := viper.GetString("authorization_google.callback_uri")
-	configAuthURL := viper.GetString("authorization_google.auth_url")
-	configTokenURL := viper.GetString("authorization_google.token_url")
+	clientID := viper.GetString("authorization_google.client_id")
+	clientSecret := viper.GetString("authorization_google.client_secret")
+	callbackURI := viper.GetString("authorization_google.callback_uri")
+	authURL := viper.GetString("authorization_google.auth_url")
+	tokenURL := viper.GetString("authorization_google.token_url")
 
-	if configClientID == "" || configClientSecret == "" {
+	if clientID == "" || clientSecret == "" {
 		log.WithFields(log.Fields{
-			"client_id":     configClientID,
-			"client_secret": configClientSecret,
-			"callback_uri":  configCallbackURI,
-			"auth_url":      configAuthURL,
-			"token_url":     configTokenURL,
+			"client_id":     clientID,
+			"client_secret": clientSecret,
+			"callback_uri":  callbackURI,
+			"auth_url":      authURL,
+			"token_url":     tokenURL,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
 	return &AuthorizationGoogleConfiguration{
-		clientID:     configClientID,
-		clientSecret: configClientSecret,
-		callbackURI:  configCallbackURI,
-		authURL:      configAuthURL,
-		tokenURL:     configTokenURL,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		callbackURI:  callbackURI,
+		authURL:      authURL,
+		tokenURL:     tokenURL,
 	}
 }
 
-func readElasticsearchConfig() *ElasticSearchConfiguration {
-	configESUsername := viper.GetString("elasticsearch.username")
-	configESPassword := viper.GetString("elasticsearch.password")
-	configESHost := viper.GetString("elasticsearch.host")
-	configESPort := viper.GetString("elasticsearch.port")
+func readElasticsearchConfig() *ElasticsearchConfiguration {
+	username := viper.GetString("elasticsearch.username")
+	password := viper.GetString("elasticsearch.password")
+	host := viper.GetString("elasticsearch.host")
+	port := viper.GetString("elasticsearch.port")
 
-	if configESUsername == "" || configESPassword == "" || configESHost == "" || configESPort == "" {
+	if username == "" || password == "" || host == "" || port == "" {
 		log.WithFields(log.Fields{
-			"username": configESUsername,
-			"password": configESPassword,
-			"host":     configESHost,
-			"port":     configESPort,
+			"username": username,
+			"password": password,
+			"host":     host,
+			"port":     port,
 		}).Fatal("Config file doesn't contain valid elasticsearch access data.")
 	}
 
-	return &ElasticSearchConfiguration{
-		username: configESUsername,
-		password: configESPassword,
-		host:     configESHost,
-		port:     configESPort,
+	return &ElasticsearchConfiguration{
+		username: username,
+		password: password,
+		host:     host,
+		port:     port,
 	}
 }

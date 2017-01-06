@@ -136,7 +136,7 @@ func (s *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
 	return nil
 }
 
-func (s *TweetStorage) GetTweetsUsingQuerystring(querystring string, requestingUserID int64) ([]*model.Tweet, error) {
+func (s *TweetStorage) GetTweetsUsingQueryString(querystring string, requestingUserID int64) ([]*model.Tweet, error) {
 	tweetsIDs := make([]int64, 0)
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweets", "querystring", querystring}, &tweetsIDs); !exists {

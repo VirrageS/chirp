@@ -182,7 +182,7 @@ func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.Pub
 	return followees, nil
 }
 
-func (s *UserStorage) GetUsersUsingQuerystring(querystring string, requestingUserID int64) ([]*model.PublicUser, error) {
+func (s *UserStorage) GetUsersUsingQueryString(querystring string, requestingUserID int64) ([]*model.PublicUser, error) {
 	usersIDs := make([]int64, 0)
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"users", "querystring", querystring}, &usersIDs); !exists {

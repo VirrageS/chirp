@@ -10,14 +10,16 @@ import (
 	"gopkg.in/olivere/elastic.v5"
 )
 
-const indexName = "fts"
+const (
+	indexName = "fts"
 
-const tweetType = "tweet"
-const tweetContentField = "content"
+	tweetType         = "tweet"
+	tweetContentField = "content"
 
-const userType = "user"
-const userNameField = "name"
-const userUsernameField = "username"
+	userType          = "user"
+	userNameField     = "name"
+	userUsernameField = "username"
+)
 
 type ElasticsearchClient struct {
 	*elastic.Client
@@ -64,19 +66,21 @@ func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fiel
 	}
 
 	totalHits := searchResult.Hits.TotalHits
-	IDs := make([]int64, totalHits)
+	ids := make([]int64, totalHits)
 
 	for i, hit := range searchResult.Hits.Hits {
-		var ID idStruct
+		var id struct {
+			ID int64 `json:"id" binding:"required"`
+		}
 
-		err := json.Unmarshal(*hit.Source, &ID)
+		err := json.Unmarshal(*hit.Source, &id)
 		if err != nil {
 			return nil, err
 		}
 
-		IDs[i] = ID.ID
+		ids[i] = id.ID
 	}
 
 	// results from elasticsearch are sorted by score by default, so we don't need to sort ourselves
-	return IDs, nil
+	return ids, nil
 }

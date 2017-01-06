@@ -29,7 +29,6 @@ func New(
 	dbConnection *sql.DB,
 	redis cache.CacheProvider,
 	elasticsearch fulltextsearch.Searcher,
-	elasticsearch fulltextsearch.Searcher,
 	tokenManager token.TokenManagerProvider,
 	serverConfig config.ServiceConfigProvider,
 	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,

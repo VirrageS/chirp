@@ -16,7 +16,7 @@ func (api *API) Search(context *gin.Context) {
 		return
 	}
 
-	ftsResult, err := api.Service.FullTextSearch(queryString, requestingUserID)
+	ftsResult, err := api.service.FullTextSearch(queryString, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)

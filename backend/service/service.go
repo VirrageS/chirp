@@ -166,12 +166,12 @@ func (service *Service) UserFollowees(userID, requestingUserID int64) ([]*model.
 }
 
 func (service *Service) FullTextSearch(queryString string, requestingUserID int64) (*model.FullTextSearchResponse, error) {
-	tweets, err := service.storage.GetTweetsUsingQuerystring(queryString, requestingUserID)
+	tweets, err := service.storage.GetTweetsUsingQueryString(queryString, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
 
-	users, err := service.storage.GetUsersUsingQuerystring(queryString, requestingUserID)
+	users, err := service.storage.GetUsersUsingQueryString(queryString, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
