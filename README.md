@@ -87,11 +87,11 @@ Then, depending on the services we want to start we have to type:
 If you want use production Docker you have to add this line to `/etc/hosts`:
 
 ```
-127.0.0.1   backend.local frontend.local
+127.0.0.1   backend.show frontend.show
 ```
 
 It is because we are not using any external domains yet. Then you can just hit
-`frontend.local/` and now you are able to access fully working project ^^.
+`frontend.show/` and now you are able to access fully working project ^^.
 
 
 
