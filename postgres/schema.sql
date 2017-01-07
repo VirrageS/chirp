@@ -1,3 +1,7 @@
+CREATE SCHEMA partman;
+CREATE EXTENSION pg_partman SCHEMA partman;
+
+
 CREATE TABLE users (
   id               SERIAL PRIMARY KEY,
   twitter_token    VARCHAR(255) UNIQUE,
@@ -24,6 +28,13 @@ CREATE INDEX users_google_token_idx ON users (google_token);
 CREATE INDEX users_username_idx ON users (username);
 CREATE INDEX users_email_idx ON users (email);
 CREATE INDEX users_active_idx ON users (active);
+
+
+-- create partition on `id` field every 100000 rows
+-- SELECT partman.create_parent('public.users', 'id', 'id', '100000');
+
+-- create partition on `created_at` field every month 
+-- SELECT partman.create_parent('public.users', 'created_at', 'time', 'monthly');
 
 
 CREATE TABLE follows (
