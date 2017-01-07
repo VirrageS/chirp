@@ -165,6 +165,25 @@ func (service *Service) UserFollowees(userID, requestingUserID int64) ([]*model.
 	return followers, nil
 }
 
+func (service *Service) FullTextSearch(queryString string, requestingUserID int64) (*model.FullTextSearchResponse, error) {
+	tweets, err := service.storage.GetTweetsUsingQueryString(queryString, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := service.storage.GetUsersUsingQueryString(queryString, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &model.FullTextSearchResponse{
+		Users:  users,
+		Tweets: tweets,
+	}
+
+	return result, nil
+}
+
 func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
 	newUser, err := service.storage.InsertUser(newUserForm)
 

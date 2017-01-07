@@ -10,23 +10,27 @@ import (
 
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/database"
+	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
-// Struct that implements UserDataAcessor using given DAO and cache
+// Struct that implements UserDataAcessor using given DAO, cache and full text search provider
 type UserStorage struct {
 	userDAO    database.UserDAO
 	followsDAO database.FollowsDAO
 	cache      cache.CacheProvider
+	fts        fulltextsearch.UserSearcher
 }
 
-// Constructs UserStorage that uses given userDAO, followsDAO and CacheProvider
-func NewUserStorage(userDAO database.UserDAO, followsDAO database.FollowsDAO, cache cache.CacheProvider) *UserStorage {
+// Constructs UserStorage that uses given userDAO, followsDAO, CacheProvider and UserSearcher
+func NewUserStorage(userDAO database.UserDAO, followsDAO database.FollowsDAO, cache cache.CacheProvider,
+	fts fulltextsearch.UserSearcher) *UserStorage {
 	return &UserStorage{
 		userDAO:    userDAO,
 		followsDAO: followsDAO,
 		cache:      cache,
+		fts:        fts,
 	}
 }
 
@@ -176,6 +180,23 @@ func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.Pub
 	}
 
 	return followees, nil
+}
+
+func (s *UserStorage) GetUsersUsingQueryString(querystring string, requestingUserID int64) ([]*model.PublicUser, error) {
+	usersIDs := make([]int64, 0)
+
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"users", "querystring", querystring}, &usersIDs); !exists {
+		var err error
+
+		usersIDs, err = s.fts.GetUsersIDs(querystring)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+
+		s.cache.SetWithFields(cache.Fields{"users", "querystring", querystring}, usersIDs)
+	}
+
+	return s.getUsersByIDs(usersIDs, requestingUserID)
 }
 
 // Be careful - this is function does SIDE EFFECTS only

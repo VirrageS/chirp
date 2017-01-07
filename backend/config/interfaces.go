@@ -38,6 +38,14 @@ type RedisConfigProvider interface {
 	GetDB() int
 }
 
+// Provides Elasticsearch access configuration
+type ElasticsearchConfigProvider interface {
+	GetUsername() string
+	GetPassword() string
+	GetHost() string
+	GetPort() string
+}
+
 type AuthorizationGoogleConfigurationProvider interface {
 	GetClientID() string
 	GetClientSecret() string
