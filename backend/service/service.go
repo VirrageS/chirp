@@ -3,32 +3,22 @@ package service
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-
-	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/VirrageS/chirp/backend/storage"
-	"github.com/VirrageS/chirp/backend/token"
 )
 
 // Struct that implements APIProvider
 type Service struct {
-	config       config.ServiceConfigProvider
-	storage      storage.StorageAccessor
-	tokenManager token.TokenManagerProvider
+	storage storage.StorageAccessor
 }
 
 // Constructs a Service that uses provided objects
 func NewService(
-	config config.ServiceConfigProvider,
 	storage storage.StorageAccessor,
-	tokenManager token.TokenManagerProvider,
 ) ServiceProvider {
 	return &Service{
-		config:       config,
-		storage:      storage,
-		tokenManager: tokenManager,
+		storage: storage,
 	}
 }
 
@@ -194,7 +184,7 @@ func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.Pub
 	return newUser, nil
 }
 
-func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error) {
+func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.PublicUser, error) {
 	email := loginForm.Email
 	password := loginForm.Password
 
@@ -216,31 +206,10 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.LoginRespo
 		return nil, updateError
 	}
 
-	authToken, err := service.createAuthToken(userAuthData.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := service.createRefreshToken(userAuthData.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := service.storage.GetUserByID(userAuthData.ID, userAuthData.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	response := &model.LoginResponse{
-		AuthToken:    authToken,
-		RefreshToken: refreshToken,
-		User:         user,
-	}
-
-	return response, nil
+	return service.storage.GetUserByID(userAuthData.ID, userAuthData.ID)
 }
 
-func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoogle) (*model.LoginResponse, error) {
+func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoogle) (*model.PublicUser, error) {
 	user, err := service.storage.GetUserByEmail(newUserGoogle.Email)
 	if err == errors.NoResultsError {
 		// TODO: add picture field and mark that this user is connected to google
@@ -271,47 +240,4 @@ func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoo
 	}
 
 	return service.LoginUser(loginForm)
-}
-
-func (service *Service) RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error) {
-	userID, err := service.tokenManager.ValidateToken(request.RefreshToken)
-	if err != nil {
-		log.WithError(err).Error("Error validating token in RefreshAuthToken.")
-		return nil, err
-	}
-
-	// check if authenticating user exists
-	_, err = service.storage.GetUserByID(userID, userID)
-	if err == errors.NoResultsError {
-		return nil, errors.NotExistingUserAuthenticatingError
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	// generate new auth token for the user
-	authToken, err := service.createAuthToken(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	response := &model.RefreshAuthTokenResponse{
-		AuthToken: authToken,
-	}
-
-	return response, nil
-}
-
-func (service *Service) createAuthToken(userID int64) (string, error) {
-	return service.tokenManager.CreateToken(
-		userID,
-		service.config.GetAuthTokenValidityPeriod(),
-	)
-}
-
-func (service *Service) createRefreshToken(userID int64) (string, error) {
-	return service.tokenManager.CreateToken(
-		userID,
-		service.config.GetRefreshTokenValidityPeriod(),
-	)
 }

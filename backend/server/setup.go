@@ -30,7 +30,6 @@ func New(
 	redis cache.CacheProvider,
 	elasticsearch fulltextsearch.Searcher,
 	tokenManager token.TokenManagerProvider,
-	serverConfig config.ServiceConfigProvider,
 	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
 ) *gin.Engine {
 	// api dependencies
@@ -41,9 +40,9 @@ func New(
 	tweetDAO := database.NewTweetDAO(dbConnection)
 	likesDAO := database.NewLikesDAO(dbConnection)
 
-	db := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis, elasticsearch)
-	services := service.NewService(serverConfig, db, tokenManager)
-	apis := api.NewAPI(services, authorizationGoogleConfig)
+	storage := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis, elasticsearch)
+	services := service.NewService(storage)
+	apis := api.NewAPI(services, tokenManager, authorizationGoogleConfig)
 
 	return setupRouter(apis, tokenManager, CORSConfig)
 }

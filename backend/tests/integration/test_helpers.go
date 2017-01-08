@@ -243,7 +243,7 @@ type requestBuilder struct {
 
 // Create new request builder struct
 func request(method, url string, body io.Reader) *requestBuilder {
-	request, _ := http.NewRequest(method, url, body)
+	request := httptest.NewRequest(method, url, body)
 
 	return &requestBuilder{
 		request: request,

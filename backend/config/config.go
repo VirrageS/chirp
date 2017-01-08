@@ -132,7 +132,7 @@ func (esConfig *ElasticsearchConfiguration) GetPort() string {
 
 // TODO: Maybe read the config only once on init() or something and then return the global object?
 func GetConfig(fileName string) (
-	ServiceConfigProvider,
+	TokenManagerConfig,
 	DBConfigProvider,
 	RedisConfigProvider,
 	AuthorizationGoogleConfigurationProvider,
@@ -146,13 +146,13 @@ func GetConfig(fileName string) (
 		log.WithError(err).Fatal("Error reading config file.")
 	}
 
-	serviceConfig := readServiceConfig()
+	tokenMangerConfig := readServiceConfig()
 	databaseConfig := readDatabaseConfig()
 	cacheConfig := readCacheConfig()
 	authorizationConfig := readAuthorizationConfig()
 	elasticsearchConfig := readElasticsearchConfig()
 
-	return serviceConfig, databaseConfig, cacheConfig, authorizationConfig, elasticsearchConfig
+	return tokenMangerConfig, databaseConfig, cacheConfig, authorizationConfig, elasticsearchConfig
 }
 
 func readServiceConfig() *ServerConfiguration {

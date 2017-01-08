@@ -4,6 +4,7 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/service"
 
+	"github.com/VirrageS/chirp/backend/token"
 	"golang.org/x/oauth2"
 )
 
@@ -11,12 +12,14 @@ import (
 type API struct {
 	// logger?
 	service      service.ServiceProvider
+	tokenManager token.TokenManagerProvider
 	googleOAuth2 oauth2.Config
 }
 
 // Constructs an API object that uses given ServiceProvider.
 func NewAPI(
 	service service.ServiceProvider,
+	tokenManager token.TokenManagerProvider,
 	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
 ) APIProvider {
 	googleOAuth2 := oauth2.Config{
@@ -32,6 +35,7 @@ func NewAPI(
 
 	return &API{
 		service:      service,
+		tokenManager: tokenManager,
 		googleOAuth2: googleOAuth2,
 	}
 }

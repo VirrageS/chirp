@@ -3,26 +3,32 @@ package token
 import (
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
-	"time"
 
 	"github.com/VirrageS/chirp/backend/config"
 	serviceErrors "github.com/VirrageS/chirp/backend/model/errors"
 )
 
 type TokenManager struct {
-	secretKey []byte
+	secretKey                  []byte
+	authTokenValidityPeriod    int
+	refreshTokenValidityPeriod int
 }
 
-func NewTokenManager(secretKey config.SecretKeyProvider) TokenManagerProvider {
+func NewTokenManager(config config.TokenManagerConfig) TokenManagerProvider {
 	return &TokenManager{
-		secretKey: secretKey.GetSecretKey(),
+		secretKey:                  config.GetSecretKey(),
+		authTokenValidityPeriod:    config.GetAuthTokenValidityPeriod(),
+		refreshTokenValidityPeriod: config.GetRefreshTokenValidityPeriod(),
 	}
 }
 
-func (manager *TokenManager) ValidateToken(tokenString string) (int64, error) {
+func (manager *TokenManager) ValidateToken(tokenString string, request *http.Request) (int64, error) {
 	// set up a parser that doesn't validate expiration time
 	parser := jwt.Parser{}
 	parser.SkipClaimsValidation = true
@@ -51,17 +57,56 @@ func (manager *TokenManager) ValidateToken(tokenString string) (int64, error) {
 			return 0, errors.New("Token has expired.")
 		}
 
+		// check if requester IP is correct
+		if err := manager.verifyIP(claims, request); err != nil {
+			return 0, err
+		}
+
 		return int64(userID), nil
 	}
 
 	return 0, errors.New("Malformed authentication token.")
 }
 
-func (manager *TokenManager) CreateToken(userID int64, duration int) (string, error) {
+func (manager *TokenManager) CreateAuthToken(userID int64, request *http.Request) (string, error) {
+	return manager.createToken(userID, request, manager.authTokenValidityPeriod)
+}
+
+func (manager *TokenManager) CreateRefreshToken(userID int64, request *http.Request) (string, error) {
+	return manager.createToken(userID, request, manager.refreshTokenValidityPeriod)
+}
+
+func (manager *TokenManager) verifyIP(claims jwt.MapClaims, request *http.Request) error {
+	requestIP, err := manager.getIPFromRequest(request)
+	if err != nil {
+		return fmt.Errorf("Malformed request: %s.", err)
+	}
+
+	claimsExpectedIP, isSetAllowedIP := claims["allowedIP"]
+	expectedIP, ok := claimsExpectedIP.(string)
+	if !ok || !isSetAllowedIP {
+		return errors.New("Token does not contain required data.")
+	}
+
+	if requestIP != expectedIP {
+		return errors.New("Token is not allowed to be used from this IP.")
+	}
+
+	return nil
+}
+
+func (manager *TokenManager) createToken(userID int64, request *http.Request, duration int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(duration) * time.Minute)
+	clientIP, err := manager.getIPFromRequest(request)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to sign token.")
+		return "", serviceErrors.UnexpectedError
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": userID,
-		"exp":    expirationTime.Unix(),
+		"userID":    userID,
+		"allowedIP": clientIP,
+		"exp":       expirationTime.Unix(),
 	})
 
 	tokenString, err := token.SignedString(manager.secretKey)
@@ -71,4 +116,33 @@ func (manager *TokenManager) CreateToken(userID int64, duration int) (string, er
 	}
 
 	return tokenString, nil
+}
+
+func (manager *TokenManager) getIPFromRequest(request *http.Request) (string, error) {
+	// We expect the realclient IP to be in X-Real-Ip header
+	if headerIP := request.Header.Get("X-Real-Ip"); headerIP != "" {
+		return headerIP, nil
+	}
+
+	// If IP was not present in X-Real-Ip header, we assume that RemoteAddr is the real client IP
+	remoteAddr := request.RemoteAddr
+	if remoteAddr == "" {
+		log.WithField("request", fmt.Sprintf("%+v", request)).
+			Error("No RemoteAddr and X-Real-IP header in request in verifyIP.")
+
+		return "", errors.New("no client IP was provided")
+	}
+
+	headerIP, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error":   err,
+			"request": fmt.Sprintf("%+v", request),
+			"address": remoteAddr,
+		}).Error("Error splitting RemoteAddr header value into host:port.")
+
+		return "", errors.New("invalid RemoteAddr format, expected host:port format")
+	}
+
+	return headerIP, nil
 }

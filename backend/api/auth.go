@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"golang.org/x/oauth2"
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/model"
-	"golang.org/x/oauth2"
 )
 
 func (api *API) RegisterUser(context *gin.Context) {
@@ -44,19 +44,32 @@ func (api *API) LoginUser(context *gin.Context) {
 		return
 	}
 
-	loginResponse, err := api.service.LoginUser(&loginForm)
+	loggedUser, err := api.service.LoginUser(&loginForm)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
 
+	authToken, refreshToken, err := api.createTokens(loggedUser.ID, context.Request)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	loginResponse := &model.LoginResponse{
+		AuthToken:    authToken,
+		RefreshToken: refreshToken,
+		User:         loggedUser,
+	}
+
 	context.IndentedJSON(http.StatusOK, loginResponse)
 }
 
 func (api *API) RefreshAuthToken(context *gin.Context) {
-	var request model.RefreshAuthTokenRequest
-	if err := context.BindJSON(&request); err != nil {
+	var requestData model.RefreshAuthTokenRequest
+	if err := context.BindJSON(&requestData); err != nil {
 		context.AbortWithError(
 			http.StatusBadRequest,
 			errors.New("Fields: user_id and refresh_token are required."),
@@ -64,7 +77,7 @@ func (api *API) RefreshAuthToken(context *gin.Context) {
 		return
 	}
 
-	response, err := api.service.RefreshAuthToken(&request)
+	response, err := api.refreshAuthToken(&requestData, context.Request)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -116,11 +129,25 @@ func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
 		return
 	}
 
-	loginResponse, err := api.service.CreateOrLoginUserWithGoogle(&user)
+	loggedUser, err := api.service.CreateOrLoginUserWithGoogle(&user)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
+
+	authToken, refreshToken, err := api.createTokens(loggedUser.ID, context.Request)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	loginResponse := &model.LoginResponse{
+		AuthToken:    authToken,
+		RefreshToken: refreshToken,
+		User:         loggedUser,
+	}
+
 	context.IndentedJSON(http.StatusOK, loginResponse)
 }

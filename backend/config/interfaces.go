@@ -5,13 +5,8 @@ import "time"
 // Interfaces that provide only those parameters that are required by different parts of the system
 
 // Provides secret key
-type SecretKeyProvider interface {
+type TokenManagerConfig interface {
 	GetSecretKey() []byte
-}
-
-// Provides configuration for ServiceProvider
-type ServiceConfigProvider interface {
-	SecretKeyProvider
 	GetAuthTokenValidityPeriod() int
 	GetRefreshTokenValidityPeriod() int
 }
