@@ -12,12 +12,10 @@
   </div>
 
   <div *ngIf="users.length > 0" class="search__results">
-    <div class="search__results__heading">Users</div>
     <users [users]="users"></users>
   </div>
 
   <div *ngIf="tweets.length > 0" class="search__results">
-    <div class="search__results__heading">Tweets</div>
     <tweets [tweets]="tweets"></tweets>
   </div>
 </div>

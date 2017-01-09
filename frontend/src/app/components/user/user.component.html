@@ -1,3 +1,17 @@
 <div class="user">
-  {{ user.name }}
+  <div class="user__header">
+    <div class="user__avatar">
+      <img src="https://pbs.twimg.com/profile_images/813987688026173440/nYQIQa0s_400x400.jpg" />
+    </div>
+    <div class="user__follow">
+      <button class="btn btn-{{ !user.following ? 'success' : 'danger' }} btn-sm btn-follow" (click)=_toggleFollow()>
+        <i class="fa fa-{{ !user.following ? 'plus' : 'times' }}" aria-hidden="true"></i>
+        <span class="btn-text">{{ !user.following ? 'follow' : 'unfollow' }}</span>
+      </button>
+    </div>
+  </div>
+  <div class="user__info">
+    <div class="user__name">{{ user.name }}</div>
+    <div class="user__username">@{{ user.username }}</div>
+  </div>
 </div>

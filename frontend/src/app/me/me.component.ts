@@ -20,8 +20,8 @@ export class MeComponent {
 
     this._store.changes.pluck("user")
       .subscribe((user: any) => {
-        // this.following = user.followee_count
-        // this.followers = user.follower_count
+        this.following = user.followee_count
+        this.followers = user.follower_count
       })
   }
 }

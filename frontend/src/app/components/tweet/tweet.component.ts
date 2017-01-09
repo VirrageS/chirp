@@ -1,8 +1,7 @@
 import { Component, Input } from '@angular/core';
 
-import { Tweet, TweetService, UserService } from '../../shared';
-
-import '../../../../public/scss/abstract.scss';
+import { Tweet, TweetService, User, UserService } from '../../shared';
+import { Store } from '../../store';
 
 
 @Component({
@@ -12,12 +11,15 @@ import '../../../../public/scss/abstract.scss';
 })
 export class TweetComponent {
   @Input() tweet: Tweet
+  loggedUser: User
 
   constructor(
     private _tweetService: TweetService,
-    private _userService: UserService
+    private _userService: UserService,
+    private _store: Store
   ) {
-
+    this._store.changes.pluck("user")
+      .subscribe((user: any) => this.loggedUser = user)
   }
 
   private _follow() {
@@ -32,7 +34,7 @@ export class TweetComponent {
     this.tweet.liked = !this.tweet.liked
 
     let toggleFunc = this._tweetService.like(this.tweet.id)
-    if (this.tweet.liked) {
+    if (!this.tweet.liked) {
       toggleFunc = this._tweetService.unlike(this.tweet.id)
     }
 
