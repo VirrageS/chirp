@@ -978,6 +978,44 @@ paths:
                 type: string
                 description: Error message.
 
+  /search:
+    get:
+      summary: Perform a full text search with a provided querystring on tweets
+        content and users name and username.
+      parameters:
+        - name: Authorization
+          in: header
+          type: string
+          required: true
+          description: Authorization token using Bearer schema.
+        - name: QueryString
+          in: query
+          type: string
+          required: true
+          description: String on which the search will be performed.
+      tags:
+        - Search
+      responses:
+        200:
+          description: Object containing array of users and tweets that match
+            provided QueryString.
+          schema:
+            $ref: '#/definitions/SearchResponse'
+        401:
+          description: User authorization failed.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+        500:
+          description: Unexpected error happened.
+          schema:
+            properties:
+              error:
+                type: string
+                description: Error message.
+
 definitions:
   User:
     type: object
@@ -1065,3 +1103,15 @@ definitions:
     properties:
       content:
         type: string
+
+  SearchResponse:
+    type: object
+    properties:
+      users:
+        type: array
+        items:
+          $ref: "#/definitions/User"
+      tweets:
+        type: array
+        items:
+          $ref: "#/definitions/Tweet"

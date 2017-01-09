@@ -38,7 +38,7 @@ services:
   elasticsearch:
     extends:
       file: core.yml
-      service: elasitcsearch
+      service: elasticsearch
 
   logstash:
     restart: always
