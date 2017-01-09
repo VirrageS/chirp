@@ -9,7 +9,7 @@ import { AppComponent }   from './app.component';
 
 import {
   ApiService, AuthService, StoreHelper,
-  TweetService, UserService,
+  TweetService, UserService, SearchService
 } from './shared';
 import { Store } from './store';
 
@@ -62,6 +62,7 @@ import { MeModule } from './me'
     Store,
     TweetService,
     UserService,
+    SearchService,
   ],
   bootstrap: [AppComponent]
  })

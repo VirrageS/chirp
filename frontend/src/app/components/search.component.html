@@ -1,0 +1,22 @@
+<div class="search__box">
+  <input #searchBox id="search-box" class="form-control" (keyup)="search(searchBox.value)"/>
+</div>
+
+<div class="search__content">
+  <div *ngIf="users.length == 0 && tweets.length == 0 && searchBox.value.length > 0" class="search__no_results">
+    <div class="no_results__heading">No results found</div>
+    <div class="no_results__description">We've searched more than million rows but nothing was found.</div>
+  </div>
+
+  <div *ngIf="users.length > 0" class="search__results">
+    <div class="search__results__heading">Users</div>
+    <div *ngFor="let user of users" class="search__result">
+      {{ user.name }}
+    </div>
+  </div>
+
+  <div *ngIf="tweets.length > 0" class="search__results">
+    <div class="search__results__heading">Tweets</div>
+    <tweets [tweets]="tweets"></tweets>
+  </div>
+</div>
