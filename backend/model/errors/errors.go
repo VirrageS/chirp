@@ -11,3 +11,5 @@ var ForbiddenError = errors.New("User is not allowed to modify this resource.")
 var InvalidCredentialsError = errors.New("Invalid email or password.")
 
 var NotExistingUserAuthenticatingError = errors.New("User authenticating with auth token of a user that does not exist.")
+
+var NoUserAgentHeaderError = errors.New("User-Agent header is required in request for API authorization.")

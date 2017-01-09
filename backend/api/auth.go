@@ -1,16 +1,14 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
+	"golang.org/x/oauth2"
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/model"
-	"golang.org/x/oauth2"
 )
 
 func (api *API) RegisterUser(context *gin.Context) {
@@ -44,27 +42,40 @@ func (api *API) LoginUser(context *gin.Context) {
 		return
 	}
 
-	loginResponse, err := api.service.LoginUser(&loginForm)
+	loggedUser, err := api.service.LoginUser(&loginForm)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
 
+	authToken, refreshToken, err := api.createTokens(loggedUser.ID, context.Request)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	loginResponse := &model.LoginResponse{
+		AuthToken:    authToken,
+		RefreshToken: refreshToken,
+		User:         loggedUser,
+	}
+
 	context.IndentedJSON(http.StatusOK, loginResponse)
 }
 
 func (api *API) RefreshAuthToken(context *gin.Context) {
-	var request model.RefreshAuthTokenRequest
-	if err := context.BindJSON(&request); err != nil {
+	var requestData model.RefreshAuthTokenRequest
+	if err := context.BindJSON(&requestData); err != nil {
 		context.AbortWithError(
 			http.StatusBadRequest,
-			errors.New("Fields: user_id and refresh_token are required."),
+			errors.New("Fields: `user_id` and `refresh_token` are required."),
 		)
 		return
 	}
 
-	response, err := api.service.RefreshAuthToken(&request)
+	response, err := api.refreshAuthToken(&requestData, context.Request)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
@@ -74,7 +85,7 @@ func (api *API) RefreshAuthToken(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, response)
 }
 
-func (api *API) GetGoogleAutorizationURL(context *gin.Context) {
+func (api *API) GetGoogleAuthorizationURL(context *gin.Context) {
 	token := "TODO" // TODO: this should be generated hash from IP Address and browser name / browser_id
 	context.IndentedJSON(http.StatusOK, api.googleOAuth2.AuthCodeURL(token, oauth2.AccessTypeOffline))
 }
@@ -90,37 +101,34 @@ func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
 	}
 
 	if form.State != "TODO" {
-		context.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state"))
+		context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Google login form."))
 		return
 	}
 
-	token, err := api.googleOAuth2.Exchange(oauth2.NoContext, form.Code)
+	user, err := api.getGoogleUser(form.Code)
 	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, err)
-		return
+		context.AbortWithError(http.StatusBadRequest, errors.New("Error fetching user from Google."))
 	}
 
-	client := api.googleOAuth2.Client(oauth2.NoContext, token)
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
-	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-	defer resp.Body.Close()
-	data, _ := ioutil.ReadAll(resp.Body)
-
-	user := model.UserGoogle{}
-	err = json.Unmarshal([]byte(data), &user)
-	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-
-	loginResponse, err := api.service.CreateOrLoginUserWithGoogle(&user)
+	loggedUser, err := api.service.CreateOrLoginUserWithGoogle(user)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
+
+	authToken, refreshToken, err := api.createTokens(loggedUser.ID, context.Request)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	loginResponse := &model.LoginResponse{
+		AuthToken:    authToken,
+		RefreshToken: refreshToken,
+		User:         loggedUser,
+	}
+
 	context.IndentedJSON(http.StatusOK, loginResponse)
 }

@@ -14,7 +14,7 @@ func TokenAuthenticator(tokenManager token.TokenManagerProvider) gin.HandlerFunc
 		fullTokenString := context.Request.Header.Get("Authorization")
 		tokenString := strings.TrimPrefix(fullTokenString, "Bearer ")
 
-		userID, err := tokenManager.ValidateToken(tokenString)
+		userID, err := tokenManager.ValidateToken(tokenString, context.Request)
 		if err != nil {
 			context.AbortWithError(http.StatusUnauthorized, err)
 			return

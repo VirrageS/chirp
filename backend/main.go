@@ -27,6 +27,6 @@ func main() {
 	elasticsearch := fulltextsearch.NewElasticsearch(elasticsearchConfig)
 	tokenManager := token.NewTokenManager(serverConfig)
 
-	s := server.New(db, redis, elasticsearch, tokenManager, serverConfig, authorizationGoogleConfig)
+	s := server.New(db, redis, elasticsearch, tokenManager, authorizationGoogleConfig)
 	s.Run(":8080")
 }

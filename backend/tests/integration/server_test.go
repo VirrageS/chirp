@@ -51,7 +51,7 @@ var _ = Describe("ServerTest", func() {
 		dummyCache := cache.NewDummyCache()
 		dummySearch := fulltextsearch.NewDummySearch()
 		tokenManager = token.NewTokenManager(testConfig)
-		router = server.New(db, dummyCache, dummySearch, tokenManager, testConfig, authorizationGoogleConfig)
+		router = server.New(db, dummyCache, dummySearch, tokenManager, authorizationGoogleConfig)
 
 		// create users
 		ala = createUser(router, "ala")
@@ -685,7 +685,7 @@ var _ = Describe("ServerTest", func() {
 		})
 
 		It("should return bad request when trying to refresh token using a token of a user that does not exist", func() {
-			refreshToken, _ := tokenManager.CreateToken(-1, 10)
+			refreshToken, _ := tokenManager.CreateRefreshToken(-1, httptest.NewRequest("GET", "/whatever", nil))
 			refreshTokenRequest := &model.RefreshAuthTokenRequest{
 				RefreshToken: refreshToken,
 			}

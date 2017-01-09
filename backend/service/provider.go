@@ -20,7 +20,6 @@ type ServiceProvider interface {
 	FullTextSearch(queryString string, requestingUserID int64) (*model.FullTextSearchResponse, error)
 
 	RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error)
-	LoginUser(loginForm *model.LoginForm) (*model.LoginResponse, error)
-	RefreshAuthToken(request *model.RefreshAuthTokenRequest) (*model.RefreshAuthTokenResponse, error)
-	CreateOrLoginUserWithGoogle(userGoogle *model.UserGoogle) (*model.LoginResponse, error)
+	LoginUser(loginForm *model.LoginForm) (*model.PublicUser, error)
+	CreateOrLoginUserWithGoogle(userGoogle *model.UserGoogle) (*model.PublicUser, error)
 }
