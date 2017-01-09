@@ -81,44 +81,6 @@ func (manager *TokenManager) CreateRefreshToken(userID int64, request *http.Requ
 	return manager.createToken(userID, request, manager.refreshTokenValidityPeriod)
 }
 
-func (manager *TokenManager) verifyIP(claims jwt.MapClaims, request *http.Request) error {
-	requestIP, err := manager.getIPFromRequest(request)
-	if err != nil {
-		return fmt.Errorf("Malformed request: %s.", err)
-	}
-
-	claimsExpectedIP, isSetAllowedIP := claims["allowedIP"]
-	expectedIP, ok := claimsExpectedIP.(string)
-	if !ok || !isSetAllowedIP {
-		return errors.New("Token does not contain required data.")
-	}
-
-	if requestIP != expectedIP {
-		return errors.New("Token is not allowed to be used from this IP.")
-	}
-
-	return nil
-}
-
-func (manager *TokenManager) verifyUserAgent(claims jwt.MapClaims, request *http.Request) error {
-	requestUserAgent := request.UserAgent()
-	if requestUserAgent == "" {
-		return errors.New("Malformed request: no User-Agent header.")
-	}
-
-	claimsExpectedUserAgent, isSetUserAgent := claims["allowedUserAgent"]
-	expectedUserAgent, ok := claimsExpectedUserAgent.(string)
-	if !ok || !isSetUserAgent {
-		return errors.New("Token does not contain required data: User-Agent.")
-	}
-
-	if requestUserAgent != expectedUserAgent {
-		return errors.New("Token is not allowed to be used from this User-Agent.")
-	}
-
-	return nil
-}
-
 func (manager *TokenManager) createToken(userID int64, request *http.Request, duration int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(duration) * time.Minute)
 	clientIP, err := manager.getIPFromRequest(request)
@@ -145,6 +107,44 @@ func (manager *TokenManager) createToken(userID int64, request *http.Request, du
 	}
 
 	return tokenString, nil
+}
+
+func (manager *TokenManager) verifyIP(claims jwt.MapClaims, request *http.Request) error {
+	requestIP, err := manager.getIPFromRequest(request)
+	if err != nil {
+		return fmt.Errorf("Malformed request: %s.", err)
+	}
+
+	claimsExpectedIP, isSetAllowedIP := claims["allowedIP"]
+	expectedIP, ok := claimsExpectedIP.(string)
+	if !ok || !isSetAllowedIP {
+		return errors.New("Token does not contain required data: allowedIP.")
+	}
+
+	if requestIP != expectedIP {
+		return errors.New("Token is not allowed to be used from this IP.")
+	}
+
+	return nil
+}
+
+func (manager *TokenManager) verifyUserAgent(claims jwt.MapClaims, request *http.Request) error {
+	requestUserAgent := request.UserAgent()
+	if requestUserAgent == "" {
+		return errors.New("Malformed request: no User-Agent header.")
+	}
+
+	claimsExpectedUserAgent, isSetUserAgent := claims["allowedUserAgent"]
+	expectedUserAgent, ok := claimsExpectedUserAgent.(string)
+	if !ok || !isSetUserAgent {
+		return errors.New("Token does not contain required data: allowedUserAgent.")
+	}
+
+	if requestUserAgent != expectedUserAgent {
+		return errors.New("Token is not allowed to be used from this User-Agent.")
+	}
+
+	return nil
 }
 
 func (manager *TokenManager) getIPFromRequest(request *http.Request) (string, error) {

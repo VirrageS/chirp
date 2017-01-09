@@ -211,6 +211,7 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.PublicUser
 
 func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoogle) (*model.PublicUser, error) {
 	user, err := service.storage.GetUserByEmail(newUserGoogle.Email)
+
 	if err == errors.NoResultsError {
 		// TODO: add picture field and mark that this user is connected to google
 		newUserForm := &model.NewUserForm{

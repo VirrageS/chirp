@@ -87,7 +87,7 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		auth.POST("/signup", contentTypeChecker, api.RegisterUser)
 		auth.POST("/login", contentTypeChecker, api.LoginUser)
 		auth.POST("/token", contentTypeChecker, api.RefreshAuthToken)
-		auth.GET("/authorize/google", api.GetGoogleAutorizationURL)
+		auth.GET("/authorize/google", api.GetGoogleAuthorizationURL)
 		auth.POST("/login/google", api.CreateOrLoginUserWithGoogle)
 	}
 
