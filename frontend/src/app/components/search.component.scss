@@ -1,7 +1,7 @@
 @import '../../../public/scss/main.scss';
 
 .search__box {
-  width: 500px;
+  width: 550px;
   margin: 0 auto;
 }
 
@@ -23,5 +23,18 @@
     margin-top: 5px;
 
     color: $TEXT-SECONDARY-COLOR;
+  }
+}
+
+.search__results {
+  margin-top: 20px;
+
+  &:first-of-type {
+    margin-top: 0px;
+  }
+
+  &__heading {
+    font-size: 1.4em;
+    margin-bottom: 15px;
   }
 }
