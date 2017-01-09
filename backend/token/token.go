@@ -62,6 +62,11 @@ func (manager *TokenManager) ValidateToken(tokenString string, request *http.Req
 			return 0, err
 		}
 
+		// chcek if userAgent is correct
+		if err := manager.verifyUserAgent(claims, request); err != nil {
+			return 0, err
+		}
+
 		return int64(userID), nil
 	}
 
@@ -95,23 +100,47 @@ func (manager *TokenManager) verifyIP(claims jwt.MapClaims, request *http.Reques
 	return nil
 }
 
+func (manager *TokenManager) verifyUserAgent(claims jwt.MapClaims, request *http.Request) error {
+	requestUserAgent := request.UserAgent()
+	if requestUserAgent == "" {
+		return errors.New("Malformed request: no User-Agent header.")
+	}
+
+	claimsExpectedUserAgent, isSetUserAgent := claims["allowedUserAgent"]
+	expectedUserAgent, ok := claimsExpectedUserAgent.(string)
+	if !ok || !isSetUserAgent {
+		return errors.New("Token does not contain required data: User-Agent.")
+	}
+
+	if requestUserAgent != expectedUserAgent {
+		return errors.New("Token is not allowed to be used from this User-Agent.")
+	}
+
+	return nil
+}
+
 func (manager *TokenManager) createToken(userID int64, request *http.Request, duration int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(duration) * time.Minute)
 	clientIP, err := manager.getIPFromRequest(request)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to sign token.")
+		log.WithError(err).Fatal("Failed to sign token, error getting client IP from request.")
 		return "", serviceErrors.UnexpectedError
+	}
+	userAgent := request.UserAgent()
+	if userAgent == "" {
+		return "", serviceErrors.NoUserAgentHeaderError
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID":    userID,
-		"allowedIP": clientIP,
-		"exp":       expirationTime.Unix(),
+		"userID":           userID,
+		"allowedIP":        clientIP,
+		"allowedUserAgent": userAgent,
+		"exp":              expirationTime.Unix(),
 	})
 
 	tokenString, err := token.SignedString(manager.secretKey)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to sign token.")
+		log.WithError(err).Fatal("Failed to sign token, error signing the token.")
 		return "", serviceErrors.UnexpectedError
 	}
 

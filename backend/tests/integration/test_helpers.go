@@ -244,6 +244,7 @@ type requestBuilder struct {
 // Create new request builder struct
 func request(method, url string, body io.Reader) *requestBuilder {
 	request := httptest.NewRequest(method, url, body)
+	request.Header.Set("User-Agent", "testAgent")
 
 	return &requestBuilder{
 		request: request,

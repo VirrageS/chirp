@@ -15,6 +15,7 @@ var errorToCodeMap = map[error]int{
 	errors.ForbiddenError:                     http.StatusForbidden,
 	errors.InvalidCredentialsError:            http.StatusUnauthorized,
 	errors.NotExistingUserAuthenticatingError: http.StatusBadRequest,
+	errors.NoUserAgentHeaderError:             http.StatusBadRequest,
 }
 
 func getStatusCodeFromError(err error) int {
