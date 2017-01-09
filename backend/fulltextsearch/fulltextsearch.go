@@ -62,6 +62,7 @@ func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fiel
 		Do(context.Background())
 
 	if err != nil {
+		log.WithError(err).Error("Error querying elasticsearch in getIDsFromIndex.")
 		return nil, err
 	}
 
@@ -75,6 +76,7 @@ func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fiel
 
 		err := json.Unmarshal(*hit.Source, &id)
 		if err != nil {
+			log.WithError(err).Error("Error umarshalling elasticsearch response in getIDsFromIndex.")
 			return nil, err
 		}
 
