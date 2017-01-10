@@ -5,7 +5,8 @@ import { Tweet, UserService } from '../shared';
 
 @Component({
   template: `
-    <tweets [tweets]="tweets"></tweets>
+    <h2>Chirp - the real Twitter</h2>
+    
   `
 })
 export class HomeComponent implements OnInit {

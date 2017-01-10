@@ -31,7 +31,7 @@ import { MeModule } from './me'
     RouterModule.forRoot([
       { path: '', redirectTo: '/home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
-      { path: 'search', component: SearchComponent },
+      { path: 'search', component: SearchComponent, canActivate: [AuthService] },
 
       { path: 'signup', component: SignupComponent },
       { path: 'login', component: LoginComponent },
