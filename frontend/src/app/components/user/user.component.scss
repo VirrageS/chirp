@@ -1,4 +1,52 @@
+@import '../../../../public/scss/main.scss';
+
 .user {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 240px;
+  height: 170px;
+  padding: 10px 20px;
+
+  border: 2px solid $TEXT-HINT-COLOR;
+  border-radius: 5px;
+  background-color: $WHITE-COLOR;
+
+  &__header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  &__avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 5px;
+
+    img {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  }
+
+  &__follow {
+    align-self: center;
+  }
+
+  &__info {
+    font-size: 1.1em;
+  }
+
+  &__name {
+    font-size: 1.05em;
+    font-weight: 700;
+
+    color: $TEXT-PRIMARY-COLOR;
+  }
+
+  &__username {
+    font-size: 0.85em;
+
+    color: $TEXT-SECONDARY-COLOR;
+  }
 }

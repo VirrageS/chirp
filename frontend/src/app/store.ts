@@ -6,9 +6,9 @@ import { User, Tweet } from './shared';
 
 
 export interface State {
+  user: User
   feed: Array<Tweet>
   my_tweets: Array<Tweet>
-  user: User
   my_following: Array<User>
   my_followers: Array<User>
   auth_token: string
@@ -16,9 +16,9 @@ export interface State {
 }
 
 const defaultState = {
+  user: {},
   feed: [],
   my_tweets: [],
-  user: {},
   my_following: [],
   my_followers: [],
   auth_token: '',

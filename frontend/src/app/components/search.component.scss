@@ -1,0 +1,40 @@
+@import '../../../public/scss/main.scss';
+
+.search__box {
+  width: 550px;
+  margin: 0 auto;
+}
+
+.search__content {
+  margin-top: 50px;
+}
+
+.search__no_results {
+  margin: 0 auto;
+  text-align: center;
+}
+
+.no_results {
+  &__heading {
+    font-size: 1.6em;
+  }
+
+  &__description {
+    margin-top: 5px;
+
+    color: $TEXT-SECONDARY-COLOR;
+  }
+}
+
+.search__results {
+  margin-top: 20px;
+
+  &:first-of-type {
+    margin-top: 0px;
+  }
+
+  &__heading {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+  }
+}

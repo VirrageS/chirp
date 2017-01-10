@@ -5,7 +5,7 @@
       <div class="author__name">{{ tweet.author.name }}</div>
       <div class="author__username">@{{ tweet.author.username }}</div>
     </div>
-    <button *ngIf="!tweet.author.following" class="btn btn-success btn-sm btn-follow" (click)=_follow()>
+    <button *ngIf="!tweet.author.following && tweet.author.id != loggedUser.id" class="btn btn-success btn-sm btn-follow" (click)=_follow()>
       <i class="fa fa-plus" aria-hidden="true"></i>
       <span class="btn-text">follow</span>
     </button>
