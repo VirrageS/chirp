@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 )
 
 // User Data Access Object - provides operations on User database table
@@ -69,7 +70,10 @@ func (db *userDB) GetPublicUserByID(userID int64) (*model.PublicUser, error) {
 		userID)
 
 	user, err := readPublicUser(row)
-	if err != nil && err != sql.ErrNoRows {
+	if err == sql.ErrNoRows {
+		return nil, errors.NoResultsError
+	}
+	if err != nil {
 		log.WithField("userID", userID).WithError(err).Error("GetPublicUserByID query error.")
 		return nil, err
 	}
@@ -87,7 +91,10 @@ func (db *userDB) GetUserByEmail(userEmail string) (*model.User, error) {
 		userEmail)
 
 	user, err := readUser(row)
-	if err != nil && err != sql.ErrNoRows {
+	if err == sql.ErrNoRows {
+		return nil, errors.NoResultsError
+	}
+	if err != nil {
 		log.WithField("userEmail", userEmail).WithError(err).Error("GetUserByEmail query error.")
 		return nil, err
 	}

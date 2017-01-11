@@ -81,6 +81,11 @@ func (cache *RedisCache) Increment(key string) error {
 		log.WithField("key", key).WithError(err).Error("increment: failed to increment key in cache")
 		return err
 	}
+	err = cache.client.Expire(key, cache.config.GetCacheExpirationTime()).Err()
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("increment: failed to set expiration time in cache")
+		return err
+	}
 
 	return nil
 }
@@ -95,6 +100,11 @@ func (cache *RedisCache) Decrement(key string) error {
 	err := cache.client.Decr(key).Err()
 	if err != nil {
 		log.WithField("key", key).WithError(err).Error("decrement: failed to decrement key in cache")
+		return err
+	}
+	err = cache.client.Expire(key, cache.config.GetCacheExpirationTime()).Err()
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("decrement: failed to set expiration time in cache")
 		return err
 	}
 
@@ -142,7 +152,7 @@ func (cache *RedisCache) Get(key string, value interface{}) (bool, error) {
 		log.WithFields(log.Fields{
 			"key":   key,
 			"value": result,
-		}).WithError(err).Error("get: failed to marshal value")
+		}).WithError(err).Error("get: failed to unmarshal value")
 		return false, err
 	}
 

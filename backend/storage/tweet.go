@@ -56,7 +56,7 @@ func (s *TweetStorage) GetUsersTweets(userID, requestingUserID int64) ([]*model.
 func (s *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error) {
 	var tweet *model.Tweet
 
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweetID}, tweet); !exists {
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweetID}, &tweet); !exists {
 		var err error
 
 		tweet, err = s.tweetDAO.GetTweetByID(tweetID)
@@ -91,9 +91,9 @@ func (s *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int64
 	insertedTweet.Author = author
 	// we don't need to fetch more data for the tweet, since we know that it has 0 likes, and is not liked
 
-	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID}, tweet)
-	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "liked_by", requestingUserID}, false)
-	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "like_count"}, 0)
+	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID}, insertedTweet)
+	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "islikedBy", requestingUserID}, false)
+	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "likeCount"}, 0)
 	s.cache.DeleteWithFields(cache.Fields{"tweets", requestingUserID})
 
 	return insertedTweet, nil
@@ -113,25 +113,29 @@ func (s *TweetStorage) DeleteTweet(tweetID, requestingUserID int64) error {
 }
 
 func (s *TweetStorage) LikeTweet(tweetID, requestingUserID int64) error {
-	err := s.likesDAO.LikeTweet(tweetID, requestingUserID)
+	liked, err := s.likesDAO.LikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
 
-	s.cache.SetWithFields(cache.Fields{"tweet", tweetID, "is_liked_by", requestingUserID}, true)
-	s.cache.IncrementWithFields(cache.Fields{"tweet", tweetID, "like_count"})
+	if liked {
+		s.cache.IncrementWithFields(cache.Fields{"tweet", tweetID, "likeCount"})
+	}
+	s.cache.SetWithFields(cache.Fields{"tweet", tweetID, "likedBy", requestingUserID}, true)
 
 	return nil
 }
 
 func (s *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
-	err := s.likesDAO.UnlikeTweet(tweetID, requestingUserID)
+	unliked, err := s.likesDAO.UnlikeTweet(tweetID, requestingUserID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
 
-	s.cache.SetWithFields(cache.Fields{"tweet", tweetID, "is_liked_by", requestingUserID}, false)
-	s.cache.DecrementWithFields(cache.Fields{"tweet", tweetID, "like_count"})
+	if unliked {
+		s.cache.DecrementWithFields(cache.Fields{"tweet", tweetID, "likeCount"})
+	}
+	s.cache.SetWithFields(cache.Fields{"tweet", tweetID, "likedBy", requestingUserID}, false)
 
 	return nil
 }
@@ -165,22 +169,22 @@ func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int
 		return err
 	}
 
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "like_count"}, &likeCount); !exists {
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "likeCount"}, &likeCount); !exists {
 		likeCount, err = s.likesDAO.GetLikeCount(tweet.ID)
 		if err != nil {
 			return err
 		}
 
-		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "like_count"}, likeCount)
+		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "likeCount"}, likeCount)
 	}
 
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "is_liked_by", requestingUserID}, &isLiked); !exists {
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "likedBy", requestingUserID}, &isLiked); !exists {
 		isLiked, err = s.likesDAO.IsLiked(tweet.ID, requestingUserID)
 		if err != nil {
 			return err
 		}
 
-		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "is_liked_by", requestingUserID}, isLiked)
+		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "likedBy", requestingUserID}, isLiked)
 	}
 
 	tweet.Author = author

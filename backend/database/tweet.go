@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/VirrageS/chirp/backend/model"
+	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/lib/pq"
 )
 
@@ -77,7 +78,10 @@ func (db *tweetDB) GetTweetByID(tweetID int64) (*model.Tweet, error) {
 		tweetID)
 
 	tweet, err := readTweet(row)
-	if err != nil && err != sql.ErrNoRows {
+	if err == sql.ErrNoRows {
+		return nil, errors.NoResultsError
+	}
+	if err != nil {
 		log.WithField("tweetID", tweetID).WithError(err).Error("GetTweetByID query error.")
 		return nil, err
 	}

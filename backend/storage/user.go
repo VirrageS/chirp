@@ -3,7 +3,6 @@ package storage
 // TODO: maybe prepare statements? http://go-database-sql.org/prepared.html
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/lib/pq"
@@ -41,8 +40,8 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 		var err error
 
 		user, err = s.userDAO.GetPublicUserByID(userID)
-		if err == sql.ErrNoRows {
-			return nil, errors.NoResultsError
+		if err == errors.NoResultsError {
+			return nil, err
 		}
 		if err != nil {
 			return nil, errors.UnexpectedError
@@ -67,8 +66,8 @@ func (s *UserStorage) GetUserByEmail(email string) (*model.User, error) {
 	// 100% real data for this.
 
 	user, err := s.userDAO.GetUserByEmail(email)
-	if err == sql.ErrNoRows {
-		return nil, errors.NoResultsError
+	if err == errors.NoResultsError {
+		return nil, err
 	}
 	if err != nil {
 		return nil, errors.UnexpectedError
@@ -112,27 +111,31 @@ func (s *UserStorage) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.
 }
 
 func (s *UserStorage) FollowUser(followeeID, followerID int64) error {
-	err := s.followsDAO.FollowUser(followeeID, followerID)
+	followed, err := s.followsDAO.FollowUser(followeeID, followerID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
 
+	if followed {
+		s.cache.IncrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
+		s.cache.IncrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+	}
 	s.cache.SetWithFields(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, true)
-	s.cache.IncrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
-	s.cache.IncrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
 
 	return nil
 }
 
 func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
-	err := s.followsDAO.UnfollowUser(followeeID, followerID)
+	unfollowed, err := s.followsDAO.UnfollowUser(followeeID, followerID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
 
+	if unfollowed {
+		s.cache.DecrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
+		s.cache.DecrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+	}
 	s.cache.SetWithFields(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, false)
-	s.cache.DecrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
-	s.cache.DecrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
 
 	return nil
 }

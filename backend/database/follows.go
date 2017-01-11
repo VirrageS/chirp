@@ -8,8 +8,8 @@ import (
 
 // Follows Data Access Object - provides operations on Follows database table
 type FollowsDAO interface {
-	FollowUser(followeeID, followerID int64) error
-	UnfollowUser(followeeID, followerID int64) error
+	FollowUser(followeeID, followerID int64) (bool, error)
+	UnfollowUser(followeeID, followerID int64) (bool, error)
 	GetFollowersIDs(userID int64) ([]int64, error)
 	GetFolloweesIDs(userID int64) ([]int64, error)
 	GetFollowerCount(userID int64) (int64, error)
@@ -25,8 +25,8 @@ func NewFollowsDAO(dbConnection *sql.DB) FollowsDAO {
 	return &followsDB{dbConnection}
 }
 
-func (db *followsDB) FollowUser(followeeID, followerID int64) error {
-	_, err := db.Exec(`
+func (db *followsDB) FollowUser(followeeID, followerID int64) (bool, error) {
+	result, err := db.Exec(`
 		INSERT INTO follows (followee_id, follower_id)
 		VALUES ($1, $2)
 		ON CONFLICT (followee_id, follower_id) DO NOTHING`,
@@ -37,14 +37,19 @@ func (db *followsDB) FollowUser(followeeID, followerID int64) error {
 			"followeeID": followeeID,
 			"followerID": followerID,
 		}).WithError(err).Error("FollowUser query error.")
-		return err
+		return false, err
 	}
 
-	return nil
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return affectedRows > 0, nil
 }
 
-func (db *followsDB) UnfollowUser(followeeID, followerID int64) error {
-	_, err := db.Exec(`
+func (db *followsDB) UnfollowUser(followeeID, followerID int64) (bool, error) {
+	result, err := db.Exec(`
 		DELETE FROM follows
 		WHERE followee_id=$1 AND follower_id=$2;
 		`,
@@ -55,10 +60,15 @@ func (db *followsDB) UnfollowUser(followeeID, followerID int64) error {
 			"followeeID": followeeID,
 			"followerID": followerID,
 		}).WithError(err).Error("UnfollowUser query error.")
-		return err
+		return false, err
 	}
 
-	return nil
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return affectedRows > 0, nil
 }
 
 func (db *followsDB) GetFollowersIDs(userID int64) ([]int64, error) {

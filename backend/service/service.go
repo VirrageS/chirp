@@ -77,7 +77,7 @@ func (service *Service) LikeTweet(tweetID, requestingUserID int64) (*model.Tweet
 		return nil, err
 	}
 
-	tweet, err := service.GetTweet(tweetID, requestingUserID)
+	tweet, err := service.storage.GetTweet(tweetID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Twe
 		return nil, err
 	}
 
-	tweet, err := service.GetTweet(tweetID, requestingUserID)
+	tweet, err := service.storage.GetTweet(tweetID, requestingUserID)
 	if err != nil {
 		return nil, err
 	}
