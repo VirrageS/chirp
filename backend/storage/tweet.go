@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"database/sql"
-
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/fulltextsearch"
@@ -60,8 +58,8 @@ func (s *TweetStorage) GetTweet(tweetID, requestingUserID int64) (*model.Tweet, 
 		var err error
 
 		tweet, err = s.tweetDAO.GetTweetByID(tweetID)
-		if err == sql.ErrNoRows {
-			return nil, errors.NoResultsError
+		if err == errors.NoResultsError {
+			return nil, err
 		}
 		if err != nil {
 			return nil, errors.UnexpectedError
@@ -92,8 +90,8 @@ func (s *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int64
 	// we don't need to fetch more data for the tweet, since we know that it has 0 likes, and is not liked
 
 	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID}, insertedTweet)
-	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "islikedBy", requestingUserID}, false)
-	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID, "likeCount"}, 0)
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", insertedTweet.ID, "likedBy", requestingUserID}, false)
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", insertedTweet.ID, "likeCount"}, 0)
 	s.cache.DeleteWithFields(cache.Fields{"tweets", requestingUserID})
 
 	return insertedTweet, nil
@@ -121,7 +119,7 @@ func (s *TweetStorage) LikeTweet(tweetID, requestingUserID int64) error {
 	if liked {
 		s.cache.IncrementWithFields(cache.Fields{"tweet", tweetID, "likeCount"})
 	}
-	s.cache.SetWithFields(cache.Fields{"tweet", tweetID, "likedBy", requestingUserID}, true)
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", tweetID, "likedBy", requestingUserID}, true)
 
 	return nil
 }
@@ -135,7 +133,7 @@ func (s *TweetStorage) UnlikeTweet(tweetID, requestingUserID int64) error {
 	if unliked {
 		s.cache.DecrementWithFields(cache.Fields{"tweet", tweetID, "likeCount"})
 	}
-	s.cache.SetWithFields(cache.Fields{"tweet", tweetID, "likedBy", requestingUserID}, false)
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", tweetID, "likedBy", requestingUserID}, false)
 
 	return nil
 }
@@ -175,7 +173,7 @@ func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int
 			return err
 		}
 
-		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "likeCount"}, likeCount)
+		s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", tweet.ID, "likeCount"}, likeCount)
 	}
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", tweet.ID, "likedBy", requestingUserID}, &isLiked); !exists {
@@ -184,7 +182,7 @@ func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int
 			return err
 		}
 
-		s.cache.SetWithFields(cache.Fields{"tweet", tweet.ID, "likedBy", requestingUserID}, isLiked)
+		s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", tweet.ID, "likedBy", requestingUserID}, isLiked)
 	}
 
 	tweet.Author = author
