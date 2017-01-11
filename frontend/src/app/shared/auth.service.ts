@@ -67,6 +67,10 @@ export class AuthService implements CanActivate {
     return canActivate
   }
 
+  canActivateChild(): boolean {
+    return this.canActivate()
+  }
+
   onCanActivate(canActivate: boolean) {
     if (!canActivate) {
       this._router.navigate(['', 'login']);

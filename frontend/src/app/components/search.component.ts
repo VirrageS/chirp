@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 
 import { User, Tweet, SearchService } from '../shared';
+import * as _ from 'lodash';
 
 
 @Component({
@@ -30,14 +31,29 @@ export class SearchComponent implements OnInit {
               this.users = result.users
               this.tweets = result.tweets
             },
-            error => {
-              console.log(error)
-            }
+            error => {} // TODO
           )
       )
   }
 
-  search(term: string): void {
+  private search(term: string): void {
     this._searchTerms.next(term)
+  }
+
+  private handleUserUpdated(updatedUser: User): void {
+    let userTweets = _.filter(this.tweets, (tweet) => { return tweet.author.id == updatedUser.id })
+    _.map(userTweets, (tweet) => _.assign(tweet.author, updatedUser))
+
+    // NOTE: since there should be only one unique user
+    // we should not do anything with `this.users`
+  }
+
+  private handleTweetUpdated(updatedTweet: Tweet) {
+    let authorTweets = _.filter(this.tweets, (tweet) => { return tweet.author.id == updatedTweet.author.id })
+    _.map(authorTweets, (tweet) => _.assign(tweet.author, updatedTweet.author))
+
+    // NOTE: there should be only one user but this is more elegant
+    let users = _.filter(this.users, (user) => { return user.id == updatedTweet.author.id })
+    _.map(users, (user) => _.assign(user, updatedTweet.author))
   }
 }

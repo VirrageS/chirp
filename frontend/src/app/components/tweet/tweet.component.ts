@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { Tweet, TweetService, User, UserService } from '../../shared';
 import { Store } from '../../store';
+import * as _ from 'lodash';
 
 
 @Component({
@@ -11,6 +12,7 @@ import { Store } from '../../store';
 })
 export class TweetComponent {
   @Input() tweet: Tweet
+  @Output() tweetChange = new EventEmitter()
   loggedUser: User
 
   constructor(
@@ -22,12 +24,21 @@ export class TweetComponent {
       .subscribe((user: any) => this.loggedUser = user)
   }
 
-  private _follow() {
-    this.tweet.author.following = true
+  private _toggleFollow() {
+    this.tweet.author.following = !this.tweet.author.following
 
     // send real request
-    this._userService.follow(this.tweet.author.id)
-      .subscribe(author => this.tweet.author = author)
+    let toggleFunc = this._userService.follow(this.tweet.author.id)
+    if (!this.tweet.author.following) {
+      toggleFunc = this._userService.unfollow(this.tweet.author.id)
+    }
+
+    this.tweetChange.emit(this.tweet)
+    toggleFunc
+      .subscribe(author => {
+        _.assign(this.tweet.author, author)
+        this.tweetChange.emit(this.tweet)
+      })
   }
 
   private _toggleLike() {
@@ -35,26 +46,26 @@ export class TweetComponent {
 
     let toggleFunc = this._tweetService.like(this.tweet.id)
     if (!this.tweet.liked) {
+      this.tweet.like_count -= 1
       toggleFunc = this._tweetService.unlike(this.tweet.id)
+    } else {
+      this.tweet.like_count += 1
     }
 
     toggleFunc
       .subscribe(
-        result => {
-          this.tweet = result
-        },
+        result => _.assign(this.tweet, result),
         error => {}
       )
   }
 
-  private _retweet() {
-    this.tweet.retweeted = true
-    this._tweetService.retweet(this.tweet.id)
-      .subscribe(
-        result => {
-          this.tweet = result
-        },
-        error => {}
-      )
-  }
+  // TODO:
+  // private _retweet() {
+  //   this.tweet.retweeted = true
+  //   this._tweetService.retweet(this.tweet.id)
+  //     .subscribe(
+  //       result => _.assign(this.tweet, result),
+  //       error => {}
+  //     )
+  // }
 }

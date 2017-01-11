@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { Tweet } from '../shared';
+import { User, Tweet } from '../shared';
 import { Store } from '../store';
 
 
@@ -10,6 +10,7 @@ import { Store } from '../store';
   styleUrls: ['./me.component.scss']
 })
 export class MeComponent {
+  // TODO: consider changing to *_count
   following: number = 0
   followers: number = 0
   tweets: number = 0
@@ -19,9 +20,11 @@ export class MeComponent {
       .subscribe((tweets: any) => this.tweets = tweets.length)
 
     this._store.changes.pluck("user")
-      .subscribe((user: any) => {
-        this.following = user.followee_count
-        this.followers = user.follower_count
+      .subscribe((user: User) => {
+        if (user) {
+          this.following = user.followee_count
+          this.followers = user.follower_count
+        }
       })
   }
 }

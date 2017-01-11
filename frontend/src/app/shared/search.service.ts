@@ -15,6 +15,5 @@ export class SearchService {
 
   search(text: string) {
     return this._apiService.get(this.search_path + "?querystring=" + text)
-      .do((res: any) => console.log(res))
   }
 }

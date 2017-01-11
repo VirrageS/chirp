@@ -5,9 +5,13 @@
       <div class="author__name">{{ tweet.author.name }}</div>
       <div class="author__username">@{{ tweet.author.username }}</div>
     </div>
-    <button *ngIf="!tweet.author.following && tweet.author.id != loggedUser.id" class="btn btn-success btn-sm btn-follow" (click)=_follow()>
-      <i class="fa fa-plus" aria-hidden="true"></i>
-      <span class="btn-text">follow</span>
+    <button
+      *ngIf="tweet.author.id != loggedUser.id"
+      class="btn btn-{{ !tweet.author.following ? 'success' : 'danger' }} btn-sm btn-follow"
+      (click)=_toggleFollow()
+    >
+      <i class="fa fa-{{ !tweet.author.following ? 'plus' : 'times' }}" aria-hidden="true"></i>
+      <span class="btn-text">{{ !tweet.author.following ? 'follow' : 'unfollow' }}</span>
     </button>
     <div class="interval">2m</div>
   </div>
@@ -17,10 +21,13 @@
   <div class="tweet__controllers">
     <button class="btn btn-primary btn-sm" (click)=_toggleLike()>
       <i class="fa fa-thumbs-{{ !tweet.liked ? 'up' : 'down' }}" aria-hidden="true"></i>
-      <span class="btn-text">{{ !tweet.liked ? 'like' : 'unlike' }}</span>
+      <span class="btn-text">{{ !tweet.liked ? 'like' : 'unlike' }} ({{ tweet.like_count }})</span>
     </button>
 
-    <button *ngIf="!tweet.retweeted" class="btn btn-primary btn-sm" (click)=_retweet()>
+    <button
+      *ngIf="tweet.author.id != loggedUser.id"
+      class="btn btn-primary btn-sm"
+    >
       <i class="fa fa-retweet" aria-hidden="true"></i>
       <span class="btn-text">retweet</span>
     </button>
