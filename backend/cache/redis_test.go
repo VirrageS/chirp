@@ -135,6 +135,13 @@ var _ = Describe("RedisCache", func() {
 			}
 		})
 
+		It("should set values without expiration without error", func() {
+			for _, test := range objectTests {
+				err := redisCache.SetWithoutExpiration("key", test.in)
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+
 		It("should not find elements when trying to get without setting", func() {
 			for _, test := range objectTests {
 				exists, err := redisCache.Get("key", test.out)
@@ -146,6 +153,18 @@ var _ = Describe("RedisCache", func() {
 		It("should find elements when trying to get after set", func() {
 			for _, test := range objectTests {
 				err := redisCache.Set("key", test.in)
+				Expect(err).NotTo(HaveOccurred())
+
+				exists, err := redisCache.Get("key", test.out)
+				Expect(exists).Should(BeTrue())
+				Expect(err).NotTo(HaveOccurred())
+				Expect(test.in).To(Equal(test.out))
+			}
+		})
+
+		It("should find elements when trying to get after set without expiration", func() {
+			for _, test := range objectTests {
+				err := redisCache.SetWithoutExpiration("key", test.in)
 				Expect(err).NotTo(HaveOccurred())
 
 				exists, err := redisCache.Get("key", test.out)
@@ -254,6 +273,19 @@ var _ = Describe("RedisCache", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		})
+
+		It("should not delete keys after specified time in config if set without expiration", func() {
+			for _, test := range objectTests {
+				err := redisCache.SetWithoutExpiration("key", test.in)
+				Expect(err).NotTo(HaveOccurred())
+
+				time.Sleep(2 * cacheTime)
+
+				exists, err := redisCache.Get("key", test.out)
+				Expect(exists).Should(BeTrue())
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
 	})
 
 	Describe("tests with fields", func() {
@@ -261,6 +293,15 @@ var _ = Describe("RedisCache", func() {
 			for _, test := range objectTests {
 				for _, fields := range fieldsTests {
 					err := redisCache.SetWithFields(fields, test.in)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+		})
+
+		It("should set values without expiration without error", func() {
+			for _, test := range objectTests {
+				for _, fields := range fieldsTests {
+					err := redisCache.SetWithFieldsWithoutExpiration(fields, test.in)
 					Expect(err).NotTo(HaveOccurred())
 				}
 			}
@@ -280,6 +321,20 @@ var _ = Describe("RedisCache", func() {
 			for _, test := range objectTests {
 				for _, fields := range fieldsTests {
 					err := redisCache.SetWithFields(fields, test.in)
+					Expect(err).NotTo(HaveOccurred())
+
+					exists, err := redisCache.GetWithFields(fields, test.out)
+					Expect(exists).Should(BeTrue())
+					Expect(err).NotTo(HaveOccurred())
+					Expect(test.in).To(Equal(test.out))
+				}
+			}
+		})
+
+		It("should find elements when trying to get after set without expiration", func() {
+			for _, test := range objectTests {
+				for _, fields := range fieldsTests {
+					err := redisCache.SetWithFieldsWithoutExpiration(fields, test.in)
 					Expect(err).NotTo(HaveOccurred())
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
@@ -399,6 +454,21 @@ var _ = Describe("RedisCache", func() {
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
 					Expect(exists).Should(BeFalse())
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+		})
+
+		It("should not delete keys after specified time in config if set without expiration", func() {
+			for _, test := range objectTests {
+				for _, fields := range fieldsTests {
+					err := redisCache.SetWithFieldsWithoutExpiration(fields, test.in)
+					Expect(err).NotTo(HaveOccurred())
+
+					time.Sleep(2 * cacheTime)
+
+					exists, err := redisCache.GetWithFields(fields, test.out)
+					Expect(exists).Should(BeTrue())
 					Expect(err).NotTo(HaveOccurred())
 				}
 			}
