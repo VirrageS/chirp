@@ -1,12 +1,13 @@
 package service
 
 import (
-	"time"
 	"sort"
+	"time"
 
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/VirrageS/chirp/backend/storage"
+	"github.com/VirrageS/chirp/backend/utils"
 )
 
 // Struct that implements APIProvider
@@ -111,7 +112,7 @@ func (service *Service) Feed(requestingUserID int64) ([]*model.Tweet, error) {
 		return nil, err
 	}
 
-	sort.Sort(byCreationDateDesc(tweets))
+	sort.Sort(utils.TweetsByCreationDateDesc(tweets))
 
 	return tweets, nil
 }

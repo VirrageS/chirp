@@ -1,18 +1,18 @@
-package service
+package utils
 
 import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
 // Helper struct to implement sorting of Tweet slices by creation date
-type byCreationDateDesc []*model.Tweet
+type TweetsByCreationDateDesc []*model.Tweet
 
-func (s byCreationDateDesc) Len() int {
+func (s TweetsByCreationDateDesc) Len() int {
 	return len(s)
 }
-func (s byCreationDateDesc) Swap(i, j int) {
+func (s TweetsByCreationDateDesc) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
-func (s byCreationDateDesc) Less(i, j int) bool {
+func (s TweetsByCreationDateDesc) Less(i, j int) bool {
 	return s[i].CreatedAt.After(s[j].CreatedAt)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -19,6 +20,7 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"
 	"github.com/VirrageS/chirp/backend/token"
+	"github.com/VirrageS/chirp/backend/utils"
 )
 
 func TestIntegration(t *testing.T) {
@@ -362,7 +364,7 @@ var _ = Describe("ServerTest", func() {
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
 
-			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
+			Expect(actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 
 		It("should get followers of user followed by multiple users", func() {
@@ -376,13 +378,13 @@ var _ = Describe("ServerTest", func() {
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
 
-			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
+			Expect(actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 
 		It("should get followers of not followed user", func() {
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
 
-			Expect(*actualFollowers).To(BeEmpty())
+			Expect(actualFollowers).To(BeEmpty())
 		})
 
 		It("should get followers of user followed by someone else", func() {
@@ -394,7 +396,7 @@ var _ = Describe("ServerTest", func() {
 
 			actualFollowers := retrieveFollowers(router, toor.ID, alaToken)
 
-			Expect(*actualFollowers).To(ConsistOf(expectedFollowers))
+			Expect(actualFollowers).To(ConsistOf(expectedFollowers))
 		})
 	})
 
@@ -412,13 +414,13 @@ var _ = Describe("ServerTest", func() {
 
 			actualFollowees := retrieveFollowees(router, ala.ID, alaToken)
 
-			Expect(*actualFollowees).To(ConsistOf(expectedFollowees))
+			Expect(actualFollowees).To(ConsistOf(expectedFollowees))
 		})
 
 		It("should get empty followees when user is not following anyone", func() {
 			actualFollowers := retrieveFollowees(router, ala.ID, alaToken)
 
-			Expect(*actualFollowers).To(BeEmpty())
+			Expect(actualFollowers).To(BeEmpty())
 		})
 
 		It("should get only current user followees", func() {
@@ -431,7 +433,7 @@ var _ = Describe("ServerTest", func() {
 
 			actualFollowers := retrieveFollowees(router, ala.ID, alaToken)
 
-			Expect(*actualFollowers).To(ConsistOf(expectedFollowees))
+			Expect(actualFollowers).To(ConsistOf(expectedFollowees))
 		})
 	})
 
@@ -522,29 +524,37 @@ var _ = Describe("ServerTest", func() {
 			alaActualTweets := retrieveUserTweets(router, alaToken, ala.ID)
 			bobActualTweets := retrieveUserTweets(router, bobToken, bob.ID)
 
-			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
-			Expect(*bobActualTweets).To(ConsistOf(bobExpectedTweets))
+			Expect(alaActualTweets).To(ConsistOf(alaExpectedTweets))
+			Expect(bobActualTweets).To(ConsistOf(bobExpectedTweets))
 		})
 	})
 
 	Describe("Get home feed", func() {
-		BeforeEach(func() {})
+		var (
+			alaTweet  *model.Tweet
+			bobTweet  *model.Tweet
+			toorToken string
+		)
 
-		It("should get tweets created by user", func() {
-			alaExpectedTweets := []*model.Tweet{
-				createTweet(router, "tweet1", alaToken),
-				createTweet(router, "tweet2", alaToken),
+		BeforeEach(func() {
+			alaTweet = createTweet(router, "new ala tweet", alaToken)
+			bobTweet = createTweet(router, "new bob tweet", bobToken)
+			toorToken, _ = loginUser(router, toor)
+			followUser(router, ala.ID, toorToken)
+			followUser(router, bob.ID, toorToken)
+		})
+
+		It("should get users feed", func() {
+			expectedFeed := []*model.Tweet{
+				retrieveTweet(router, alaTweet.ID, toorToken),
+				retrieveTweet(router, bobTweet.ID, toorToken),
 			}
+			sort.Sort(utils.TweetsByCreationDateDesc(expectedFeed))
 
-			bobExpectedTweets := []*model.Tweet{
-				createTweet(router, "something different", bobToken),
-			}
+			actualFeed := retrieveFeed(router, toorToken)
 
-			alaActualTweets := retrieveHomeFeed(router, alaToken)
-			bobActualTweets := retrieveHomeFeed(router, bobToken)
-
-			Expect(*alaActualTweets).To(ConsistOf(alaExpectedTweets))
-			Expect(*bobActualTweets).To(ConsistOf(bobExpectedTweets))
+			Expect(actualFeed).To(Equal(expectedFeed))
+			Expect(len(actualFeed)).To(Equal(len(expectedFeed)))
 		})
 	})
 

@@ -169,7 +169,7 @@ func (s *TweetStorage) getTweetsIDsByAuthorID(userID int64) ([]int64, error) {
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweetsIDs", userID}, &tweetsIDs); !exists {
 		var err error
 
-		tweetsIDs, err = s.tweetDAO.GetTweetsIDsByUserID(userID)
+		tweetsIDs, err = s.tweetDAO.GetTweetsIDsByAuthorID(userID)
 		if err != nil {
 			return nil, errors.UnexpectedError
 		}

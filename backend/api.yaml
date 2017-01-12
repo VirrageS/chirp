@@ -945,9 +945,9 @@ paths:
                 type: string
                 description: Error message.
 
-  /home_feed:
+  /feed:
     get:
-      summary: Get authenticating users home feed which is a combination of authenticating user's tweets and tweets of people he/she follows.
+      summary: Get authenticating users feed which is a combination of tweets of people he/she follows.
       parameters:
         - name: Authorization
           in: header
@@ -958,7 +958,7 @@ paths:
         - Home Timeline
       responses:
         200:
-          description: An array of tweets that represents users home timeline.
+          description: An array of tweets that represents users feed.
           schema:
             type: array
             items:
