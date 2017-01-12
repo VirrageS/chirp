@@ -146,11 +146,11 @@ func (api *API) UnlikeTweet(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, tweet)
 }
 
-func (api *API) HomeFeed(context *gin.Context) {
+func (api *API) Feed(context *gin.Context) {
 	// for now lets panic when userID is not set, or when its not an int because that would mean a BUG in token_auth middleware
 	requestingUserID := (context.MustGet("userID").(int64))
 
-	tweets, err := api.service.GetTweetsOfUserWithID(requestingUserID, requestingUserID)
+	tweets, err := api.service.Feed(requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)

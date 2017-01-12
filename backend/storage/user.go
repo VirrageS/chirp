@@ -168,6 +168,20 @@ func (s *UserStorage) GetFollowers(userID, requestingUserID int64) ([]*model.Pub
 
 // TODO: this all could be done nicely in paralell
 func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
+	followeesIDs, err := s.GetFolloweesIDs(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	followees, err := s.getUsersByIDs(followeesIDs, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
+	}
+
+	return followees, nil
+}
+
+func (s *UserStorage) GetFolloweesIDs(userID int64) ([]int64, error) {
 	followeesIDs := make([]int64, 0)
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", userID, "followeesIDs"}, &followeesIDs); !exists {
@@ -181,12 +195,7 @@ func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.Pub
 		s.cache.SetWithFields(cache.Fields{"user", userID, "followeesIDs"}, followeesIDs)
 	}
 
-	followees, err := s.getUsersByIDs(followeesIDs, requestingUserID)
-	if err != nil {
-		return nil, errors.UnexpectedError
-	}
-
-	return followees, nil
+	return followeesIDs, nil
 }
 
 func (s *UserStorage) GetUsersUsingQueryString(querystring string, requestingUserID int64) ([]*model.PublicUser, error) {

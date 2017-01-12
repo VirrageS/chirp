@@ -6,6 +6,8 @@ type APIProvider interface {
 	RegisterUser(context *gin.Context)
 	LoginUser(context *gin.Context)
 	RefreshAuthToken(context *gin.Context)
+	GetGoogleAuthorizationURL(context *gin.Context)
+	CreateOrLoginUserWithGoogle(context *gin.Context)
 
 	GetTweets(context *gin.Context)
 	GetTweet(context *gin.Context)
@@ -13,15 +15,13 @@ type APIProvider interface {
 	DeleteTweet(context *gin.Context)
 	LikeTweet(context *gin.Context)
 	UnlikeTweet(context *gin.Context)
-	HomeFeed(context *gin.Context)
+	Feed(context *gin.Context)
 
 	GetUser(context *gin.Context)
 	FollowUser(context *gin.Context)
 	UnfollowUser(context *gin.Context)
 	UserFollowers(context *gin.Context)
 	UserFollowees(context *gin.Context)
-	GetGoogleAuthorizationURL(context *gin.Context)
-	CreateOrLoginUserWithGoogle(context *gin.Context)
 
 	Search(context *gin.Context)
 }

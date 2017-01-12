@@ -31,21 +31,29 @@ func NewTweetStorage(tweetDAO database.TweetDAO, likesDAO database.LikesDAO,
 }
 
 func (s *TweetStorage) GetUsersTweets(userID, requestingUserID int64) ([]*model.Tweet, error) {
-	tweetsIDs := make([]int64, 0)
-
-	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweetsIDs", userID}, &tweetsIDs); !exists {
-		var err error
-
-		tweetsIDs, err = s.tweetDAO.GetTweetsIDsByUserID(userID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
-		s.cache.SetWithFields(cache.Fields{"tweetsIDs", userID}, tweetsIDs)
+	tweetsIDs, err := s.getTweetsIDsByAuthorID(userID)
+	if err != nil {
+		return nil, err
 	}
 
 	tweets, err := s.getTweetsByIDs(tweetsIDs, requestingUserID)
 	if err != nil {
 		return nil, errors.UnexpectedError
+	}
+
+	return tweets, nil
+}
+
+func (s *TweetStorage) GetTweetsByAuthorIDs(authorsIDs []int64, requestingUserID int64) ([]*model.Tweet, error) {
+	tweets := make([]*model.Tweet, 0)
+
+	for _, userID := range authorsIDs {
+		usersTweets, err := s.GetUsersTweets(userID, requestingUserID)
+		if err != nil {
+			return nil, err
+		}
+
+		tweets = append(tweets, usersTweets...)
 	}
 
 	return tweets, nil
@@ -153,6 +161,22 @@ func (s *TweetStorage) GetTweetsUsingQueryString(querystring string, requestingU
 	}
 
 	return s.getTweetsByIDs(tweetsIDs, requestingUserID)
+}
+
+func (s *TweetStorage) getTweetsIDsByAuthorID(userID int64) ([]int64, error) {
+	tweetsIDs := make([]int64, 0)
+
+	if exists, _ := s.cache.GetWithFields(cache.Fields{"tweetsIDs", userID}, &tweetsIDs); !exists {
+		var err error
+
+		tweetsIDs, err = s.tweetDAO.GetTweetsIDsByUserID(userID)
+		if err != nil {
+			return nil, errors.UnexpectedError
+		}
+		s.cache.SetWithFields(cache.Fields{"tweetsIDs", userID}, tweetsIDs)
+	}
+
+	return tweetsIDs, nil
 }
 
 // Be careful - this is function does SIDE EFFECTS only

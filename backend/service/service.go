@@ -2,6 +2,7 @@ package service
 
 import (
 	"time"
+	"sort"
 
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
@@ -97,6 +98,22 @@ func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Twe
 	}
 
 	return tweet, nil
+}
+
+func (service *Service) Feed(requestingUserID int64) ([]*model.Tweet, error) {
+	usersFollowedIDs, err := service.storage.GetFolloweesIDs(requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	tweets, err := service.storage.GetTweetsByAuthorIDs(usersFollowedIDs, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Sort(byCreationDateDesc(tweets))
+
+	return tweets, nil
 }
 
 func (service *Service) GetUser(userID, requestingUserID int64) (*model.PublicUser, error) {

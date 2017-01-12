@@ -82,14 +82,14 @@ func (api *API) UserFollowers(context *gin.Context) {
 		return
 	}
 
-	user, err := api.service.UserFollowers(userID, requestingUserID)
+	users, err := api.service.UserFollowers(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, user)
+	context.IndentedJSON(http.StatusOK, users)
 }
 
 func (api *API) UserFollowees(context *gin.Context) {
@@ -102,12 +102,12 @@ func (api *API) UserFollowees(context *gin.Context) {
 		return
 	}
 
-	user, err := api.service.UserFollowees(userID, requestingUserID)
+	users, err := api.service.UserFollowees(userID, requestingUserID)
 	if err != nil {
 		statusCode := getStatusCodeFromError(err)
 		context.AbortWithError(statusCode, err)
 		return
 	}
 
-	context.IndentedJSON(http.StatusOK, user)
+	context.IndentedJSON(http.StatusOK, users)
 }
