@@ -23,9 +23,7 @@ export class LoginComponent {
     this._userService.authorizeWithGoogle() // firstly we have to authorize then login
       .subscribe(
         result => { window.location.href = result }, // redirect to Google AUTH
-        error => {
-          // console.log("error")
-        }
+        error => {} // TODO
       )
   }
 
@@ -35,7 +33,7 @@ export class LoginComponent {
         result => {
           this._router.navigateByUrl('home')
         },
-        error => {
+        error => { // TODO
           this.errors = error["errors"]
         }
       );

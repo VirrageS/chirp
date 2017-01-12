@@ -23,8 +23,9 @@ import { AuthService } from '../shared';
         path: 'me',
         component: MeComponent,
         canActivate: [AuthService],
+        canActivateChild: [AuthService],
         children: [
-          { path: '', redirectTo: 'tweets', pathMatch: 'full' },
+          { path: '', redirectTo: 'tweets', pathMatch: 'prefix' },
           { path: 'tweets', component: MyTweetsComponent },
           { path: 'following', component: FollowingComponent },
           { path: 'followers', component: FollowersComponent },

@@ -12,10 +12,10 @@
   </div>
 
   <div *ngIf="users.length > 0" class="search__results">
-    <users [users]="users"></users>
+    <users [users]="users" (userUpdated)="handleUserUpdated($event)"></users>
   </div>
 
   <div *ngIf="tweets.length > 0" class="search__results">
-    <tweets [tweets]="tweets"></tweets>
+    <tweets [tweets]="tweets" (tweetUpdated)="handleTweetUpdated($event)"></tweets>
   </div>
 </div>

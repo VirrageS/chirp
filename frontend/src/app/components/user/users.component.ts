@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { User } from '../../shared';
+import * as _ from 'lodash';
 
 
 @Component({
@@ -11,6 +12,7 @@ import { User } from '../../shared';
         *ngFor="let user of users"
         [user]="user"
         class="user"
+        (userChange)="handleUserUpdated($event)"
       >
       </user>
     </div>
@@ -19,4 +21,10 @@ import { User } from '../../shared';
 })
 export class UsersComponent {
   @Input() users: User[]
+  @Output() userUpdated = new EventEmitter()
+
+  // propagate change
+  private handleUserUpdated(user: User) {
+    this.userUpdated.emit(user)
+  }
 }

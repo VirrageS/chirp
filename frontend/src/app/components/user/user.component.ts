@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { User, UserService } from '../../shared';
 import { Store } from '../../store';
+import * as _ from 'lodash';
 
 
 @Component({
@@ -11,6 +12,7 @@ import { Store } from '../../store';
 })
 export class UserComponent {
   @Input() user: User
+  @Output() userChange = new EventEmitter()
   loggedUser: User
 
   constructor(
@@ -30,9 +32,15 @@ export class UserComponent {
       toggleFunc = this._userService.unfollow(this.user.id)
     }
 
+    this.userChange.emit(this.user)
     toggleFunc
-      .subscribe(user => this.user = user)
-
-    this._userService.getFollowers()
+      .subscribe(user => {
+        // TODO: make this "this.user = user"
+        // it involves changing whole binding system since `users.component`
+        // will not update reference in table which will result is detached objects
+        _.assign(this.user, user)
+        this.userChange.emit(this.user)
+        this._userService.getFollowers()
+      })
   }
 }

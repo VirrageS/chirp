@@ -4,7 +4,7 @@
       <img src="https://pbs.twimg.com/profile_images/813987688026173440/nYQIQa0s_400x400.jpg" />
     </div>
     <div class="user__follow">
-      <button class="btn btn-{{ !user.following ? 'success' : 'danger' }} btn-sm btn-follow" (click)=_toggleFollow()>
+      <button *ngIf="user.id != loggedUser.id" class="btn btn-{{ !user.following ? 'success' : 'danger' }} btn-sm btn-follow" (click)=_toggleFollow()>
         <i class="fa fa-{{ !user.following ? 'plus' : 'times' }}" aria-hidden="true"></i>
         <span class="btn-text">{{ !user.following ? 'follow' : 'unfollow' }}</span>
       </button>

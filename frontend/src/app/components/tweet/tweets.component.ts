@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 import { Tweet } from '../../shared';
 
@@ -11,6 +11,7 @@ import { Tweet } from '../../shared';
         *ngFor="let tweet of tweets"
         [tweet]="tweet"
         class="tweet"
+        (tweetChange)="handleTweetUpdated($event)"
       >
       </tweet>
     </div>
@@ -19,4 +20,10 @@ import { Tweet } from '../../shared';
 })
 export class TweetsComponent {
   @Input() tweets: Tweet[]
+  @Output() tweetUpdated = new EventEmitter()
+
+  // propagate change
+  private handleTweetUpdated(tweet: Tweet) {
+    this.tweetUpdated.emit(tweet)
+  }
 }

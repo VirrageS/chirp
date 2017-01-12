@@ -3,8 +3,8 @@ import { User } from './user.model'
 export interface Tweet {
   id?: number
   author?: User
-  likes?: number
-  retweets?: number
+  like_count?: number
+  retweet_count?: number
   liked?: boolean
   retweeted?: boolean
   created_at?: string
