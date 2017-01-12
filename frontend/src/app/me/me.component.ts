@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 
-import { User, Tweet } from '../shared';
+import { Tweet, User, UserService } from '../shared';
 import { Store } from '../store';
 
 
@@ -10,19 +10,24 @@ import { Store } from '../store';
   styleUrls: ['./me.component.scss']
 })
 export class MeComponent {
-  // TODO: consider changing to *_count
-  following: number = 0
-  followers: number = 0
-  tweets: number = 0
+  following_count: number = 0
+  follower_count: number = 0
+  tweet_count: number = 0
 
-  constructor(private _store: Store) {
+  constructor(private _userService: UserService, private _store: Store) {
+    this._userService.getTweets()
+      .subscribe((tweets: Array<Tweet>) => this.tweet_count = tweets.length)
     this._store.changes.pluck("my_tweets")
-      .subscribe((tweets: any) => this.tweets = tweets.length)
+      .subscribe((tweets: Array<Tweet>) => this.tweet_count = tweets.length)
 
+    this._userService.getFollowers()
+      .subscribe((users: Array<User>) => this.follower_count = users.length)
     this._store.changes.pluck("my_followers")
-        .subscribe((users: any) => this.followers = users.length)
+      .subscribe((users: Array<User>) => this.follower_count = users.length)
 
+    this._userService.getFollowing()
+      .subscribe((users: Array<User>) => this.following_count = users.length)
     this._store.changes.pluck("my_following")
-        .subscribe((users: any) => this.following = users.length)
+      .subscribe((users: Array<User>) => this.following_count = users.length)
   }
 }
