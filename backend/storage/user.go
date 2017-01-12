@@ -86,7 +86,7 @@ func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicU
 		return nil, errors.UnexpectedError
 	}
 
-	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID}, insertedUser.ID)
+	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID}, insertedUser)
 	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", insertedUser.ID, "followerCount"}, 0)
 	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", insertedUser.ID, "followeeCount"}, 0)
 

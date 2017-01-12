@@ -92,7 +92,7 @@ func (s *TweetStorage) InsertTweet(tweet *model.NewTweet, requestingUserID int64
 	s.cache.SetWithFields(cache.Fields{"tweet", insertedTweet.ID}, insertedTweet)
 	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", insertedTweet.ID, "likedBy", requestingUserID}, false)
 	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"tweet", insertedTweet.ID, "likeCount"}, 0)
-	s.cache.DeleteWithFields(cache.Fields{"tweets", requestingUserID})
+	s.cache.DeleteWithFields(cache.Fields{"tweetsIDs", requestingUserID})
 
 	return insertedTweet, nil
 }
@@ -105,7 +105,7 @@ func (s *TweetStorage) DeleteTweet(tweetID, requestingUserID int64) error {
 
 	s.cache.DeleteWithFields(cache.Fields{"tweet", tweetID})
 	// for now delete tweets affects only 'tweets of user with ID' of the author of the tweet
-	s.cache.DeleteWithFields(cache.Fields{"tweets", requestingUserID})
+	s.cache.DeleteWithFields(cache.Fields{"tweetsIDs", requestingUserID})
 
 	return nil
 }
