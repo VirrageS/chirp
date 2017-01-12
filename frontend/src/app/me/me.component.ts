@@ -19,12 +19,10 @@ export class MeComponent {
     this._store.changes.pluck("my_tweets")
       .subscribe((tweets: any) => this.tweets = tweets.length)
 
-    this._store.changes.pluck("user")
-      .subscribe((user: User) => {
-        if (user) {
-          this.following = user.followee_count
-          this.followers = user.follower_count
-        }
-      })
+    this._store.changes.pluck("my_followers")
+        .subscribe((users: any) => this.followers = users.length)
+
+    this._store.changes.pluck("my_following")
+        .subscribe((users: any) => this.following = users.length)
   }
 }

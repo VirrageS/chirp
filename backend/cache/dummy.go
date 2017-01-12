@@ -14,6 +14,14 @@ func (cache *DummyCache) SetWithFields(fields Fields, value interface{}) error {
 	return nil
 }
 
+func (cache *DummyCache) SetWithoutExpiration(key string, value interface{}) error {
+	return nil
+}
+
+func (cache *DummyCache) SetWithFieldsWithoutExpiration(fields Fields, value interface{}) error {
+	return nil
+}
+
 func (cache *DummyCache) Increment(key string) error {
 	return nil
 }

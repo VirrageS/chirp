@@ -3,7 +3,6 @@ package storage
 // TODO: maybe prepare statements? http://go-database-sql.org/prepared.html
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/lib/pq"
@@ -41,8 +40,8 @@ func (s *UserStorage) GetUserByID(userID, requestingUserID int64) (*model.Public
 		var err error
 
 		user, err = s.userDAO.GetPublicUserByID(userID)
-		if err == sql.ErrNoRows {
-			return nil, errors.NoResultsError
+		if err == errors.NoResultsError {
+			return nil, err
 		}
 		if err != nil {
 			return nil, errors.UnexpectedError
@@ -67,8 +66,8 @@ func (s *UserStorage) GetUserByEmail(email string) (*model.User, error) {
 	// 100% real data for this.
 
 	user, err := s.userDAO.GetUserByEmail(email)
-	if err == sql.ErrNoRows {
-		return nil, errors.NoResultsError
+	if err == errors.NoResultsError {
+		return nil, err
 	}
 	if err != nil {
 		return nil, errors.UnexpectedError
@@ -87,9 +86,9 @@ func (s *UserStorage) InsertUser(newUserForm *model.NewUserForm) (*model.PublicU
 		return nil, errors.UnexpectedError
 	}
 
-	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID}, insertedUser.ID)
-	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID, "followerCount"}, 0)
-	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID, "followeeCount"}, 0)
+	s.cache.SetWithFields(cache.Fields{"user", insertedUser.ID}, insertedUser)
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", insertedUser.ID, "followerCount"}, 0)
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", insertedUser.ID, "followeeCount"}, 0)
 
 	return insertedUser, nil
 }
@@ -112,27 +111,35 @@ func (s *UserStorage) UpdateUserLastLoginTime(userID int64, lastLoginTime *time.
 }
 
 func (s *UserStorage) FollowUser(followeeID, followerID int64) error {
-	err := s.followsDAO.FollowUser(followeeID, followerID)
+	followed, err := s.followsDAO.FollowUser(followeeID, followerID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
 
-	s.cache.SetWithFields(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, true)
-	s.cache.IncrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
-	s.cache.IncrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+	if followed {
+		s.cache.IncrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
+		s.cache.IncrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followeeID, "followersIDs"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followerID, "followeesIDs"})
+	}
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, true)
 
 	return nil
 }
 
 func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
-	err := s.followsDAO.UnfollowUser(followeeID, followerID)
+	unfollowed, err := s.followsDAO.UnfollowUser(followeeID, followerID)
 	if err != nil {
 		return errors.UnexpectedError
 	}
 
-	s.cache.SetWithFields(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, false)
-	s.cache.DecrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
-	s.cache.DecrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+	if unfollowed {
+		s.cache.DecrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
+		s.cache.DecrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followeeID, "followersIDs"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followerID, "followeesIDs"})
+	}
+	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, false)
 
 	return nil
 }
@@ -213,7 +220,7 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 			return errors.UnexpectedError
 		}
 
-		s.cache.SetWithFields(cache.Fields{"user", user.ID, "followerCount"}, followerCount)
+		s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", user.ID, "followerCount"}, followerCount)
 	}
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "followeeCount"}, &followeeCount); !exists {
@@ -224,7 +231,7 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 			return errors.UnexpectedError
 		}
 
-		s.cache.SetWithFields(cache.Fields{"user", user.ID, "followeeCount"}, followeeCount)
+		s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", user.ID, "followeeCount"}, followeeCount)
 	}
 
 	if exists, _ := s.cache.GetWithFields(cache.Fields{"user", user.ID, "isFollowedBy", requestingUserID}, &following); !exists {
@@ -235,7 +242,7 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 			return errors.UnexpectedError
 		}
 
-		s.cache.SetWithFields(cache.Fields{"user", user.ID, "isFollowedBy", requestingUserID}, following)
+		s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", user.ID, "isFollowedBy", requestingUserID}, following)
 	}
 
 	user.FollowerCount = followerCount

@@ -1,13 +1,15 @@
 package cache
 
 import (
+	"fmt"
+	"strconv"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/redis.v5"
 	"gopkg.in/vmihailenco/msgpack.v2"
 
-	"fmt"
 	"github.com/VirrageS/chirp/backend/config"
-	"strconv"
 )
 
 type RedisCache struct {
@@ -40,38 +42,22 @@ func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
 
 // Set `value` for specified `key`
 func (cache *RedisCache) Set(key string, value interface{}) error {
-	var data interface{}
-
-	switch value := value.(type) {
-	case int64, int32, int16, int8, int:
-		data = value
-	default:
-		var err error
-		data, err = msgpack.Marshal(value)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"key":   key,
-				"value": value,
-			}).WithError(err).Error("set: failed to marshal value")
-			return err
-		}
-	}
-
-	err := cache.client.Set(key, data, cache.config.GetCacheExpirationTime()).Err()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"key":   key,
-			"value": value,
-		}).WithError(err).Error("set: failed to set key and value in cache")
-		return err
-	}
-
-	return nil
+	return cache.set(key, value, cache.config.GetCacheExpirationTime())
 }
 
 // Set `value` for specified key where key is created by hashing `fields`
 func (cache *RedisCache) SetWithFields(fields Fields, value interface{}) error {
 	return cache.Set(convertFieldsToKey(fields), value)
+}
+
+// Set `value` for specified `key` without expiration time
+func (cache *RedisCache) SetWithoutExpiration(key string, value interface{}) error {
+	return cache.set(key, value, 0)
+}
+
+// Set `value` for specified key where key is created by hashing `fields`, without expiration time
+func (cache *RedisCache) SetWithFieldsWithoutExpiration(fields Fields, value interface{}) error {
+	return cache.SetWithoutExpiration(convertFieldsToKey(fields), value)
 }
 
 // Atomic increment of a value for specified `key`
@@ -142,7 +128,7 @@ func (cache *RedisCache) Get(key string, value interface{}) (bool, error) {
 		log.WithFields(log.Fields{
 			"key":   key,
 			"value": result,
-		}).WithError(err).Error("get: failed to marshal value")
+		}).WithError(err).Error("get: failed to unmarshal value")
 		return false, err
 	}
 
@@ -173,4 +159,34 @@ func (cache *RedisCache) DeleteWithFields(fields Fields) error {
 // Flush all cache
 func (cache *RedisCache) Flush() error {
 	return cache.client.FlushAll().Err()
+}
+
+func (cache *RedisCache) set(key string, value interface{}, expirationTime time.Duration) error {
+	var data interface{}
+
+	switch value := value.(type) {
+	case int64, int32, int16, int8, int:
+		data = value
+	default:
+		var err error
+		data, err = msgpack.Marshal(value)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"key":   key,
+				"value": value,
+			}).WithError(err).Error("set: failed to marshal value")
+			return err
+		}
+	}
+
+	err := cache.client.Set(key, data, expirationTime).Err()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"key":   key,
+			"value": value,
+		}).WithError(err).Error("set: failed to set key and value in cache")
+		return err
+	}
+
+	return nil
 }

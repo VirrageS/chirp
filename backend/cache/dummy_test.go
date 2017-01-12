@@ -33,6 +33,11 @@ var _ = Describe("DummyCache", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should set values without expiration without error", func() {
+			err := dummyCache.SetWithoutExpiration("key", objectTest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should not find elements when trying to get without setting", func() {
 			exists, err := dummyCache.Get("key", &objectTest)
 			Expect(exists).Should(BeFalse())
@@ -41,6 +46,16 @@ var _ = Describe("DummyCache", func() {
 
 		It("should not find elements when trying to get after set", func() {
 			err := dummyCache.Set("key", objectTest)
+			Expect(err).NotTo(HaveOccurred())
+
+			var obj object
+			exists, err := dummyCache.Get("key", &obj)
+			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not find elements when trying to get after set without expiration", func() {
+			err := dummyCache.SetWithoutExpiration("key", objectTest)
 			Expect(err).NotTo(HaveOccurred())
 
 			var obj object
@@ -84,6 +99,11 @@ var _ = Describe("DummyCache", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		It("should set values without expiration without error", func() {
+			err := dummyCache.SetWithFieldsWithoutExpiration(fieldTest, objectTest)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("should not find elements when trying to get without setting", func() {
 			exists, err := dummyCache.GetWithFields(fieldTest, objectTest)
 			Expect(exists).Should(BeFalse())
@@ -92,6 +112,16 @@ var _ = Describe("DummyCache", func() {
 
 		It("should not find elements when trying to get after set", func() {
 			err := dummyCache.SetWithFields(fieldTest, objectTest)
+			Expect(err).NotTo(HaveOccurred())
+
+			var obj object
+			exists, err := dummyCache.GetWithFields(fieldTest, &obj)
+			Expect(exists).Should(BeFalse())
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not find elements when trying to get after set without expiration", func() {
+			err := dummyCache.SetWithFieldsWithoutExpiration(fieldTest, objectTest)
 			Expect(err).NotTo(HaveOccurred())
 
 			var obj object
