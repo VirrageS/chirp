@@ -119,6 +119,8 @@ func (s *UserStorage) FollowUser(followeeID, followerID int64) error {
 	if followed {
 		s.cache.IncrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
 		s.cache.IncrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followeeID, "followersIDs"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followerID, "followeesIDs"})
 	}
 	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, true)
 
@@ -134,6 +136,8 @@ func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
 	if unfollowed {
 		s.cache.DecrementWithFields(cache.Fields{"user", followeeID, "followerCount"})
 		s.cache.DecrementWithFields(cache.Fields{"user", followerID, "followeeCount"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followeeID, "followersIDs"})
+		s.cache.DeleteWithFields(cache.Fields{"user", followerID, "followeesIDs"})
 	}
 	s.cache.SetWithFieldsWithoutExpiration(cache.Fields{"user", followeeID, "isFollowedBy", followerID}, false)
 
