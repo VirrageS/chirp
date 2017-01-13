@@ -104,7 +104,7 @@ func unfollowUser(s *gin.Engine, userID int64, authToken string) *model.PublicUs
 }
 
 // Followers
-func retrieveFollowers(s *gin.Engine, userID int64, authToken string) *[]*model.PublicUser {
+func retrieveFollowers(s *gin.Engine, userID int64, authToken string) []*model.PublicUser {
 	path := fmt.Sprintf("/users/%v/followers", userID)
 	req := request("GET", path, nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
@@ -115,11 +115,11 @@ func retrieveFollowers(s *gin.Engine, userID int64, authToken string) *[]*model.
 	err := json.Unmarshal(w.Body.Bytes(), &followers)
 	Expect(err).NotTo(HaveOccurred())
 
-	return &followers
+	return followers
 }
 
 // Followees
-func retrieveFollowees(s *gin.Engine, userID int64, authToken string) *[]*model.PublicUser {
+func retrieveFollowees(s *gin.Engine, userID int64, authToken string) []*model.PublicUser {
 	path := fmt.Sprintf("/users/%v/followees", userID)
 	req := request("GET", path, nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
@@ -130,7 +130,7 @@ func retrieveFollowees(s *gin.Engine, userID int64, authToken string) *[]*model.
 	err := json.Unmarshal(w.Body.Bytes(), &followees)
 	Expect(err).NotTo(HaveOccurred())
 
-	return &followees
+	return followees
 }
 
 // Tweet
@@ -201,7 +201,7 @@ func unlikeTweet(s *gin.Engine, tweetID int64, authToken string) *model.Tweet {
 	return &tweet
 }
 
-func retrieveUserTweets(s *gin.Engine, authToken string, userID int64) *[]*model.Tweet {
+func retrieveUserTweets(s *gin.Engine, authToken string, userID int64) []*model.Tweet {
 	req := request("GET", "/tweets", nil).authorize(authToken).urlQuery("userID", userID).build()
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
@@ -211,12 +211,12 @@ func retrieveUserTweets(s *gin.Engine, authToken string, userID int64) *[]*model
 	err := json.Unmarshal(w.Body.Bytes(), &tweets)
 	Expect(err).NotTo(HaveOccurred())
 
-	return &tweets
+	return tweets
 }
 
 // Home feed
-func retrieveHomeFeed(s *gin.Engine, authToken string) *[]*model.Tweet {
-	req := request("GET", "/home_feed", nil).authorize(authToken).build()
+func retrieveFeed(s *gin.Engine, authToken string) []*model.Tweet {
+	req := request("GET", "/feed", nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 	Expect(w.Code).To(Equal(http.StatusOK))
@@ -225,7 +225,7 @@ func retrieveHomeFeed(s *gin.Engine, authToken string) *[]*model.Tweet {
 	err := json.Unmarshal(w.Body.Bytes(), &tweets)
 	Expect(err).NotTo(HaveOccurred())
 
-	return &tweets
+	return tweets
 }
 
 // Interface to bytes marshaler (helper for body)

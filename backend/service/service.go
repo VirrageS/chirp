@@ -1,11 +1,13 @@
 package service
 
 import (
+	"sort"
 	"time"
 
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
 	"github.com/VirrageS/chirp/backend/storage"
+	"github.com/VirrageS/chirp/backend/utils"
 )
 
 // Struct that implements APIProvider
@@ -97,6 +99,22 @@ func (service *Service) UnlikeTweet(tweetID, requestingUserID int64) (*model.Twe
 	}
 
 	return tweet, nil
+}
+
+func (service *Service) Feed(requestingUserID int64) ([]*model.Tweet, error) {
+	usersFollowedIDs, err := service.storage.GetFolloweesIDs(requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	tweets, err := service.storage.GetTweetsByAuthorIDs(usersFollowedIDs, requestingUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Sort(utils.TweetsByCreationDateDesc(tweets))
+
+	return tweets, nil
 }
 
 func (service *Service) GetUser(userID, requestingUserID int64) (*model.PublicUser, error) {

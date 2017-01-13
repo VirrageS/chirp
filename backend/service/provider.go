@@ -16,6 +16,7 @@ type ServiceProvider interface {
 	UnfollowUser(userID, requestingUserID int64) (*model.PublicUser, error)
 	UserFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
 	UserFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	Feed(userID int64) ([]*model.Tweet, error)
 
 	FullTextSearch(queryString string, requestingUserID int64) (*model.FullTextSearchResponse, error)
 

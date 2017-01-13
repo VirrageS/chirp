@@ -68,8 +68,8 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		tweets.POST("/:id/like", api.LikeTweet)
 		tweets.POST("/:id/unlike", api.UnlikeTweet)
 
-		homeFeed := authorizedRoutes.Group("home_feed")
-		homeFeed.GET("", api.HomeFeed)
+		feed := authorizedRoutes.Group("feed")
+		feed.GET("", api.Feed)
 
 		users := authorizedRoutes.Group("users")
 		users.GET("/:id", api.GetUser)

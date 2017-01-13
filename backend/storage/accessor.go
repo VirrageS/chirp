@@ -8,6 +8,7 @@ import (
 
 type TweetDataAccessor interface {
 	GetUsersTweets(userID, requestingUserID int64) ([]*model.Tweet, error)
+	GetTweetsByAuthorIDs(authorsIDs []int64, requestingUserID int64) ([]*model.Tweet, error)
 	GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
 	InsertTweet(tweet *model.NewTweet, requestingUserID int64) (*model.Tweet, error)
 	DeleteTweet(tweetID, requestingUserID int64) error
@@ -25,6 +26,7 @@ type UserDataAccessor interface {
 	UnfollowUser(followeeID, followerID int64) error
 	GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error)
 	GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error)
+	GetFolloweesIDs(userID int64) ([]int64, error)
 	GetUsersUsingQueryString(querystring string, requestingUserID int64) ([]*model.PublicUser, error)
 }
 

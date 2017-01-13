@@ -12,7 +12,7 @@ import (
 
 // Tweet Data Access Object - provides operations on Tweet database table
 type TweetDAO interface {
-	GetTweetsIDsByUserID(userID int64) ([]int64, error)
+	GetTweetsIDsByAuthorID(userID int64) ([]int64, error)
 	GetTweetsByIDs(tweetsIDs []int64) ([]*model.Tweet, error)
 	GetTweetByID(tweetID int64) (*model.Tweet, error)
 	InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error)
@@ -27,7 +27,7 @@ func NewTweetDAO(dbConnection *sql.DB) TweetDAO {
 	return &tweetDB{dbConnection}
 }
 
-func (db *tweetDB) GetTweetsIDsByUserID(userID int64) ([]int64, error) {
+func (db *tweetDB) GetTweetsIDsByAuthorID(userID int64) ([]int64, error) {
 	rows, err := db.Query(`
 		SELECT id
 		FROM tweets
@@ -35,14 +35,14 @@ func (db *tweetDB) GetTweetsIDsByUserID(userID int64) ([]int64, error) {
 		ORDER BY created_at DESC`,
 		userID)
 	if err != nil {
-		log.WithField("userID", userID).WithError(err).Error("GetTweetsIDsByUserID query error.")
+		log.WithField("userID", userID).WithError(err).Error("GetTweetsIDsByAuthorID query error.")
 		return nil, err
 	}
 	defer rows.Close()
 
 	tweetIDs, err := readMultipleTweetsIDs(rows)
 	if err != nil {
-		log.WithError(err).Error("GetTweetsIDsByUserID rows scan/iteration error.")
+		log.WithError(err).Error("GetTweetsIDsByAuthorID rows scan/iteration error.")
 	}
 
 	return tweetIDs, nil
