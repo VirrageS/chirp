@@ -31,14 +31,12 @@ export class UserService {
   }
 
   getTweets() {
-    // TODO: update path
-    // return this._apiService.get("/users/" + this.user.id + path)
-    return this._apiService.get("/home_feed")
+    return this._apiService.get(this.user_path + "/" + this.user.id + "/tweets")
       .do(tweets => this._storeHelper.update("my_tweets", tweets))
   }
 
   getFeed() {
-    return this._apiService.get("/home_feed")
+    return this._apiService.get("/feed")
       .do(tweets => this._storeHelper.update("feed", tweets))
   }
 

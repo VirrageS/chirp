@@ -1,16 +1,31 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
-import { Tweet, UserService } from '../shared';
+import { User, Tweet, UserService } from '../shared';
+import { Store } from '../store';
 
 
 @Component({
-  template: `
-    <h2>Chirp - the real Twitter</h2>
-
-  `
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
- constructor(private _userService: UserService) {}
+export class HomeComponent {
+  private feed: Array<Tweet> = []
+  private loggedUser?: User
 
- ngOnInit(): void {}
+  constructor(
+    private _userService: UserService,
+    private _store: Store
+  ) {
+    this._store.changes.pluck("user")
+      .subscribe((user: any) => {
+        this.loggedUser = user
+
+        if (this.loggedUser) {
+          this._userService.getFeed()
+            .subscribe((tweets: any) => this.feed = tweets)
+          this._store.changes.pluck("feed")
+            .subscribe((tweets: any) => this.feed = tweets)
+        }
+      })
+  }
 }

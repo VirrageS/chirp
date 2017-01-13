@@ -13,7 +13,7 @@
       <i class="fa fa-{{ !tweet.author.following ? 'plus' : 'times' }}" aria-hidden="true"></i>
       <span class="btn-text">{{ !tweet.author.following ? 'follow' : 'unfollow' }}</span>
     </button>
-    <div class="interval">2m</div>
+    <div class="interval">{{ time.difference }}</div>
   </div>
   <div class="tweet__content">
     {{ tweet.content }}
