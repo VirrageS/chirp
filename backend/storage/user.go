@@ -5,6 +5,7 @@ package storage
 import (
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/lib/pq"
 
 	"github.com/VirrageS/chirp/backend/cache"
@@ -215,6 +216,26 @@ func (s *UserStorage) GetUsersUsingQueryString(querystring string, requestingUse
 	return s.getUsersByIDs(usersIDs, requestingUserID)
 }
 
+// on deadlocks blame VirrageS
+func (s *UserStorage) collectPublicUsersData(users []*model.PublicUser, requestingUserID int64) error {
+	errChan := make(chan error, len(users))
+
+	for _, user := range users {
+		go func(user *model.PublicUser) {
+			err := s.collectPublicUserData(user, requestingUserID)
+			errChan <- err
+		}(user)
+	}
+
+	for range users {
+		if err := <-errChan; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Be careful - this is function does SIDE EFFECTS only
 func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUserID int64) error {
 	var followerCount int64
@@ -262,36 +283,43 @@ func (s *UserStorage) collectPublicUserData(user *model.PublicUser, requestingUs
 }
 
 func (s *UserStorage) getUsersByIDs(usersIDs []int64, requestingUserID int64) ([]*model.PublicUser, error) {
-	users := make([]*model.PublicUser, 0)
+	expectedUserCount := len(usersIDs)
+
+	users := make([]*model.PublicUser, 0, expectedUserCount)
+	notInCacheCount := 0
 
 	// get users from cache
-	for i, id := range usersIDs {
+	for _, id := range usersIDs {
 		var user model.PublicUser
 
 		if exists, _ := s.cache.GetWithFields(cache.Fields{"user", id}, &user); exists {
 			users = append(users, &user)
-
-			// remove ID from usersIDs
-			usersIDs[i] = usersIDs[len(usersIDs)-1]
-			usersIDs = usersIDs[:len(usersIDs)-1]
+		} else {
+			usersIDs[notInCacheCount] = id
+			notInCacheCount++
 		}
 	}
 
 	// get users that are not in cache from database
-	if len(usersIDs) > 0 {
-		dbFollowers, err := s.userDAO.GetPublicUsersByIDs(usersIDs)
+	if notInCacheCount > 0 {
+		dbFollowers, err := s.userDAO.GetPublicUsersByIDs(usersIDs[:notInCacheCount])
 		if err != nil {
 			return nil, err
 		}
 		users = append(users, dbFollowers...)
 	}
 
+	if len(users) != expectedUserCount {
+		log.WithFields(log.Fields{
+			"number of users found":    len(users),
+			"expected tweets of users": expectedUserCount,
+		}).Error("Found less users than expected in getUsersByIDs.")
+	}
+
 	// fill users with missing data
-	for _, user := range users {
-		err := s.collectPublicUserData(user, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
+	err := s.collectPublicUsersData(users, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
 	}
 
 	return users, nil
