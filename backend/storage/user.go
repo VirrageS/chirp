@@ -302,11 +302,11 @@ func (s *UserStorage) getUsersByIDs(usersIDs []int64, requestingUserID int64) ([
 
 	// get users that are not in cache from database
 	if notInCacheCount > 0 {
-		dbFollowers, err := s.userDAO.GetPublicUsersByIDs(usersIDs[:notInCacheCount])
+		dbUsers, err := s.userDAO.GetPublicUsersByIDs(usersIDs[:notInCacheCount])
 		if err != nil {
 			return nil, err
 		}
-		users = append(users, dbFollowers...)
+		users = append(users, dbUsers...)
 	}
 
 	if len(users) != expectedUserCount {

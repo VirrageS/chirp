@@ -9,7 +9,6 @@ type APIProvider interface {
 	GetGoogleAuthorizationURL(context *gin.Context)
 	CreateOrLoginUserWithGoogle(context *gin.Context)
 
-	GetTweets(context *gin.Context)
 	GetTweet(context *gin.Context)
 	PostTweet(context *gin.Context)
 	DeleteTweet(context *gin.Context)
@@ -22,6 +21,7 @@ type APIProvider interface {
 	UnfollowUser(context *gin.Context)
 	UserFollowers(context *gin.Context)
 	UserFollowees(context *gin.Context)
+	UserTweets(context *gin.Context)
 
 	Search(context *gin.Context)
 }

@@ -61,7 +61,6 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 	authorizedRoutes := router.Group("/", authenticator)
 	{
 		tweets := authorizedRoutes.Group("tweets")
-		tweets.GET("", api.GetTweets)
 		tweets.POST("", contentTypeChecker, api.PostTweet)
 		tweets.GET("/:id", api.GetTweet)
 		tweets.DELETE("/:id", api.DeleteTweet)
@@ -77,6 +76,7 @@ func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, c
 		users.POST(":id/unfollow", api.UnfollowUser)
 		users.GET(":id/followers", api.UserFollowers)
 		users.GET(":id/followees", api.UserFollowees)
+		users.GET(":id/tweets", api.UserTweets)
 
 		search := authorizedRoutes.Group("search")
 		search.GET("", api.Search)

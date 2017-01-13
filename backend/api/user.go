@@ -111,3 +111,23 @@ func (api *API) UserFollowees(context *gin.Context) {
 
 	context.IndentedJSON(http.StatusOK, users)
 }
+
+func (api *API) UserTweets(context *gin.Context) {
+	requestingUserID := (context.MustGet("userID").(int64))
+	parameterID := context.Param("id")
+
+	userID, err := strconv.ParseInt(parameterID, 10, 64)
+	if err != nil {
+		context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
+		return
+	}
+
+	tweets, err := api.service.GetTweetsOfUserWithID(userID, requestingUserID)
+	if err != nil {
+		statusCode := getStatusCodeFromError(err)
+		context.AbortWithError(statusCode, err)
+		return
+	}
+
+	context.IndentedJSON(http.StatusOK, tweets)
+}
