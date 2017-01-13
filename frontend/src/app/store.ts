@@ -29,8 +29,8 @@ const _store = new BehaviorSubject<State>(defaultState);
 
 @Injectable()
 export class Store {
-  private _store = _store;
-  changes = this._store.asObservable().distinctUntilChanged()
+  private _store = _store
+  private _changes = this._store.asObservable().distinctUntilChanged()
 
   setState(state: State) {
     this._store.next(state);
@@ -38,6 +38,10 @@ export class Store {
 
   getState(): State {
     return this._store.value;
+  }
+
+  changes(name: string): any {
+    return this._changes.pluck(name).distinctUntilChanged()
   }
 
   purge() {

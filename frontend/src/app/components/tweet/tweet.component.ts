@@ -25,7 +25,7 @@ export class TweetComponent implements OnInit, OnDestroy {
     private _userService: UserService,
     private _store: Store
   ) {
-    this._store.changes.pluck("user")
+    this._store.changes("user")
       .subscribe((user: any) => this.loggedUser = user)
   }
 

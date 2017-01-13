@@ -21,7 +21,7 @@ export class UserService {
     private _store: Store,
     private _storeHelper: StoreHelper
   ) {
-    this._store.changes.pluck('user')
+    this._store.changes('user')
       .subscribe((user: any) => this.user = user)
   }
 
