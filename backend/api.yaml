@@ -19,68 +19,6 @@ produces:
 
 paths:
   /tweets:
-    get:
-      summary: Get list of all tweets.
-      description: |
-        The tweets endpoint returns list of tweets that fulfill given
-        search criteria.
-      parameters:
-        - name: Authorization
-          in: header
-          type: string
-          required: true
-          description: Authorization token using Bearer schema.
-        - name: author_id
-          in: query
-          description: ID of the tweet author.
-          required: false
-          type: integer
-          format: int64
-        - name: author_username
-          in: query
-          type: string
-          description: ID username of the tweet author.
-          required: false
-        - name: liked_by
-          in: query
-          description: ID of liker.
-          required: false
-          type: integer
-          format: int64
-        - name: retweeted_by
-          in: query
-          description: ID of retweeter.
-          required: false
-          type: integer
-          format: int64
-        - name: content
-          in: query
-          type: string
-          description: Part of the text of a tweet.
-          required: false
-      tags:
-        - Tweets
-      responses:
-        200:
-          description: An array of tweets that fulfill given cirteria.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Tweet'
-        400:
-          description: One of the query parameters is not supported.
-          schema:
-            properties:
-              error:
-                type: string
-                description: Error message.
-        500:
-          description: Unexpected error happened.
-          schema:
-            properties:
-              error:
-                type: string
-                description: Error message.
     post:
       summary: Authenticating user adds a new tweet.
       parameters:
@@ -906,9 +844,9 @@ paths:
                 type: string
                 description: Error message.
 
-  /user_timeline/{user_id}:
+  /users/{user_id}/tweets:
     get:
-      summary: Get user timeline.
+      summary: Get list of tweets posted by user with a given ID.
       parameters:
         - name: Authorization
           in: header
@@ -922,16 +860,16 @@ paths:
           type: integer
           format: int64
       tags:
-        - Timelines
+        - Tweets
       responses:
         200:
-          description: An array of tweet that represents users timeline.
+          description: An array of users tweets.
           schema:
             type: array
             items:
               $ref: '#/definitions/Tweet'
-        404:
-          description: User with given ID does not exist.
+        400:
+          description: Returned when user_id in path was not an integer.
           schema:
             properties:
               error:

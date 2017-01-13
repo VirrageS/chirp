@@ -1,6 +1,8 @@
 package storage
 
 import (
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/fulltextsearch"
@@ -179,6 +181,26 @@ func (s *TweetStorage) getTweetsIDsByAuthorID(userID int64) ([]int64, error) {
 	return tweetsIDs, nil
 }
 
+// on deadlocks blame VirrageS
+func (s *TweetStorage) collectTweetsData(tweets []*model.Tweet, requestingUserID int64) error {
+	errChan := make(chan error, len(tweets))
+
+	for _, tweet := range tweets {
+		go func(tweet *model.Tweet) {
+			err := s.collectTweetData(tweet, requestingUserID)
+			errChan <- err
+		}(tweet)
+	}
+
+	for range tweets {
+		if err := <-errChan; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Be careful - this is function does SIDE EFFECTS only
 func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int64) error {
 	var author *model.PublicUser
@@ -217,36 +239,43 @@ func (s *TweetStorage) collectTweetData(tweet *model.Tweet, requestingUserID int
 }
 
 func (s *TweetStorage) getTweetsByIDs(tweetsIDs []int64, requestingUserID int64) ([]*model.Tweet, error) {
-	tweets := make([]*model.Tweet, 0)
+	expectedTweetCount := len(tweetsIDs)
+
+	tweets := make([]*model.Tweet, 0, expectedTweetCount)
+	notInCacheCount := 0
 
 	// get tweets from cache
-	for i, id := range tweetsIDs {
+	for _, id := range tweetsIDs {
 		var tweet model.Tweet
 
 		if exists, _ := s.cache.GetWithFields(cache.Fields{"tweet", id}, &tweet); exists {
 			tweets = append(tweets, &tweet)
-
-			// remove ID from tweetsIDs
-			tweetsIDs[i] = tweetsIDs[len(tweetsIDs)-1]
-			tweetsIDs = tweetsIDs[:len(tweetsIDs)-1]
+		} else {
+			tweetsIDs[notInCacheCount] = id
+			notInCacheCount++
 		}
 	}
 
 	// get tweets that are not in cache from database
-	if len(tweetsIDs) > 0 {
-		dbTweets, err := s.tweetDAO.GetTweetsByIDs(tweetsIDs)
+	if notInCacheCount > 0 {
+		dbTweets, err := s.tweetDAO.GetTweetsByIDs(tweetsIDs[:notInCacheCount])
 		if err != nil {
 			return nil, err
 		}
 		tweets = append(tweets, dbTweets...)
 	}
 
+	if len(tweets) != expectedTweetCount {
+		log.WithFields(log.Fields{
+			"number of tweets found":   len(tweets),
+			"expected tweets of users": expectedTweetCount,
+		}).Error("Found less tweets than expected in getTweetsByIDs.")
+	}
+
 	// fill tweets with missing data
-	for _, tweet := range tweets {
-		err := s.collectTweetData(tweet, requestingUserID)
-		if err != nil {
-			return nil, errors.UnexpectedError
-		}
+	err := s.collectTweetsData(tweets, requestingUserID)
+	if err != nil {
+		return nil, errors.UnexpectedError
 	}
 
 	return tweets, nil

@@ -202,7 +202,7 @@ func unlikeTweet(s *gin.Engine, tweetID int64, authToken string) *model.Tweet {
 }
 
 func retrieveUserTweets(s *gin.Engine, authToken string, userID int64) []*model.Tweet {
-	req := request("GET", "/tweets", nil).authorize(authToken).urlQuery("userID", userID).build()
+	req := request("GET", fmt.Sprintf("/users/%v/tweets", userID), nil).authorize(authToken).build()
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 	Expect(w.Code).To(Equal(http.StatusOK))

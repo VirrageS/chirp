@@ -437,6 +437,27 @@ var _ = Describe("ServerTest", func() {
 		})
 	})
 
+	Describe("Get users tweets", func() {
+		BeforeEach(func() {})
+
+		It(`should only get tweets created by specified user`, func() {
+			alaExpectedTweets := []*model.Tweet{
+				createTweet(router, "tweet1", alaToken),
+				createTweet(router, "tweet2", alaToken),
+			}
+
+			bobExpectedTweets := []*model.Tweet{
+				createTweet(router, "something different", bobToken),
+			}
+
+			alaActualTweets := retrieveUserTweets(router, alaToken, ala.ID)
+			bobActualTweets := retrieveUserTweets(router, bobToken, bob.ID)
+
+			Expect(alaActualTweets).To(ConsistOf(alaExpectedTweets))
+			Expect(bobActualTweets).To(ConsistOf(bobExpectedTweets))
+		})
+	})
+
 	Describe("Create and get tweet", func() {
 		BeforeEach(func() {})
 
@@ -504,28 +525,6 @@ var _ = Describe("ServerTest", func() {
 			router.ServeHTTP(w, req)
 
 			Expect(w.Code).To(Equal(http.StatusForbidden))
-		})
-	})
-
-	Describe("Get tweets", func() {
-		BeforeEach(func() {})
-
-		It(`should only get tweets created by specified user
-				when providing user in query parameter`, func() {
-			alaExpectedTweets := []*model.Tweet{
-				createTweet(router, "tweet1", alaToken),
-				createTweet(router, "tweet2", alaToken),
-			}
-
-			bobExpectedTweets := []*model.Tweet{
-				createTweet(router, "something different", bobToken),
-			}
-
-			alaActualTweets := retrieveUserTweets(router, alaToken, ala.ID)
-			bobActualTweets := retrieveUserTweets(router, bobToken, bob.ID)
-
-			Expect(alaActualTweets).To(ConsistOf(alaExpectedTweets))
-			Expect(bobActualTweets).To(ConsistOf(bobExpectedTweets))
 		})
 	})
 

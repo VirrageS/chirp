@@ -11,34 +11,6 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
-func (api *API) GetTweets(context *gin.Context) {
-	requestingUserID := (context.MustGet("userID").(int64))
-	userIDStr := context.Query("userID")
-	var tweets []*model.Tweet
-	var err error
-
-	// TODO: maybe put the logic of checking request parameters to service when there is more than 1 flag
-	if userIDStr != "" {
-		userID, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			context.AbortWithError(http.StatusBadRequest, errors.New("Invalid user ID. Expected an integer."))
-			return
-		}
-		tweets, err = api.service.GetTweetsOfUserWithID(userID, requestingUserID)
-	} else {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Required userID query parameter was not provided."))
-		return
-	}
-
-	if err != nil {
-		statusCode := getStatusCodeFromError(err)
-		context.AbortWithError(statusCode, err)
-		return
-	}
-
-	context.IndentedJSON(http.StatusOK, tweets)
-}
-
 func (api *API) GetTweet(context *gin.Context) {
 	requestingUserID := (context.MustGet("userID").(int64))
 	parameterID := context.Param("id")
