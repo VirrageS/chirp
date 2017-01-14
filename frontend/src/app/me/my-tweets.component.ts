@@ -24,7 +24,7 @@ export class MyTweetsComponent implements OnInit {
     this._userService.getTweets()
       .subscribe((tweets: any) => this.tweets = tweets)
 
-    this._store.changes.pluck("my_tweets")
+    this._store.changes("my_tweets")
       .subscribe((tweets: any) => this.tweets = tweets)
   }
 }

@@ -1,0 +1,30 @@
+@import '../../../public/scss/main.scss';
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  font-size: 3.2em;
+  font-weight: 900;
+}
+
+.subtitle {
+  font-size: 1.5em;
+  font-weight: 200;
+  color: $TEXT-HINT-COLOR;
+}
+
+.descriptions {
+  max-width: 800px;
+
+  font-size: 1.3em;
+  text-align: center;
+}
+
+.bird {
+  margin: 50px 0;
+  width: 300px;
+}

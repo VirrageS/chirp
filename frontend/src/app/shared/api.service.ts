@@ -33,15 +33,15 @@ export class ApiService {
       this.apiUrl = 'http://backend.show'
     }
 
-    this._store.changes.pluck('user')
+    this._store.changes('user')
       .subscribe((user: any) => this.user = user)
 
-    this._store.changes.pluck('auth_token')
+    this._store.changes('auth_token')
       .subscribe((token: any) => this._setHeaders({
         Authorization: `Bearer ${token}`
       }))
 
-    this._store.changes.pluck('refresh_token')
+    this._store.changes('refresh_token')
       .subscribe((token: any) => this.refreshToken = token)
   }
 

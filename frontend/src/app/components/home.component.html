@@ -1,0 +1,14 @@
+<div *ngIf="!loggedUser" class="center">
+  <div class="title">Welcome to Chirp</div>
+  <div class="subtitle">the alternative for Twitter</div>
+  <div class="bird">
+    <img height="100%" width="100%" src="http://www.clipartkid.com/images/194/bird-face-clip-art-clipart-panda-free-clipart-images-wPLgQ8-clipart.png"/>
+  </div>
+  <div class="descriptions">
+    Connect with your friends — and other fascinating people. Get in-the-moment updates on the things that interest you. And watch events unfold, in real time, from every angle.
+  </div>
+</div>
+
+<div *ngIf="loggedUser" class="feed">
+  <tweets [tweets]="feed"></tweets>
+</div>

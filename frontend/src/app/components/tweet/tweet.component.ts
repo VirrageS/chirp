@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, Output, EventEmitter } from '@angular/core';
 
 import { Tweet, TweetService, User, UserService } from '../../shared';
 import { Store } from '../../store';
 import * as _ from 'lodash';
+import * as moment from 'moment';
 
 
 @Component({
@@ -10,18 +11,42 @@ import * as _ from 'lodash';
   templateUrl: './tweet.component.html',
   styleUrls: ['./tweet.component.scss']
 })
-export class TweetComponent {
+export class TweetComponent implements OnInit, OnDestroy {
   @Input() tweet: Tweet
   @Output() tweetChange = new EventEmitter()
-  loggedUser: User
+  private loggedUser?: User
+  private time: any = {
+    difference: "",
+    handler: {}
+  }
 
   constructor(
     private _tweetService: TweetService,
     private _userService: UserService,
     private _store: Store
   ) {
-    this._store.changes.pluck("user")
+    this._store.changes("user")
       .subscribe((user: any) => this.loggedUser = user)
+  }
+
+  ngOnInit(): void {
+    this.updateTimeDifferrence()
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.time.handler)
+  }
+
+  private updateTimeDifferrence(): void {
+    this.time.difference = moment(this.tweet.created_at).fromNow()
+
+    // update each minute plus some random to make tweets update
+    // not fire at the same time (because this could lead to performance issues)
+    // TODO: maybe consider changing 60 seconds to interval depending on actual
+    // difference, so when difference is 1 hour, next update should be like every 20 minutes
+    this.time.handler = setTimeout(() => {
+      this.updateTimeDifferrence()
+    }, (60 + Math.random() * 10) * 1000)
   }
 
   private _toggleFollow() {

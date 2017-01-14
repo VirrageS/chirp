@@ -23,7 +23,7 @@ export class FollowersComponent implements OnInit {
     this._userService.getFollowers()
       .subscribe((users: any) => this.followers = users)
 
-    this._store.changes.pluck("my_followers")
+    this._store.changes("my_followers")
       .subscribe((users: any) => this.followers = users)
   }
 }

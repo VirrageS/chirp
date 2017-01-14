@@ -34,7 +34,7 @@ export class NavigationBarComponent {
     private _authService: AuthService,
     private _store: Store
   ) {
-    this._store.changes.pluck('user')
+    this._store.changes('user')
       .subscribe((user: any) => this.user = user)
   }
 
