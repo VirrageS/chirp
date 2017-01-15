@@ -18,7 +18,7 @@ RUN yarn global add typescript webpack webpack-dev-server tslint typings
 
 # install all packes
 RUN mkdir /frontend
-COPY package.json typings.json /frontend/
+COPY package.json /frontend/
 WORKDIR /frontend/
 
 RUN yarn install
