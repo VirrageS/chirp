@@ -14,6 +14,7 @@ import (
 	"github.com/VirrageS/chirp/backend/database"
 	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/middleware"
+	"github.com/VirrageS/chirp/backend/password"
 	"github.com/VirrageS/chirp/backend/service"
 	"github.com/VirrageS/chirp/backend/storage"
 	"github.com/VirrageS/chirp/backend/token"
@@ -30,6 +31,7 @@ func New(
 	redis cache.CacheProvider,
 	elasticsearch fulltextsearch.Searcher,
 	tokenManager token.TokenManagerProvider,
+	passwordManager password.Manager,
 	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
 ) *gin.Engine {
 	// api dependencies
@@ -41,7 +43,7 @@ func New(
 	likesDAO := database.NewLikesDAO(dbConnection)
 
 	storage := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis, elasticsearch)
-	services := service.NewService(storage)
+	services := service.NewService(storage, passwordManager)
 	apis := api.NewAPI(services, tokenManager, authorizationGoogleConfig)
 
 	return setupRouter(apis, tokenManager, CORSConfig)

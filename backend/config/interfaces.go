@@ -11,6 +11,10 @@ type TokenManagerConfig interface {
 	GetRefreshTokenValidityPeriod() int
 }
 
+type PasswordManagerConfig interface {
+	GetRandomPasswordLength() int
+}
+
 // Provides DB access configuration
 type DBConfigProvider interface {
 	GetUsername() string

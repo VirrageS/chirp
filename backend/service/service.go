@@ -4,23 +4,29 @@ import (
 	"sort"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/model/errors"
+	appErrors "github.com/VirrageS/chirp/backend/model/errors"
+	"github.com/VirrageS/chirp/backend/password"
 	"github.com/VirrageS/chirp/backend/storage"
 	"github.com/VirrageS/chirp/backend/utils"
 )
 
 // Struct that implements APIProvider
 type Service struct {
-	storage storage.StorageAccessor
+	storage         storage.StorageAccessor
+	passwordManager password.Manager
 }
 
 // Constructs a Service that uses provided objects
 func NewService(
 	storage storage.StorageAccessor,
+	passwordManager password.Manager,
 ) ServiceProvider {
 	return &Service{
-		storage: storage,
+		storage:         storage,
+		passwordManager: passwordManager,
 	}
 }
 
@@ -193,6 +199,13 @@ func (service *Service) FullTextSearch(queryString string, requestingUserID int6
 }
 
 func (service *Service) RegisterUser(newUserForm *model.NewUserForm) (*model.PublicUser, error) {
+	hashedPassword, err := service.passwordManager.HashPassword(newUserForm.Password)
+	if err != nil {
+		log.WithError(err).Error("Error creating a password hash.")
+		return nil, appErrors.UnexpectedError
+	}
+
+	newUserForm.Password = hashedPassword
 	newUser, err := service.storage.InsertUser(newUserForm)
 
 	if err != nil {
@@ -213,8 +226,7 @@ func (service *Service) LoginUser(loginForm *model.LoginForm) (*model.PublicUser
 		return nil, databaseError
 	}
 
-	// TODO: hash the password before comparing
-	if userAuthData.Password != password {
+	if !service.passwordManager.ValidatePassword(password, userAuthData.Password) {
 		return nil, errors.InvalidCredentialsError
 	}
 
@@ -239,7 +251,7 @@ func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoo
 			Name:     newUserGoogle.Name,
 		}
 
-		_, err := service.storage.InsertUser(newUserForm)
+		_, err = service.RegisterUser(newUserForm)
 		if err != nil {
 			return nil, err
 		}
@@ -255,7 +267,7 @@ func (service *Service) CreateOrLoginUserWithGoogle(newUserGoogle *model.UserGoo
 
 	loginForm := &model.LoginForm{
 		Email:    user.Email,
-		Password: user.Password,
+		Password: "superwierdhash",
 	}
 
 	return service.LoginUser(loginForm)
