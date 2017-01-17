@@ -14,6 +14,7 @@ type ServerConfiguration struct {
 	secretKey                  []byte
 	authTokenValidityPeriod    int
 	refreshTokenValidityPeriod int
+	randomPasswordLength       int
 }
 
 func (config *ServerConfiguration) GetSecretKey() []byte {
@@ -26,6 +27,10 @@ func (config *ServerConfiguration) GetAuthTokenValidityPeriod() int {
 
 func (config *ServerConfiguration) GetRefreshTokenValidityPeriod() int {
 	return config.refreshTokenValidityPeriod
+}
+
+func (config *ServerConfiguration) GetRandomPasswordLength() int {
+	return config.randomPasswordLength
 }
 
 type DatabaseConfiguration struct {
@@ -133,6 +138,7 @@ func (esConfig *ElasticsearchConfiguration) GetPort() string {
 // TODO: Maybe read the config only once on init() or something and then return the global object?
 func GetConfig(fileName string) (
 	TokenManagerConfig,
+	PasswordManagerConfig,
 	DBConfigProvider,
 	RedisConfigProvider,
 	AuthorizationGoogleConfigurationProvider,
@@ -146,25 +152,30 @@ func GetConfig(fileName string) (
 		log.WithError(err).Fatal("Error reading config file.")
 	}
 
-	tokenMangerConfig := readServiceConfig()
+	serverConfiguration := readServiceConfig()
+
+	tokenMangerConfig := serverConfiguration
+	passwordManagerConfig := serverConfiguration
 	databaseConfig := readDatabaseConfig()
 	cacheConfig := readCacheConfig()
 	authorizationConfig := readAuthorizationConfig()
 	elasticsearchConfig := readElasticsearchConfig()
 
-	return tokenMangerConfig, databaseConfig, cacheConfig, authorizationConfig, elasticsearchConfig
+	return tokenMangerConfig, passwordManagerConfig, databaseConfig, cacheConfig, authorizationConfig, elasticsearchConfig
 }
 
 func readServiceConfig() *ServerConfiguration {
 	secretKey := viper.GetString("secret_key")
 	authTokenValidityPeriod := viper.GetInt("auth_token_validity_period")
 	refreshTokenValidityPeriod := viper.GetInt("refresh_token_validity_period")
+	randomPasswordLength := viper.GetInt("random_password_length")
 
-	if secretKey == "" || authTokenValidityPeriod <= 0 || refreshTokenValidityPeriod <= 0 {
+	if secretKey == "" || authTokenValidityPeriod <= 0 || refreshTokenValidityPeriod <= 0 || randomPasswordLength <= 0 {
 		log.WithFields(log.Fields{
 			"secret key":              secretKey,
 			"auth validity period":    authTokenValidityPeriod,
 			"refresh validity period": refreshTokenValidityPeriod,
+			"random password length":  randomPasswordLength,
 		}).Fatal("Config file doesn't contain valid data.")
 	}
 
@@ -172,6 +183,7 @@ func readServiceConfig() *ServerConfiguration {
 		secretKey:                  []byte(secretKey),
 		authTokenValidityPeriod:    authTokenValidityPeriod,
 		refreshTokenValidityPeriod: refreshTokenValidityPeriod,
+		randomPasswordLength:       randomPasswordLength,
 	}
 }
 

@@ -1,6 +1,7 @@
 secret_key: "just a random secret string"
 auth_token_validity_period: 15
 refresh_token_validity_period: 1440
+random_password_length: 128
 
 database:
   username: "postgres"
