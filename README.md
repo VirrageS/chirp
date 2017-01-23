@@ -9,14 +9,6 @@
 Chirp is simplified Twitter written in Angular 2 and Go.
 
 
-
-## Delete unused branches
-
-    $ git fetch --all --prune
-    $ git branch --merged master | grep -v 'master$' | xargs git branch -d
-
-
-
 ## Getting started (BACKEND)
 
 Install Go language: https://golang.org/doc/install (don't forget to set your GOPATH).
@@ -27,7 +19,7 @@ Now run
     $ go get github.com/VirrageS/chirp
     $ cd $GOPATH/src/github.com/VirrageS/chirp/backend
     $ make install
-    $ docker-compose -f docker/backend.yml build && docker-compose -f docker/backend.yml up
+    $ docker-compose -f docker/core.yml up --build
     $ $GOPATH/bin/backend
 
 Now you've got your chirp backend running on [localhost:8080](http://localhost:8080/)!
@@ -44,15 +36,12 @@ You can add `$GOPATH/bin` to your `$PATH` and run `backend` easier.
 
 ## Getting started (FRONTEND)
 
-You should get `Node > 6.x` and `npm > 3.x`.
-
+You should get `Node > 6.x`, `npm > 3.x` and `yarn`.
 
 Now run
 
-    $ npm install --global typescript webpack webpack-dev-server tslint
-    $ npm install
-    $ npm rebuild node-sass
-    $ npm start
+    $ yarn global add typescript webpack webpack-dev-server tslint typings
+    $ yarn install
 
 now open browser to [localhost:3000](http://localhost:3000/) and done! :)
 
@@ -67,22 +56,22 @@ Then, depending on the services we want to start we have to type:
 
 ### Backend with services
 
-    $ docker-compose -f docker/backend.yml build && docker-compose -f docker/backend.yml up
+    $ docker-compose -f docker/backend.yml up --build
 
 
 ### Frontend with services
 
-    $ docker-compose -f docker/frontend.yml build && docker-compose -f docker/frontend.yml up
+    $ docker-compose -f docker/frontend.yml up --build
 
 
 ### Basic services
 
-    $ docker-compose -f docker/core.yml build && docker-compose -f docker/core.yml up
+    $ docker-compose -f docker/core.yml up --build
 
 
 ### Production
 
-    $ docker-compose -f docker/production.yml build && docker-compose -f docker/production.yml up
+    $ docker-compose -f docker/production.yml up --build
 
 If you want use production Docker you have to add this line to `/etc/hosts`:
 
