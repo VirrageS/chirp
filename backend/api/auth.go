@@ -11,12 +11,13 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
+// Creates new user with provided `name`, `username`, `password` and `email`.
 func (api *API) RegisterUser(context *gin.Context) {
 	var newUserForm model.NewUserForm
 	if err := context.BindJSON(&newUserForm); err != nil {
 		context.AbortWithError(
 			http.StatusBadRequest,
-			errors.New("Fields: name, username, password and email are required."),
+			errors.New("Name, username, password and email fields are required."),
 		)
 		return
 	}
@@ -28,16 +29,16 @@ func (api *API) RegisterUser(context *gin.Context) {
 		return
 	}
 
-	context.Header("Location", fmt.Sprintf("/user/%d", newUser.ID))
 	context.IndentedJSON(http.StatusCreated, newUser)
 }
 
+// Log in user to system with provided `email` and `password`.
 func (api *API) LoginUser(context *gin.Context) {
 	var loginForm model.LoginForm
 	if err := context.BindJSON(&loginForm); err != nil {
 		context.AbortWithError(
 			http.StatusBadRequest,
-			errors.New("Fields: email and password are required."),
+			errors.New("Email and password fields are required."),
 		)
 		return
 	}
@@ -65,6 +66,7 @@ func (api *API) LoginUser(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, loginResponse)
 }
 
+// Refreshes auth token
 func (api *API) RefreshAuthToken(context *gin.Context) {
 	var requestData model.RefreshAuthTokenRequest
 	if err := context.BindJSON(&requestData); err != nil {
@@ -101,13 +103,20 @@ func (api *API) CreateOrLoginUserWithGoogle(context *gin.Context) {
 	}
 
 	if form.State != "TODO" {
-		context.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Google login form."))
+		context.AbortWithError(
+			http.StatusUnauthorized,
+			errors.New("Invalid Google login form."),
+		)
 		return
 	}
 
 	user, err := api.getGoogleUser(form.Code)
 	if err != nil {
-		context.AbortWithError(http.StatusBadRequest, errors.New("Error fetching user from Google."))
+		context.AbortWithError(
+			http.StatusBadRequest,
+			errors.New("Error fetching user from Google."),
+		)
+		return
 	}
 
 	loggedUser, err := api.service.CreateOrLoginUserWithGoogle(user)

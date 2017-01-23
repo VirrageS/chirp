@@ -10,7 +10,6 @@ import (
 
 // Struct that implements APIProvider
 type API struct {
-	// logger?
 	service      service.ServiceProvider
 	tokenManager token.TokenManagerProvider
 	googleOAuth2 oauth2.Config

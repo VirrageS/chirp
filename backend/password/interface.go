@@ -1,6 +1,6 @@
 package password
 
-type Manager interface {
+type PasswordManager interface {
 	HashPassword(password string) (string, error)
 	GenerateRandomPassword() (string, error)
 	ValidatePassword(password, hashedPassword string) bool
