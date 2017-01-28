@@ -42,7 +42,7 @@ func NewRedisCache(config config.RedisConfigProvider) CacheProvider {
 
 // Set `value` for specified `key`
 func (cache *RedisCache) Set(key string, value interface{}) error {
-	return cache.set(key, value, cache.config.GetCacheExpirationTime())
+	return cache.set(key, value, cache.config.GetExpirationTime())
 }
 
 // Set `value` for specified key where key is created by hashing `fields`

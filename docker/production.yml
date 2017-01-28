@@ -21,6 +21,8 @@ services:
   backend:
     restart: always
     build: ../backend
+    environment:
+      - CHIRP_CONFIG=production
     ports:
       - "8080:8080"
     depends_on:

@@ -33,7 +33,7 @@ var _ = Describe("ServerTest", func() {
 	var (
 		router       *gin.Engine
 		db           *sql.DB
-		tokenManager token.TokenManagerProvider
+		tokenManager token.Manager
 
 		ala             *model.User
 		bob             *model.User
@@ -49,13 +49,14 @@ var _ = Describe("ServerTest", func() {
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
 
-		tokenManagerConfig, passwordManagerConfig, databaseConfig, _, authorizationGoogleConfig, _ := config.GetConfig("test_config")
-		db = database.NewConnection(databaseConfig)
+		conf := config.New()
+
+		db = database.NewConnection(conf.Database)
 		dummyCache := cache.NewDummyCache()
 		dummySearch := fulltextsearch.NewDummySearch()
-		tokenManager = token.NewTokenManager(tokenManagerConfig)
-		passwordManager := password.NewBcryptPasswordManager(passwordManagerConfig)
-		router = server.New(db, dummyCache, dummySearch, tokenManager, passwordManager, authorizationGoogleConfig)
+		tokenManager = token.NewManager(conf.Token)
+		passwordManager := password.NewBcryptManager(conf.Password)
+		router = server.New(db, dummyCache, dummySearch, tokenManager, passwordManager, conf.AuthorizationGoogle)
 
 		// create users
 		ala = createUser(router, "ala")

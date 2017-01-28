@@ -33,6 +33,16 @@ You can add `$GOPATH/bin` to your `$PATH` and run `backend` easier.
     $ backend
 
 
+### Additional environment variables
+
+You can set bunch of environment variables to steer some configs.
+When variables are not set default values are used instead.
+
+- `$CHIRP_CONFIG_PATH` - change to set config file path from which config will be loaded (**default** is `$GOPATH/src/github.com/VirrageS/chirp/backend`)
+- `$CHIRP_CONFIG_NAME` - change to set config file name (**default** is `config`)
+- `$CHIRP_CONFIG` - change to set config type. Options are: `development`, `production`, `test` (**default** is `development`)
+
+
 
 ## Getting started (FRONTEND)
 
@@ -56,22 +66,22 @@ Then, depending on the services we want to start we have to type:
 
 ### Backend with services
 
-    $ docker-compose -f docker/backend.yml up --build
+    $ make backend
 
 
 ### Frontend with services
 
-    $ docker-compose -f docker/frontend.yml up --build
+    $ make frontend
 
 
 ### Basic services
 
-    $ docker-compose -f docker/core.yml up --build
+    $ make core
 
 
 ### Production
 
-    $ docker-compose -f docker/production.yml up --build
+    $ make production
 
 If you want use production Docker you have to add this line to `/etc/hosts`:
 
@@ -98,5 +108,5 @@ To be able to use full code formatting you need to install:
 
 Then to test or format code run (**tip**: tests require Docker running!):
 
-    /backend$ make test
-    /backend$ make format
+    $ make test -C ./backend
+    $ make format -C ./backend

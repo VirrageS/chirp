@@ -10,17 +10,16 @@ import (
 
 // Struct that implements APIProvider
 type API struct {
-	// logger?
 	service      service.ServiceProvider
-	tokenManager token.TokenManagerProvider
+	tokenManager token.Manager
 	googleOAuth2 oauth2.Config
 }
 
 // Constructs an API object that uses given ServiceProvider.
 func NewAPI(
 	service service.ServiceProvider,
-	tokenManager token.TokenManagerProvider,
-	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
+	tokenManager token.Manager,
+	authorizationGoogleConfig config.AuthorizationGoogleConfigProvider,
 ) APIProvider {
 	googleOAuth2 := oauth2.Config{
 		ClientID:     authorizationGoogleConfig.GetClientID(),
