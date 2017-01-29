@@ -1,4 +1,4 @@
-## Getting started (BACKEND)
+## Building the backend
 
 Install Go language: https://golang.org/doc/install (don't forget to set your GOPATH).
 In order for backed to work you also need to have docker and docker-compose, see [Docker](https://github.com/VirrageS/chirp#docker)
@@ -23,7 +23,7 @@ You can add `$GOPATH/bin` to your `$PATH` and run `backend` easier.
 
 
 
-## Getting started (FRONTEND)
+## Building the frontend
 
 You should get `Node > 6.x`, `npm > 3.x` and `yarn`.
 
@@ -48,14 +48,14 @@ To be able to use full code formatting you need to install:
 
     $ go get -u github.com/golang/lint/golint
 
-Then to test or format code run (**tip**: tests require Docker running!):
+Then to test or format code run (**tip**: tests require Docker Machine running!):
 
     $ make test -C ./backend
     $ make format -C ./backend
 
 
 
-## Services
+## Building the project
 
 You can also start services with using docker:
 
