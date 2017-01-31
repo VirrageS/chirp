@@ -145,8 +145,8 @@ var _ = Describe("RedisCache", func() {
 		It("should not find elements when trying to get without setting", func() {
 			for _, test := range objectTests {
 				exists, err := redisCache.Get("key", test.out)
-				Expect(exists).Should(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).Should(BeFalse())
 			}
 		})
 
@@ -156,8 +156,8 @@ var _ = Describe("RedisCache", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				exists, err := redisCache.Get("key", test.out)
-				Expect(exists).Should(BeTrue())
 				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).Should(BeTrue())
 				Expect(test.in).To(Equal(test.out))
 			}
 		})
@@ -168,8 +168,8 @@ var _ = Describe("RedisCache", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				exists, err := redisCache.Get("key", test.out)
-				Expect(exists).Should(BeTrue())
 				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).Should(BeTrue())
 				Expect(test.in).To(Equal(test.out))
 			}
 		})
@@ -180,6 +180,7 @@ var _ = Describe("RedisCache", func() {
 
 			var v int64
 			exists, err := redisCache.Get("key", &v)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(exists).Should(BeTrue())
 			Expect(v).To(Equal(int64(1)))
 		})
@@ -201,6 +202,7 @@ var _ = Describe("RedisCache", func() {
 
 			var output int64
 			exists, err := redisCache.Get("key", &output)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(exists).Should(BeTrue())
 			Expect(output).To(Equal(input + 1))
 		})
@@ -211,6 +213,7 @@ var _ = Describe("RedisCache", func() {
 
 			var output int64
 			exists, err := redisCache.Get("key", &output)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(exists).Should(BeTrue())
 			Expect(output).To(Equal(int64(-1)))
 		})
@@ -232,6 +235,7 @@ var _ = Describe("RedisCache", func() {
 
 			var output int64
 			exists, err := redisCache.Get("key", &output)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(exists).Should(BeTrue())
 			Expect(output).To(Equal((input - 1)))
 		})
@@ -256,8 +260,8 @@ var _ = Describe("RedisCache", func() {
 				By("Getting key")
 
 				exists, err := redisCache.Get("key", test.out)
-				Expect(exists).Should(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).Should(BeFalse())
 			}
 		})
 
@@ -269,8 +273,8 @@ var _ = Describe("RedisCache", func() {
 				time.Sleep(2 * cacheTime)
 
 				exists, err := redisCache.Get("key", test.out)
-				Expect(exists).Should(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).Should(BeFalse())
 			}
 		})
 
@@ -282,8 +286,8 @@ var _ = Describe("RedisCache", func() {
 				time.Sleep(2 * cacheTime)
 
 				exists, err := redisCache.Get("key", test.out)
-				Expect(exists).Should(BeTrue())
 				Expect(err).NotTo(HaveOccurred())
+				Expect(exists).Should(BeTrue())
 			}
 		})
 	})
@@ -311,8 +315,8 @@ var _ = Describe("RedisCache", func() {
 			for _, test := range objectTests {
 				for _, fields := range fieldsTests {
 					exists, err := redisCache.GetWithFields(fields, test.out)
-					Expect(exists).Should(BeFalse())
 					Expect(err).NotTo(HaveOccurred())
+					Expect(exists).Should(BeFalse())
 				}
 			}
 		})
@@ -338,8 +342,8 @@ var _ = Describe("RedisCache", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
-					Expect(exists).Should(BeTrue())
 					Expect(err).NotTo(HaveOccurred())
+					Expect(exists).Should(BeTrue())
 					Expect(test.in).To(Equal(test.out))
 				}
 			}
@@ -352,6 +356,7 @@ var _ = Describe("RedisCache", func() {
 
 				var output int64
 				exists, err := redisCache.GetWithFields(fields, &output)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).Should(BeTrue())
 				Expect(output).To(Equal(int64(1)))
 			}
@@ -375,8 +380,9 @@ var _ = Describe("RedisCache", func() {
 
 				var output int64
 				exists, err := redisCache.GetWithFields(fields, &output)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).Should(BeTrue())
-				Expect((output)).To(Equal(input + 1))
+				Expect(output).To(Equal(input + 1))
 			}
 		})
 
@@ -387,6 +393,7 @@ var _ = Describe("RedisCache", func() {
 
 				var output int64
 				exists, err := redisCache.GetWithFields(fields, &output)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).Should(BeTrue())
 				Expect(output).To(Equal(int64(-1)))
 			}
@@ -410,6 +417,7 @@ var _ = Describe("RedisCache", func() {
 
 				var output int64
 				exists, err := redisCache.GetWithFields(fields, &output)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(exists).Should(BeTrue())
 				Expect(output).To(Equal(input - 1))
 			}
@@ -438,8 +446,8 @@ var _ = Describe("RedisCache", func() {
 					By("Getting key")
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
-					Expect(exists).Should(BeFalse())
 					Expect(err).NotTo(HaveOccurred())
+					Expect(exists).Should(BeFalse())
 				}
 			}
 		})
@@ -453,8 +461,8 @@ var _ = Describe("RedisCache", func() {
 					time.Sleep(2 * cacheTime)
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
-					Expect(exists).Should(BeFalse())
 					Expect(err).NotTo(HaveOccurred())
+					Expect(exists).Should(BeFalse())
 				}
 			}
 		})
@@ -468,8 +476,8 @@ var _ = Describe("RedisCache", func() {
 					time.Sleep(2 * cacheTime)
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
-					Expect(exists).Should(BeTrue())
 					Expect(err).NotTo(HaveOccurred())
+					Expect(exists).Should(BeTrue())
 				}
 			}
 		})

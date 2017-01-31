@@ -145,7 +145,7 @@ func (s *UserStorage) UnfollowUser(followeeID, followerID int64) error {
 	return nil
 }
 
-// TODO: this all could be done nicely in paralell
+// TODO: this all could be done nicely in parallel
 func (s *UserStorage) GetFollowers(userID, requestingUserID int64) ([]*model.PublicUser, error) {
 	followersIDs := make([]int64, 0)
 
@@ -167,7 +167,7 @@ func (s *UserStorage) GetFollowers(userID, requestingUserID int64) ([]*model.Pub
 	return followers, nil
 }
 
-// TODO: this all could be done nicely in paralell
+// TODO: this all could be done nicely in parallel
 func (s *UserStorage) GetFollowees(userID, requestingUserID int64) ([]*model.PublicUser, error) {
 	followeesIDs, err := s.GetFolloweesIDs(userID)
 	if err != nil {
