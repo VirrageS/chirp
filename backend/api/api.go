@@ -16,7 +16,7 @@ type API struct {
 }
 
 // Constructs an API object that uses given ServiceProvider.
-func NewAPI(
+func New(
 	service service.ServiceProvider,
 	tokenManager token.Manager,
 	authorizationGoogleConfig config.AuthorizationGoogleConfigProvider,

@@ -11,27 +11,18 @@ package main
 */
 
 import (
-	"github.com/VirrageS/chirp/backend/cache"
-	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/database"
-	"github.com/VirrageS/chirp/backend/fulltextsearch"
-	"github.com/VirrageS/chirp/backend/password"
+	"os"
+
+	"github.com/Sirupsen/logrus"
+
 	"github.com/VirrageS/chirp/backend/server"
-	"github.com/VirrageS/chirp/backend/token"
 )
 
+func init() {
+	logrus.SetOutput(os.Stderr)
+}
+
 func main() {
-	conf := config.New()
-	if conf == nil {
-		panic("Failed to get config.")
-	}
-
-	db := database.NewConnection(conf.Database)
-	redis := cache.NewRedisCache(conf.Redis)
-	elasticsearch := fulltextsearch.NewElasticsearch(conf.Elasticsearch)
-	tokenManager := token.NewManager(conf.Token)
-	passwordManager := password.NewBcryptManager(conf.Password)
-
-	s := server.New(db, redis, elasticsearch, tokenManager, passwordManager, conf.AuthorizationGoogle)
+	s := server.New()
 	s.Run(":8080")
 }

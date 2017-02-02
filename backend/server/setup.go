@@ -1,18 +1,11 @@
 package server
 
 import (
-	"database/sql"
-	"os"
-
-	"github.com/Sirupsen/logrus"
 	"gopkg.in/gin-contrib/cors.v1"
 	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/api"
-	"github.com/VirrageS/chirp/backend/cache"
 	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/database"
-	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/middleware"
 	"github.com/VirrageS/chirp/backend/password"
 	"github.com/VirrageS/chirp/backend/service"
@@ -20,43 +13,31 @@ import (
 	"github.com/VirrageS/chirp/backend/token"
 )
 
-func init() {
-	logrus.SetOutput(os.Stderr)
+// New creates a new server.
+func New() *gin.Engine {
+	conf := config.New()
+	if conf == nil {
+		panic("Failed to get config.")
+	}
+
+	storage := storage.New(conf.Postgres, conf.Redis, conf.Elasticsearch)
+	passwordManager := password.NewBcryptManager(conf.Password)
+	services := service.New(storage, passwordManager)
+
+	tokenManager := token.NewManager(conf.Token)
+	apis := api.New(services, tokenManager, conf.AuthorizationGoogle)
+
+	return setupRouter(apis, tokenManager)
 }
 
-// Handles all dependencies and creates a new server.
-// Takes a DB connection parameter in order to support test database.
-func New(
-	dbConnection *sql.DB,
-	redis cache.CacheProvider,
-	elasticsearch fulltextsearch.Searcher,
-	tokenManager token.Manager,
-	passwordManager password.Manager,
-	authGoogleConfig config.AuthorizationGoogleConfigProvider,
-) *gin.Engine {
-	// api dependencies
-	CORSConfig := setupCORS()
-
-	userDAO := database.NewUserDAO(dbConnection)
-	followsDAO := database.NewFollowsDAO(dbConnection)
-	tweetDAO := database.NewTweetDAO(dbConnection)
-	likesDAO := database.NewLikesDAO(dbConnection)
-
-	storage := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis, elasticsearch)
-	services := service.NewService(storage, passwordManager)
-	apis := api.NewAPI(services, tokenManager, authGoogleConfig)
-
-	return setupRouter(apis, tokenManager, CORSConfig)
-}
-
-func setupRouter(api api.APIProvider, tokenManager token.Manager, corsConfig *cors.Config) *gin.Engine {
-	CORSHandler := cors.New(*corsConfig)
+func setupRouter(api api.APIProvider, tokenManager token.Manager) *gin.Engine {
+	corsHandler := newCorsHandler()
 	contentTypeChecker := middleware.ContentTypeChecker()
 	authenticator := middleware.TokenAuthenticator(tokenManager)
 	errorHandler := middleware.ErrorHandler()
 
 	router := gin.Default()
-	router.Use(CORSHandler)
+	router.Use(corsHandler)
 	router.Use(errorHandler)
 
 	authorizedRoutes := router.Group("/", authenticator)
@@ -95,10 +76,10 @@ func setupRouter(api api.APIProvider, tokenManager token.Manager, corsConfig *co
 	return router
 }
 
-func setupCORS() *cors.Config {
+func newCorsHandler() gin.HandlerFunc {
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AddAllowHeaders("Authorization")
 
-	return &config
+	return cors.New(config)
 }

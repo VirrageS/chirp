@@ -83,7 +83,7 @@ var _ = Describe("Config", func() {
 
 		Expect(config.Token).NotTo(BeNil())
 		Expect(config.Password).NotTo(BeNil())
-		Expect(config.Database).NotTo(BeNil())
+		Expect(config.Postgres).NotTo(BeNil())
 		Expect(config.Redis).NotTo(BeNil())
 		Expect(config.AuthorizationGoogle).NotTo(BeNil())
 		Expect(config.Elasticsearch).NotTo(BeNil())

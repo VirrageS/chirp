@@ -6,7 +6,7 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
-// Helper that wraps rows and row so they can be used in the same function
+// scannable is helper interface that wraps rows and row so they can be used in the same function.
 type scannable interface {
 	Scan(dest ...interface{}) error
 }
@@ -44,9 +44,11 @@ func readPublicUser(row scannable) (*model.PublicUser, error) {
 func readUser(row scannable) (*model.User, error) {
 	var user model.User
 
-	err := row.Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.Name,
+	err := row.Scan(
+		&user.ID, &user.Username, &user.Password, &user.Email, &user.Name,
 		&user.TwitterToken, &user.FacebookToken, &user.GoogleToken,
-		&user.CreatedAt, &user.LastLogin, &user.Active, &user.AvatarUrl)
+		&user.CreatedAt, &user.LastLogin, &user.Active, &user.AvatarUrl,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +58,11 @@ func readUser(row scannable) (*model.User, error) {
 
 func readMultipleTweetsIDs(rows *sql.Rows) ([]int64, error) {
 	tweetsIDs := make([]int64, 0)
+
 	for rows.Next() {
 		var tweetID int64
 
-		err := rows.Scan(&tweetID)
-		if err != nil {
+		if err := rows.Scan(&tweetID); err != nil {
 			return nil, err
 		}
 
@@ -76,6 +78,7 @@ func readMultipleTweetsIDs(rows *sql.Rows) ([]int64, error) {
 
 func readMultipleTweets(rows *sql.Rows) ([]*model.Tweet, error) {
 	tweets := make([]*model.Tweet, 0)
+
 	for rows.Next() {
 		tweet, err := readTweet(rows)
 		if err != nil {
@@ -93,8 +96,10 @@ func readMultipleTweets(rows *sql.Rows) ([]*model.Tweet, error) {
 }
 
 func readTweet(row scannable) (*model.Tweet, error) {
-	var tweet model.Tweet
-	var authorID int64
+	var (
+		tweet    model.Tweet
+		authorID int64
+	)
 
 	err := row.Scan(&tweet.ID, &tweet.CreatedAt, &tweet.Content, &authorID)
 	if err != nil {
@@ -102,6 +107,5 @@ func readTweet(row scannable) (*model.Tweet, error) {
 	}
 
 	tweet.Author = &model.PublicUser{ID: authorID}
-
 	return &tweet, nil
 }

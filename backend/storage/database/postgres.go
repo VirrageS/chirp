@@ -9,8 +9,9 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 )
 
-// Returns new connection to DB specified in config file. Panics when unrecoverable error occurs.
-func NewConnection(config config.DatabaseConfigProvider) *sql.DB {
+// NewPostgresDatabase returns new connection to PostgreSQL database.
+// All configurations can be specified in config file.
+func NewPostgresDatabase(config config.DatabaseConfigProvider) *Connection {
 	username := config.GetUsername()
 	password := config.GetPassword()
 	host := config.GetHost()
@@ -19,13 +20,14 @@ func NewConnection(config config.DatabaseConfigProvider) *sql.DB {
 	accessString := fmt.Sprintf("user=%s password=%s host=%s sslmode=disable port=%s", username, password, host, port)
 	db, err := sql.Open("postgres", accessString)
 	if err != nil {
-		log.WithError(err).Fatal("Error opening database.")
+		log.WithError(err).Error("Error opening database.")
+		return nil
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.WithError(err).Fatal("Error connecting to database.")
+	if err = db.Ping(); err != nil {
+		log.WithError(err).Error("Error connecting to database.")
+		return nil
 	}
 
-	return db
+	return &Connection{db}
 }

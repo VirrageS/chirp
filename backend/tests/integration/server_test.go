@@ -1,38 +1,27 @@
 package integration
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sort"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/gin-gonic/gin.v1"
 
-	"github.com/VirrageS/chirp/backend/cache"
-	"github.com/VirrageS/chirp/backend/config"
-	"github.com/VirrageS/chirp/backend/database"
-	"github.com/VirrageS/chirp/backend/fulltextsearch"
 	"github.com/VirrageS/chirp/backend/model"
-	"github.com/VirrageS/chirp/backend/password"
 	"github.com/VirrageS/chirp/backend/server"
+	"github.com/VirrageS/chirp/backend/storage/database"
 	"github.com/VirrageS/chirp/backend/token"
 	"github.com/VirrageS/chirp/backend/utils"
 )
 
-func TestIntegration(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration")
-}
-
 var _ = Describe("ServerTest", func() {
 	var (
 		router       *gin.Engine
-		db           *sql.DB
+		db           *database.Connection
 		tokenManager token.Manager
 
 		ala             *model.User
@@ -48,14 +37,10 @@ var _ = Describe("ServerTest", func() {
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
 
-		conf := config.New()
-
-		db = database.NewConnection(conf.Database)
-		dummyCache := cache.NewDummyCache()
-		dummySearch := fulltextsearch.NewDummySearch()
-		tokenManager = token.NewManager(conf.Token)
-		passwordManager := password.NewBcryptManager(conf.Password)
-		router = server.New(db, dummyCache, dummySearch, tokenManager, passwordManager, conf.AuthorizationGoogle)
+		fakeServer := server.NewFakeServer()
+		router = fakeServer.Server
+		db = fakeServer.Storage.Database
+		tokenManager = fakeServer.TokenManager
 
 		// create users
 		ala = createUser(router, "ala")

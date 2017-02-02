@@ -14,7 +14,7 @@ type PasswordConfigProvider interface {
 	GetRandomPasswordLength() int
 }
 
-// DatabaseConfigProvider provides Database access configuration.
+// DatabaseConfigProvider provides general Database access configuration.
 type DatabaseConfigProvider interface {
 	GetUsername() string
 	GetPassword() string
@@ -22,7 +22,12 @@ type DatabaseConfigProvider interface {
 	GetPort() string
 }
 
-// CacheConfigProvider provides Cache access configuration.
+// PostgresConfigProvider provides Postgres access configuration.
+type PostgresConfigProvider interface {
+	DatabaseConfigProvider
+}
+
+// CacheConfigProvider provides general Cache access configuration.
 type CacheConfigProvider interface {
 	GetPassword() string
 	GetHost() string

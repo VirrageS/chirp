@@ -1,12 +1,10 @@
 package database
 
 import (
-	"database/sql"
-
 	log "github.com/Sirupsen/logrus"
 )
 
-// Follows Data Access Object - provides operations on Follows database table
+// FollowsDAO (Follows Data Access Object) is interface that provides operations on Follows database table.
 type FollowsDAO interface {
 	FollowUser(followeeID, followerID int64) (bool, error)
 	UnfollowUser(followeeID, followerID int64) (bool, error)
@@ -18,18 +16,18 @@ type FollowsDAO interface {
 }
 
 type followsDB struct {
-	*sql.DB
+	*Connection
 }
 
-func NewFollowsDAO(dbConnection *sql.DB) FollowsDAO {
-	return &followsDB{dbConnection}
+// NewFollowsDAO creates new struct which implements FollowsDAO functions.
+func NewFollowsDAO(conn *Connection) FollowsDAO {
+	return &followsDB{conn}
 }
 
 func (db *followsDB) FollowUser(followeeID, followerID int64) (bool, error) {
-	result, err := db.Exec(`
-		INSERT INTO follows (followee_id, follower_id)
-		VALUES ($1, $2)
-		ON CONFLICT (followee_id, follower_id) DO NOTHING`,
+	result, err := db.Exec(
+		`INSERT INTO follows (followee_id, follower_id) VALUES ($1, $2)
+			ON CONFLICT (followee_id, follower_id) DO NOTHING`,
 		followeeID, followerID,
 	)
 	if err != nil {
@@ -49,10 +47,8 @@ func (db *followsDB) FollowUser(followeeID, followerID int64) (bool, error) {
 }
 
 func (db *followsDB) UnfollowUser(followeeID, followerID int64) (bool, error) {
-	result, err := db.Exec(`
-		DELETE FROM follows
-		WHERE followee_id=$1 AND follower_id=$2;
-		`,
+	result, err := db.Exec(
+		`DELETE FROM follows WHERE followee_id=$1 AND follower_id=$2`,
 		followeeID, followerID,
 	)
 	if err != nil {
@@ -75,20 +71,22 @@ func (db *followsDB) GetFollowersIDs(userID int64) ([]int64, error) {
 	rows, err := db.Query(`SELECT follower_id FROM follows WHERE followee_id = $1`, userID)
 	if err != nil {
 		log.WithError(err).Error("GetFollowersIDs query error")
+		return nil, err
 	}
 	defer rows.Close()
 
 	followersIDs := make([]int64, 0)
 	for rows.Next() {
 		var followerID int64
-		err = rows.Scan(&followerID)
-		if err != nil {
+
+		if err = rows.Scan(&followerID); err != nil {
 			log.WithError(err).Error("GetFollowersIDs row scan error.")
 			return nil, err
 		}
 
 		followersIDs = append(followersIDs, followerID)
 	}
+
 	if err = rows.Err(); err != nil {
 		log.WithError(err).Error("GetFollowersIDs rows iteration error.")
 		return nil, err
@@ -101,6 +99,7 @@ func (db *followsDB) GetFolloweesIDs(userID int64) ([]int64, error) {
 	rows, err := db.Query(`SELECT followee_id FROM follows WHERE follower_id = $1`, userID)
 	if err != nil {
 		log.WithError(err).Error("GetFolloweesIDs query error")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -116,6 +115,7 @@ func (db *followsDB) GetFolloweesIDs(userID int64) ([]int64, error) {
 
 		followeesIDs = append(followeesIDs, followeeID)
 	}
+
 	if err = rows.Err(); err != nil {
 		log.WithError(err).Error("GetFolloweesIDs rows iteration error.")
 		return nil, err
@@ -151,8 +151,11 @@ func (db *followsDB) GetFolloweeCount(userID int64) (int64, error) {
 func (db *followsDB) IsFollowing(followerID, followeeID int64) (bool, error) {
 	var isFollowing bool
 
-	err := db.QueryRow(`SELECT exists (SELECT TRUE FROM follows WHERE follower_id = $1 AND followee_id = $2)`,
-		followerID, followeeID).Scan(&isFollowing)
+	err := db.QueryRow(
+		`SELECT exists (SELECT TRUE FROM follows WHERE follower_id = $1 AND followee_id = $2)`,
+		followerID, followeeID,
+	).Scan(&isFollowing)
+
 	if err != nil {
 		log.WithError(err).Error("IsFollowing query error.")
 		return false, err

@@ -6,7 +6,7 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
-type TweetDataAccessor interface {
+type tweetsDataAccessor interface {
 	GetUsersTweets(userID, requestingUserID int64) ([]*model.Tweet, error)
 	GetTweetsByAuthorIDs(authorsIDs []int64, requestingUserID int64) ([]*model.Tweet, error)
 	GetTweet(tweetID, requestingUserID int64) (*model.Tweet, error)
@@ -17,7 +17,7 @@ type TweetDataAccessor interface {
 	GetTweetsUsingQueryString(querystring string, requestingUserID int64) ([]*model.Tweet, error)
 }
 
-type UserDataAccessor interface {
+type usersDataAccessor interface {
 	GetUserByID(userID, requestingUserID int64) (*model.PublicUser, error)
 	GetUserByEmail(email string) (*model.User, error)
 	InsertUser(user *model.NewUserForm) (*model.PublicUser, error)
@@ -30,7 +30,10 @@ type UserDataAccessor interface {
 	GetUsersUsingQueryString(querystring string, requestingUserID int64) ([]*model.PublicUser, error)
 }
 
-type StorageAccessor interface {
-	UserDataAccessor
-	TweetDataAccessor
+// Accessor is interface which defines all functions used on database/cache/fts
+// in the system. Any other packages should use this Accessor instead of using
+// eg. database directly.
+type Accessor interface {
+	usersDataAccessor
+	tweetsDataAccessor
 }
