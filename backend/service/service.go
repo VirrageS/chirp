@@ -15,15 +15,12 @@ import (
 
 // Struct that implements APIProvider
 type Service struct {
-	storage         storage.StorageAccessor
+	storage         storage.Accessor
 	passwordManager password.Manager
 }
 
 // Constructs a Service that uses provided objects
-func NewService(
-	storage storage.StorageAccessor,
-	passwordManager password.Manager,
-) ServiceProvider {
+func New(storage storage.Accessor, passwordManager password.Manager) ServiceProvider {
 	return &Service{
 		storage:         storage,
 		passwordManager: passwordManager,

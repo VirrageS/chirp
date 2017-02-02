@@ -13,10 +13,10 @@ import (
 type Configuration struct {
 	Token               TokenConfigProvider
 	Password            PasswordConfigProvider
-	Database            DatabaseConfigProvider
+	Postgres            PostgresConfigProvider
 	Redis               RedisConfigProvider
-	AuthorizationGoogle AuthorizationGoogleConfigProvider
 	Elasticsearch       ElasticsearchConfigProvider
+	AuthorizationGoogle AuthorizationGoogleConfigProvider
 }
 
 // New reads and creates configuration from path provided in env `$CHIRP_CONFIG_PATH`
@@ -51,14 +51,12 @@ func New() *Configuration {
 	}
 
 	config := &generalConfig{subConfig}
-
-	serverConfiguration := config.getServerConfig()
 	return &Configuration{
-		Token:               serverConfiguration,
-		Password:            serverConfiguration,
-		Database:            config.getDatabaseConfig(),
-		Redis:               config.getRedisCacheConfig(),
-		AuthorizationGoogle: config.getAuthorizationGoogleConfig(),
+		Token:               config.getServerConfig(),
+		Password:            config.getServerConfig(),
+		Postgres:            config.getPostgresConfig(),
+		Redis:               config.getRedisConfig(),
 		Elasticsearch:       config.getElasticsearchConfig(),
+		AuthorizationGoogle: config.getAuthorizationGoogleConfig(),
 	}
 }

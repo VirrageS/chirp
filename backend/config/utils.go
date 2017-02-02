@@ -30,30 +30,30 @@ func (config *serverConfig) GetRandomPasswordLength() int {
 	return config.randomPasswordLength
 }
 
-type databaseConfig struct {
+type postgresConfig struct {
 	username string
 	password string
 	host     string
 	port     string
 }
 
-func (config *databaseConfig) GetUsername() string {
+func (config *postgresConfig) GetUsername() string {
 	return config.username
 }
 
-func (config *databaseConfig) GetPassword() string {
+func (config *postgresConfig) GetPassword() string {
 	return config.password
 }
 
-func (config *databaseConfig) GetHost() string {
+func (config *postgresConfig) GetHost() string {
 	return config.host
 }
 
-func (config *databaseConfig) GetPort() string {
+func (config *postgresConfig) GetPort() string {
 	return config.port
 }
 
-type redisCacheConfig struct {
+type redisConfig struct {
 	password       string
 	host           string
 	port           string
@@ -61,23 +61,23 @@ type redisCacheConfig struct {
 	expirationTime time.Duration
 }
 
-func (config *redisCacheConfig) GetPassword() string {
+func (config *redisConfig) GetPassword() string {
 	return config.password
 }
 
-func (config *redisCacheConfig) GetHost() string {
+func (config *redisConfig) GetHost() string {
 	return config.host
 }
 
-func (config *redisCacheConfig) GetPort() string {
+func (config *redisConfig) GetPort() string {
 	return config.port
 }
 
-func (config *redisCacheConfig) GetDB() int {
+func (config *redisConfig) GetDB() int {
 	return config.db
 }
 
-func (config *redisCacheConfig) GetExpirationTime() time.Duration {
+func (config *redisConfig) GetExpirationTime() time.Duration {
 	return config.expirationTime
 }
 
@@ -159,11 +159,11 @@ func (config *generalConfig) getServerConfig() *serverConfig {
 	}
 }
 
-func (config *generalConfig) getDatabaseConfig() *databaseConfig {
-	username := config.GetString("database.username")
-	password := config.GetString("database.password")
-	host := config.GetString("database.host")
-	port := config.GetString("database.port")
+func (config *generalConfig) getPostgresConfig() *postgresConfig {
+	username := config.GetString("postgres.username")
+	password := config.GetString("postgres.password")
+	host := config.GetString("postgres.host")
+	port := config.GetString("postgres.port")
 
 	if username == "" || password == "" || host == "" || port == "" {
 		log.WithFields(log.Fields{
@@ -171,10 +171,10 @@ func (config *generalConfig) getDatabaseConfig() *databaseConfig {
 			"password": password,
 			"host":     host,
 			"port":     port,
-		}).Fatal("Config file doesn't contain valid database access data.")
+		}).Fatal("Config file doesn't contain valid postgres access data.")
 	}
 
-	return &databaseConfig{
+	return &postgresConfig{
 		username: username,
 		password: password,
 		host:     host,
@@ -182,7 +182,7 @@ func (config *generalConfig) getDatabaseConfig() *databaseConfig {
 	}
 }
 
-func (config *generalConfig) getRedisCacheConfig() *redisCacheConfig {
+func (config *generalConfig) getRedisConfig() *redisConfig {
 	password := config.GetString("redis.password")
 	host := config.GetString("redis.host")
 	port := config.GetString("redis.port")
@@ -199,7 +199,7 @@ func (config *generalConfig) getRedisCacheConfig() *redisCacheConfig {
 		}).Fatal("Config file doesn't contain valid redis access data.")
 	}
 
-	return &redisCacheConfig{
+	return &redisConfig{
 		password:       password,
 		host:           host,
 		port:           port,

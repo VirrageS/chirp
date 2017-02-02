@@ -10,8 +10,8 @@ import (
 	"github.com/lib/pq"
 )
 
-// Tweet Data Access Object - provides operations on Tweet database table
-type TweetDAO interface {
+// TweetsDAO (Tweets Data Access Object) is interface which provides operations on Tweet database table.
+type TweetsDAO interface {
 	GetTweetsIDsByAuthorID(userID int64) ([]int64, error)
 	GetTweetsByIDs(tweetsIDs []int64) ([]*model.Tweet, error)
 	GetTweetByID(tweetID int64) (*model.Tweet, error)
@@ -19,21 +19,17 @@ type TweetDAO interface {
 	DeleteTweet(tweetID int64) error
 }
 
-type tweetDB struct {
-	*sql.DB
+type tweetsDB struct {
+	*Connection
 }
 
-func NewTweetDAO(dbConnection *sql.DB) TweetDAO {
-	return &tweetDB{dbConnection}
+// NewTweetDAO creates new struct which implements TweetDAO functions.
+func NewTweetDAO(conn *Connection) TweetsDAO {
+	return &tweetsDB{conn}
 }
 
-func (db *tweetDB) GetTweetsIDsByAuthorID(userID int64) ([]int64, error) {
-	rows, err := db.Query(`
-		SELECT id
-		FROM tweets
-		WHERE author_id = $1
-		ORDER BY created_at DESC`,
-		userID)
+func (db *tweetsDB) GetTweetsIDsByAuthorID(userID int64) ([]int64, error) {
+	rows, err := db.Query(`SELECT id FROM tweets WHERE author_id = $1 ORDER BY created_at DESC`, userID)
 	if err != nil {
 		log.WithField("userID", userID).WithError(err).Error("GetTweetsIDsByAuthorID query error.")
 		return nil, err
@@ -48,13 +44,12 @@ func (db *tweetDB) GetTweetsIDsByAuthorID(userID int64) ([]int64, error) {
 	return tweetIDs, nil
 }
 
-func (db *tweetDB) GetTweetsByIDs(tweetsIDs []int64) ([]*model.Tweet, error) {
-	rows, err := db.Query(`
-		SELECT id, created_at, content, author_id
-		FROM tweets
-		WHERE id = ANY($1)
-		ORDER BY created_at DESC`,
-		pq.Array(tweetsIDs))
+func (db *tweetsDB) GetTweetsByIDs(tweetsIDs []int64) ([]*model.Tweet, error) {
+	rows, err := db.Query(
+		`SELECT id, created_at, content, author_id FROM tweets
+			WHERE id = ANY($1) ORDER BY created_at DESC`,
+		pq.Array(tweetsIDs),
+	)
 	if err != nil {
 		log.WithField("tweetsIDs", tweetsIDs).WithError(err).Error("GetTweetsByIDs query error.")
 		return nil, err
@@ -69,19 +64,17 @@ func (db *tweetDB) GetTweetsByIDs(tweetsIDs []int64) ([]*model.Tweet, error) {
 	return tweets, nil
 }
 
-func (db *tweetDB) GetTweetByID(tweetID int64) (*model.Tweet, error) {
-	row := db.QueryRow(`
-		SELECT id, created_at, content, author_id
-		FROM tweets
-		WHERE id = $1
-		ORDER BY created_at DESC`,
-		tweetID)
+func (db *tweetsDB) GetTweetByID(tweetID int64) (*model.Tweet, error) {
+	row := db.QueryRow(
+		`SELECT id, created_at, content, author_id FROM tweets
+			WHERE id = $1 ORDER BY created_at DESC`,
+		tweetID,
+	)
 
 	tweet, err := readTweet(row)
 	if err == sql.ErrNoRows {
 		return nil, errors.NoResultsError
-	}
-	if err != nil {
+	} else if err != nil {
 		log.WithField("tweetID", tweetID).WithError(err).Error("GetTweetByID query error.")
 		return nil, err
 	}
@@ -89,12 +82,12 @@ func (db *tweetDB) GetTweetByID(tweetID int64) (*model.Tweet, error) {
 	return tweet, err
 }
 
-func (db *tweetDB) InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error) {
-	row := db.QueryRow(`
-		INSERT INTO tweets (author_id, content)
-		VALUES ($1, $2)
-		RETURNING id, created_at, content, author_id`,
-		newTweet.AuthorID, newTweet.Content)
+func (db *tweetsDB) InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error) {
+	row := db.QueryRow(
+		`INSERT INTO tweets (author_id, content) VALUES ($1, $2)
+			RETURNING id, created_at, content, author_id`,
+		newTweet.AuthorID, newTweet.Content,
+	)
 
 	insertedTweet, err := readTweet(row)
 	if err != nil {
@@ -105,7 +98,7 @@ func (db *tweetDB) InsertTweet(newTweet *model.NewTweet) (*model.Tweet, error) {
 	return insertedTweet, nil
 }
 
-func (db *tweetDB) DeleteTweet(tweetID int64) error {
+func (db *tweetsDB) DeleteTweet(tweetID int64) error {
 	_, err := db.Exec(`DELETE FROM tweets WHERE id=$1`, tweetID)
 	if err != nil {
 		log.WithField("tweetID", tweetID).WithError(err).Error("DeleteTweet query error.")
