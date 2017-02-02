@@ -15,7 +15,7 @@ server_defaults: &server_defaults
   refresh_token_validity_period: 24h
   random_password_length: 128
 
-database_defaults: &database_defaults
+postgres_defaults: &postgres_defaults
   username: "postgres"
   password: "postgres"
   host: "localhost"
@@ -43,8 +43,8 @@ elasticsearch_defaults: &elasticsearch_defaults
 
 defaults: &defaults
   <<: *server_defaults
-  database:
-    <<: *database_defaults
+  postgres:
+    <<: *postgres_defaults
   redis:
     <<: *redis_defaults
   authorization_google:
@@ -57,8 +57,8 @@ development:
 
 production:
   <<: *defaults
-  database:
-    <<: *database_defaults
+  postgres:
+    <<: *postgres_defaults
     host: "database"
   redis:
     <<: *redis_defaults
@@ -74,8 +74,8 @@ test:
   <<: *defaults
   secret_key: "secret"
   random_password_length: 32
-  database:
-    <<: *database_defaults
+  postgres:
+    <<: *postgres_defaults
     port: "5433"
   redis:
     <<: *redis_defaults

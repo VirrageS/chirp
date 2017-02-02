@@ -1,12 +1,10 @@
 package database
 
 import (
-	"database/sql"
-
 	log "github.com/Sirupsen/logrus"
 )
 
-// Likes Data Access Object - provides operations on Likes database table
+// LikesDAO (Likes Data Access Object) is interface which provides operations on Likes database table.
 type LikesDAO interface {
 	LikeTweet(tweetID, userID int64) (bool, error)
 	UnlikeTweet(tweetID, userID int64) (bool, error)
@@ -15,19 +13,20 @@ type LikesDAO interface {
 }
 
 type likesDB struct {
-	*sql.DB
+	*Connection
 }
 
-func NewLikesDAO(dbConnection *sql.DB) LikesDAO {
-	return &likesDB{dbConnection}
+// NewLikesDAO creates new struct which implements LikesDAO functions.
+func NewLikesDAO(conn *Connection) LikesDAO {
+	return &likesDB{conn}
 }
 
 func (db *likesDB) LikeTweet(tweetID, userID int64) (bool, error) {
-	result, err := db.Exec(`
-		INSERT INTO likes (tweet_id, user_id)
-		VALUES ($1, $2)
-		ON CONFLICT (tweet_id, user_id) DO NOTHING`,
-		tweetID, userID)
+	result, err := db.Exec(
+		`INSERT INTO likes (tweet_id, user_id) VALUES ($1, $2)
+			ON CONFLICT (tweet_id, user_id) DO NOTHING`,
+		tweetID, userID,
+	)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"tweetID": tweetID,
@@ -77,8 +76,11 @@ func (db *likesDB) GetLikeCount(tweetID int64) (int64, error) {
 func (db *likesDB) IsLiked(tweetID, userID int64) (bool, error) {
 	var isLiked bool
 
-	err := db.QueryRow(`SELECT exists (SELECT TRUE FROM likes WHERE tweet_id = $1 AND user_id = $2)`,
-		tweetID, userID).Scan(&isLiked)
+	err := db.QueryRow(
+		`SELECT exists (SELECT TRUE FROM likes WHERE tweet_id = $1 AND user_id = $2)`,
+		tweetID, userID,
+	).Scan(&isLiked)
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"tweetID": tweetID,

@@ -7,13 +7,15 @@ import (
 	"github.com/VirrageS/chirp/backend/storage/fulltextsearch"
 )
 
-type storage struct {
-	usersDataAccessor
-	tweetsDataAccessor
+// FakeStorage exports all fields which can be necessary for tests.
+type FakeStorage struct {
+	Database *database.Connection
+	Cache    cache.Accessor
+	Storage  Accessor
 }
 
-// New constructs Accessor that TODO
-func New(postgresConfig config.PostgresConfigProvider, redisConfig config.RedisConfigProvider, elasticsearchConfig config.ElasticsearchConfigProvider) Accessor {
+// NewFakeStorage creates new fake storage necessary for tests.
+func NewFakeStorage(postgresConfig config.PostgresConfigProvider) *FakeStorage {
 	db := database.NewPostgresDatabase(postgresConfig)
 	if db == nil {
 		panic("failed to connect to Postgres instance")
@@ -24,20 +26,17 @@ func New(postgresConfig config.PostgresConfigProvider, redisConfig config.RedisC
 	followsDAO := database.NewFollowsDAO(db)
 	likesDAO := database.NewLikesDAO(db)
 
-	cache := cache.NewRedisCache(redisConfig)
-	if cache == nil {
-		panic("failed to connect to Redis instance")
-	}
-
-	fts := fulltextsearch.NewElasticsearchSearch(elasticsearchConfig)
-	if fts == nil {
-		panic("failed to connect to Elasticsearch instance")
-	}
+	cache := cache.NewFakeCache() // TODO this shoud be redis...
+	fts := fulltextsearch.NewFakeSearch()
 
 	usersStorage := newUsersStorage(usersDAO, followsDAO, cache, fts)
 	tweetsStorage := newTweetsStorage(tweetsDAO, likesDAO, usersStorage, cache, fts)
-	return &storage{
-		usersDataAccessor:  usersStorage,
-		tweetsDataAccessor: tweetsStorage,
+	return &FakeStorage{
+		Database: db,
+		Cache:    cache,
+		Storage: &storage{
+			usersDataAccessor:  usersStorage,
+			tweetsDataAccessor: tweetsStorage,
+		},
 	}
 }

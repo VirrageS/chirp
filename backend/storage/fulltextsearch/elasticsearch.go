@@ -21,11 +21,13 @@ const (
 	userUsernameField = "username"
 )
 
-type ElasticsearchClient struct {
+type elasticsearchClient struct {
 	*elastic.Client
 }
 
-func NewElasticsearch(config config.ElasticsearchConfigProvider) *ElasticsearchClient {
+// NewElasticsearchSearch connects to Elasticsearch and returns new instance of
+// struct which implements Searcher functions.
+func NewElasticsearchSearch(config config.ElasticsearchConfigProvider) Searcher {
 	username := config.GetUsername()
 	password := config.GetPassword()
 	url := fmt.Sprintf("http://%v:%v", config.GetHost(), config.GetPort())
@@ -36,23 +38,24 @@ func NewElasticsearch(config config.ElasticsearchConfigProvider) *ElasticsearchC
 		elastic.SetSniff(false),
 	)
 	if err != nil {
-		log.WithError(err).Fatal("Error connecting to elasticsearch.")
+		log.WithError(err).Error("Error connecting to elasticsearch.")
+		return nil
 	}
 
-	return &ElasticsearchClient{client}
+	return &elasticsearchClient{client}
 }
 
-func (e *ElasticsearchClient) GetTweetsIDs(querystring string) ([]int64, error) {
+func (e *elasticsearchClient) GetTweetsIDs(querystring string) ([]int64, error) {
 	return e.getIDsFromIndex(querystring, tweetType, tweetContentField)
 }
 
-func (e *ElasticsearchClient) GetUsersIDs(querystring string) ([]int64, error) {
+func (e *elasticsearchClient) GetUsersIDs(querystring string) ([]int64, error) {
 	return e.getIDsFromIndex(querystring, userType, userUsernameField, userNameField)
 }
 
-func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fields ...string) ([]int64, error) {
-	// Create a MatchQuery with "and" operator - a query that will require each word in `querystring` to be matched
-	// in one of the `fields`.
+func (e *elasticsearchClient) getIDsFromIndex(querystring, typeName string, fields ...string) ([]int64, error) {
+	// Creates a MatchQuery with "and" operator - a query that will require
+	// each word in `querystring` to be matched in one of the `fields`.
 	query := elastic.NewMultiMatchQuery(querystring, fields...).Operator("and")
 
 	searchResult, err := e.Search().
@@ -66,8 +69,7 @@ func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fiel
 		return nil, err
 	}
 
-	totalHits := searchResult.Hits.TotalHits
-	ids := make([]int64, totalHits)
+	ids := make([]int64, searchResult.Hits.TotalHits)
 
 	for i, hit := range searchResult.Hits.Hits {
 		var id struct {
@@ -83,6 +85,7 @@ func (e *ElasticsearchClient) getIDsFromIndex(querystring, typeName string, fiel
 		ids[i] = id.ID
 	}
 
-	// results from elasticsearch are sorted by score by default, so we don't need to sort ourselves
+	// Results from elasticsearch are sorted by score by default.
+	// We do not need to sort them ourselves.
 	return ids, nil
 }
