@@ -1,14 +1,20 @@
-language: go
-go:
-  - 1.7.3
-os:
-  - linux
-
 sudo: required
 dist: trusty
 
 services:
   - docker
+
+language: go
+
+go:
+  - 1.7
+  - tip
+os:
+  - linux
+
+matrix:
+  allow_failures:
+    - go: tip
 
 script:
   - make test -C  ./backend
