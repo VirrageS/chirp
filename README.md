@@ -40,7 +40,7 @@ When variables are not set default values are used instead.
 
 - `$CHIRP_CONFIG_PATH` - change to set config file path from which config will be loaded (**default** is `$GOPATH/src/github.com/VirrageS/chirp/backend`)
 - `$CHIRP_CONFIG_NAME` - change to set config file name (**default** is `config`)
-- `$CHIRP_CONFIG` - change to set config type. Options are: `development`, `production`, `test` (**default** is `development`)
+- `$CHIRP_CONFIG_TYPE` - change to set config type. Options are: `development`, `production`, `test` (**default** is `development`)
 
 
 

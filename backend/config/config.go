@@ -25,7 +25,7 @@ type Configuration struct {
 // By setting `$CHIRP_CONFIG_NAME` variable you can specify the name
 // of config file. Default name is `config`.
 //
-// By setting `$CHIRP_CONFIG` variable you can specify which config type will
+// By setting `$CHIRP_CONFIG_TYPE` variable you can specify which config type will
 // be chosen: `development`, `production` or `test`. Default is `development`.
 func New() *Configuration {
 	v := viper.New()
@@ -43,7 +43,7 @@ func New() *Configuration {
 		return nil
 	}
 
-	ct := utils.GetenvOrDefault(`CHIRP_CONFIG`, "development")
+	ct := utils.GetenvOrDefault(`CHIRP_CONFIG_TYPE`, "development")
 	subConfig := v.Sub(ct)
 	if subConfig == nil {
 		log.Errorf("Failed to read '%s' config.", ct)

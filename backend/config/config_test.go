@@ -69,7 +69,7 @@ var _ = Describe("Config", func() {
 	AfterEach(func() {
 		os.Setenv(`CHIRP_CONFIG_PATH`, "")
 		os.Setenv(`CHIRP_CONFIG_NAME`, "")
-		os.Setenv(`CHIRP_CONFIG`, "")
+		os.Setenv(`CHIRP_CONFIG_TYPE`, "")
 	})
 
 	It("should not return nil when using default values", func() {
@@ -138,10 +138,10 @@ var _ = Describe("Config", func() {
 		Expect(config).To(BeNil())
 	})
 
-	It("should return nil when CHIRP_CONFIG is set but is not valid", func() {
+	It("should return nil when CHIRP_CONFIG_TYPE is set but is not valid", func() {
 		configTypes := []string{"dev", "prod", "testing", "mmm", "."}
 		for _, configType := range configTypes {
-			os.Setenv(`CHIRP_CONFIG`, configType)
+			os.Setenv(`CHIRP_CONFIG_TYPE`, configType)
 
 			config := New()
 			Expect(config).To(BeNil())
