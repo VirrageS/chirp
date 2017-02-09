@@ -43,7 +43,6 @@ var _ = Describe("ServerTest", func() {
 		alaRefreshToken string
 		bobToken        string
 		alaPublic       *model.PublicUser
-		bobPublic       *model.PublicUser
 	)
 
 	BeforeEach(func() {
@@ -64,7 +63,6 @@ var _ = Describe("ServerTest", func() {
 		bobToken, _ = loginUser(router, bob)
 
 		alaPublic = retrieveUser(router, ala.ID, alaToken)
-		bobPublic = retrieveUser(router, bob.ID, bobToken)
 
 		// create additional users
 		toor = createUser(router, "toor")
@@ -615,12 +613,10 @@ var _ = Describe("ServerTest", func() {
 	Describe("Unlike tweet", func() {
 		var (
 			alaTweet *model.Tweet
-			bobTweet *model.Tweet
 		)
 
 		BeforeEach(func() {
 			alaTweet = createTweet(router, "new ala tweet", alaToken)
-			bobTweet = createTweet(router, "new bob tweet", bobToken)
 		})
 
 		It("should unlike tweet and return unliked tweet with fresh data", func() {
