@@ -4,7 +4,8 @@ import (
 	"github.com/VirrageS/chirp/backend/model"
 )
 
-// Helper struct to implement sorting of Tweet slices by creation date
+// TweetsByCreationDateDesc is helper struct to implement sorting of `Tweet`
+// slices by creation date.
 type TweetsByCreationDateDesc []*model.Tweet
 
 func (s TweetsByCreationDateDesc) Len() int {

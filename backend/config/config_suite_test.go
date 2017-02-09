@@ -1,4 +1,14 @@
-# DEFAULTS
+package config
+
+import (
+	"testing"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+)
+
+// NOTE: DO NOT CHANGE SPACES TO TABS HERE! - it will break loading
+var content = []byte(`
 server_defaults: &server_defaults
   secret_key: "just a random secret string"
   auth_token_validity_period: 15m
@@ -12,11 +22,11 @@ database_defaults: &database_defaults
   port: "5432"
 
 redis_defaults: &redis_defaults
-  password: ""
+  password: "pass"
   host: "localhost"
   port: "6379"
   db: 0
-  expiration_time: 1m # how long cache is valid
+  expiration_time: 1m
 
 authorization_google_defaults: &authorization_google_defaults
   client_id: "248788072320-cgap8rml3940qugk1u1i1c77onukabnn.apps.googleusercontent.com"
@@ -42,11 +52,10 @@ defaults: &defaults
   elasticsearch:
     <<: *elasticsearch_defaults
 
-# CONFIGS
 development:
   <<: *defaults
 
-production: # Docker for now
+production:
   <<: *defaults
   database:
     <<: *database_defaults
@@ -72,3 +81,9 @@ test:
     <<: *redis_defaults
     port: "6380"
     expiration_time: 50ms
+`)
+
+func TestCache(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Config")
+}

@@ -6,36 +6,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/model"
 )
 
-type mockCacheConfigProvider struct{}
-
-var cacheTime time.Duration = 10 * time.Millisecond
-
-func (m *mockCacheConfigProvider) GetCacheExpirationTime() time.Duration {
-	return cacheTime
-}
-
-func (m *mockCacheConfigProvider) GetPassword() string {
-	return ""
-}
-
-func (m *mockCacheConfigProvider) GetHost() string {
-	return "localhost"
-}
-
-func (m *mockCacheConfigProvider) GetPort() string {
-	return "6379"
-}
-
-func (m *mockCacheConfigProvider) GetDB() int {
-	return 0
-}
-
 var _ = Describe("RedisCache", func() {
 	var (
-		redisCache CacheProvider = NewRedisCache(&mockCacheConfigProvider{})
+		conf       *config.Configuration = config.New()
+		redisCache CacheProvider         = NewRedisCache(conf.Redis)
 
 		objectTests []struct {
 			in  interface{}
@@ -74,6 +52,7 @@ var _ = Describe("RedisCache", func() {
 				},
 				&model.PublicUser{},
 			},
+			// TODO: make this work
 			// {
 			// 	&model.Tweet{
 			// 		ID: 2,
@@ -270,7 +249,7 @@ var _ = Describe("RedisCache", func() {
 				err := redisCache.Set("key", test.in)
 				Expect(err).NotTo(HaveOccurred())
 
-				time.Sleep(2 * cacheTime)
+				time.Sleep(2 * conf.Redis.GetExpirationTime())
 
 				exists, err := redisCache.Get("key", test.out)
 				Expect(err).NotTo(HaveOccurred())
@@ -283,7 +262,7 @@ var _ = Describe("RedisCache", func() {
 				err := redisCache.SetWithoutExpiration("key", test.in)
 				Expect(err).NotTo(HaveOccurred())
 
-				time.Sleep(2 * cacheTime)
+				time.Sleep(2 * conf.Redis.GetExpirationTime())
 
 				exists, err := redisCache.Get("key", test.out)
 				Expect(err).NotTo(HaveOccurred())
@@ -458,7 +437,7 @@ var _ = Describe("RedisCache", func() {
 					err := redisCache.SetWithFields(fields, test.in)
 					Expect(err).NotTo(HaveOccurred())
 
-					time.Sleep(2 * cacheTime)
+					time.Sleep(2 * conf.Redis.GetExpirationTime())
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
 					Expect(err).NotTo(HaveOccurred())
@@ -473,7 +452,7 @@ var _ = Describe("RedisCache", func() {
 					err := redisCache.SetWithFieldsWithoutExpiration(fields, test.in)
 					Expect(err).NotTo(HaveOccurred())
 
-					time.Sleep(2 * cacheTime)
+					time.Sleep(2 * conf.Redis.GetExpirationTime())
 
 					exists, err := redisCache.GetWithFields(fields, test.out)
 					Expect(err).NotTo(HaveOccurred())

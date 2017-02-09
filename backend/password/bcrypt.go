@@ -7,18 +7,18 @@ import (
 	"github.com/VirrageS/chirp/backend/config"
 )
 
-type BcryptPasswordManager struct {
+type bcryptManager struct {
 	randomPasswordLength int
 }
 
-func NewBcryptPasswordManager(config config.PasswordManagerConfig) Manager {
+func NewBcryptManager(config config.PasswordConfigProvider) Manager {
 	randomPasswordLength := config.GetRandomPasswordLength()
-	return &BcryptPasswordManager{
+	return &bcryptManager{
 		randomPasswordLength: randomPasswordLength,
 	}
 }
 
-func (pm *BcryptPasswordManager) HashPassword(password string) (string, error) {
+func (m *bcryptManager) HashPassword(password string) (string, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.WithError(err).Error("Error generating hash from password.")
@@ -27,11 +27,11 @@ func (pm *BcryptPasswordManager) HashPassword(password string) (string, error) {
 	return string(passwordHash), err
 }
 
-func (pm *BcryptPasswordManager) GenerateRandomPassword() (string, error) {
-	return generateRandomString(pm.randomPasswordLength)
+func (m *bcryptManager) GenerateRandomPassword() (string, error) {
+	return generateRandomString(m.randomPasswordLength)
 }
 
-func (pm *BcryptPasswordManager) ValidatePassword(password, hashedPassword string) bool {
+func (m *bcryptManager) ValidatePassword(password, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return false

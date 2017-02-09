@@ -14,21 +14,21 @@ import (
 	serviceErrors "github.com/VirrageS/chirp/backend/model/errors"
 )
 
-type TokenManager struct {
+type tokenManager struct {
 	secretKey                  []byte
-	authTokenValidityPeriod    int
-	refreshTokenValidityPeriod int
+	authTokenValidityPeriod    time.Duration
+	refreshTokenValidityPeriod time.Duration
 }
 
-func NewTokenManager(config config.TokenManagerConfig) TokenManagerProvider {
-	return &TokenManager{
+func NewManager(config config.TokenConfigProvider) Manager {
+	return &tokenManager{
 		secretKey:                  config.GetSecretKey(),
 		authTokenValidityPeriod:    config.GetAuthTokenValidityPeriod(),
 		refreshTokenValidityPeriod: config.GetRefreshTokenValidityPeriod(),
 	}
 }
 
-func (manager *TokenManager) ValidateToken(tokenString string, request *http.Request) (int64, error) {
+func (m *tokenManager) ValidateToken(tokenString string, request *http.Request) (int64, error) {
 	// set up a parser that doesn't validate expiration time
 	parser := jwt.Parser{}
 	parser.SkipClaimsValidation = true
@@ -37,7 +37,7 @@ func (manager *TokenManager) ValidateToken(tokenString string, request *http.Req
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return manager.secretKey, nil
+		return m.secretKey, nil
 	})
 
 	if err != nil {
@@ -58,12 +58,12 @@ func (manager *TokenManager) ValidateToken(tokenString string, request *http.Req
 		}
 
 		// check if requester IP is correct
-		if err := manager.verifyIP(claims, request); err != nil {
+		if err := m.verifyIP(claims, request); err != nil {
 			return 0, err
 		}
 
 		// chcek if userAgent is correct
-		if err := manager.verifyUserAgent(claims, request); err != nil {
+		if err := m.verifyUserAgent(claims, request); err != nil {
 			return 0, err
 		}
 
@@ -73,17 +73,17 @@ func (manager *TokenManager) ValidateToken(tokenString string, request *http.Req
 	return 0, errors.New("Malformed authentication token.")
 }
 
-func (manager *TokenManager) CreateAuthToken(userID int64, request *http.Request) (string, error) {
-	return manager.createToken(userID, request, manager.authTokenValidityPeriod)
+func (m *tokenManager) CreateAuthToken(userID int64, request *http.Request) (string, error) {
+	return m.createToken(userID, request, m.authTokenValidityPeriod)
 }
 
-func (manager *TokenManager) CreateRefreshToken(userID int64, request *http.Request) (string, error) {
-	return manager.createToken(userID, request, manager.refreshTokenValidityPeriod)
+func (m *tokenManager) CreateRefreshToken(userID int64, request *http.Request) (string, error) {
+	return m.createToken(userID, request, m.refreshTokenValidityPeriod)
 }
 
-func (manager *TokenManager) createToken(userID int64, request *http.Request, duration int) (string, error) {
-	expirationTime := time.Now().Add(time.Duration(duration) * time.Minute)
-	clientIP, err := manager.getIPFromRequest(request)
+func (m *tokenManager) createToken(userID int64, request *http.Request, duration time.Duration) (string, error) {
+	expirationTime := time.Now().Add(duration)
+	clientIP, err := m.getIPFromRequest(request)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to sign token, error getting client IP from request.")
 		return "", serviceErrors.UnexpectedError
@@ -100,7 +100,7 @@ func (manager *TokenManager) createToken(userID int64, request *http.Request, du
 		"exp":              expirationTime.Unix(),
 	})
 
-	tokenString, err := token.SignedString(manager.secretKey)
+	tokenString, err := token.SignedString(m.secretKey)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to sign token, error signing the token.")
 		return "", serviceErrors.UnexpectedError
@@ -109,8 +109,8 @@ func (manager *TokenManager) createToken(userID int64, request *http.Request, du
 	return tokenString, nil
 }
 
-func (manager *TokenManager) verifyIP(claims jwt.MapClaims, request *http.Request) error {
-	requestIP, err := manager.getIPFromRequest(request)
+func (m *tokenManager) verifyIP(claims jwt.MapClaims, request *http.Request) error {
+	requestIP, err := m.getIPFromRequest(request)
 	if err != nil {
 		return fmt.Errorf("Malformed request: %s.", err)
 	}
@@ -128,7 +128,7 @@ func (manager *TokenManager) verifyIP(claims jwt.MapClaims, request *http.Reques
 	return nil
 }
 
-func (manager *TokenManager) verifyUserAgent(claims jwt.MapClaims, request *http.Request) error {
+func (m *tokenManager) verifyUserAgent(claims jwt.MapClaims, request *http.Request) error {
 	requestUserAgent := request.UserAgent()
 	if requestUserAgent == "" {
 		return errors.New("Malformed request: no User-Agent header.")
@@ -147,7 +147,7 @@ func (manager *TokenManager) verifyUserAgent(claims jwt.MapClaims, request *http
 	return nil
 }
 
-func (manager *TokenManager) getIPFromRequest(request *http.Request) (string, error) {
+func (m *tokenManager) getIPFromRequest(request *http.Request) (string, error) {
 	// We expect the realclient IP to be in X-Real-Ip header
 	if headerIP := request.Header.Get("X-Real-Ip"); headerIP != "" {
 		return headerIP, nil
