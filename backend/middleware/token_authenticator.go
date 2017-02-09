@@ -9,7 +9,7 @@ import (
 	"github.com/VirrageS/chirp/backend/token"
 )
 
-func TokenAuthenticator(tokenManager token.TokenManagerProvider) gin.HandlerFunc {
+func TokenAuthenticator(tokenManager token.Manager) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		fullTokenString := context.Request.Header.Get("Authorization")
 		tokenString := strings.TrimPrefix(fullTokenString, "Bearer ")

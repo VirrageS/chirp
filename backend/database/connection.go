@@ -10,7 +10,7 @@ import (
 )
 
 // Returns new connection to DB specified in config file. Panics when unrecoverable error occurs.
-func NewConnection(config config.DBConfigProvider) *sql.DB {
+func NewConnection(config config.DatabaseConfigProvider) *sql.DB {
 	username := config.GetUsername()
 	password := config.GetPassword()
 	host := config.GetHost()

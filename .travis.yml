@@ -17,4 +17,5 @@ matrix:
     - go: tip
 
 script:
-  - make test -C  ./backend
+  - make install -C ./backend
+  - make test -C ./backend

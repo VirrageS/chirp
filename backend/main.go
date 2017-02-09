@@ -21,16 +21,17 @@ import (
 )
 
 func main() {
-	tokenManagerConfig, passwordManagerConfig,
-		databaseConfig, redisConfig,
-		authorizationGoogleConfig, elasticsearchConfig := config.GetConfig("config")
+	conf := config.New()
+	if conf == nil {
+		panic("Failed to get config.")
+	}
 
-	db := database.NewConnection(databaseConfig)
-	redis := cache.NewRedisCache(redisConfig)
-	elasticsearch := fulltextsearch.NewElasticsearch(elasticsearchConfig)
-	tokenManager := token.NewTokenManager(tokenManagerConfig)
-	passwordManager := password.NewBcryptPasswordManager(passwordManagerConfig)
+	db := database.NewConnection(conf.Database)
+	redis := cache.NewRedisCache(conf.Redis)
+	elasticsearch := fulltextsearch.NewElasticsearch(conf.Elasticsearch)
+	tokenManager := token.NewManager(conf.Token)
+	passwordManager := password.NewBcryptManager(conf.Password)
 
-	s := server.New(db, redis, elasticsearch, tokenManager, passwordManager, authorizationGoogleConfig)
+	s := server.New(db, redis, elasticsearch, tokenManager, passwordManager, conf.AuthorizationGoogle)
 	s.Run(":8080")
 }

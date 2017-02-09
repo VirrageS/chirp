@@ -30,9 +30,9 @@ func New(
 	dbConnection *sql.DB,
 	redis cache.CacheProvider,
 	elasticsearch fulltextsearch.Searcher,
-	tokenManager token.TokenManagerProvider,
+	tokenManager token.Manager,
 	passwordManager password.Manager,
-	authorizationGoogleConfig config.AuthorizationGoogleConfigurationProvider,
+	authGoogleConfig config.AuthorizationGoogleConfigProvider,
 ) *gin.Engine {
 	// api dependencies
 	CORSConfig := setupCORS()
@@ -44,13 +44,12 @@ func New(
 
 	storage := storage.NewStorage(userDAO, followsDAO, tweetDAO, likesDAO, redis, elasticsearch)
 	services := service.NewService(storage, passwordManager)
-	apis := api.NewAPI(services, tokenManager, authorizationGoogleConfig)
+	apis := api.NewAPI(services, tokenManager, authGoogleConfig)
 
 	return setupRouter(apis, tokenManager, CORSConfig)
 }
 
-// TODO: Maybe middlewares should also be dependencies
-func setupRouter(api api.APIProvider, tokenManager token.TokenManagerProvider, corsConfig *cors.Config) *gin.Engine {
+func setupRouter(api api.APIProvider, tokenManager token.Manager, corsConfig *cors.Config) *gin.Engine {
 	CORSHandler := cors.New(*corsConfig)
 	contentTypeChecker := middleware.ContentTypeChecker()
 	authenticator := middleware.TokenAuthenticator(tokenManager)

@@ -9,22 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 	"gopkg.in/gin-gonic/gin.v1"
 
+	"github.com/VirrageS/chirp/backend/config"
 	"github.com/VirrageS/chirp/backend/token"
 )
-
-type mockSecretProvider struct{}
-
-func (msp *mockSecretProvider) GetSecretKey() []byte {
-	return []byte("secret")
-}
-
-func (msp *mockSecretProvider) GetAuthTokenValidityPeriod() int {
-	return 1
-}
-
-func (msp *mockSecretProvider) GetRefreshTokenValidityPeriod() int {
-	return 1
-}
 
 // From Go documentation of httptest.NewRequest():
 // 192.0.2.0/24 is "TEST-NET" in RFC 5737 for use solely in
@@ -35,10 +22,6 @@ const (
 	testAgent = "test/1.0"
 )
 
-func mockTokenManagerProvider() token.TokenManagerProvider {
-	return token.NewTokenManager(&mockSecretProvider{})
-}
-
 var _ = Describe("TokenAuthenticator", func() {
 	var (
 		router *gin.Engine
@@ -47,7 +30,8 @@ var _ = Describe("TokenAuthenticator", func() {
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
 
-		tokenManager := mockTokenManagerProvider()
+		conf := config.New()
+		tokenManager := token.NewManager(conf.Token)
 		router = gin.New()
 		router.Use(ErrorHandler())
 		router.Use(TokenAuthenticator(tokenManager))
