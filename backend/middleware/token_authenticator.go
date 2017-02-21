@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"strings"
 
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-gonic/gin"
 
 	"github.com/VirrageS/chirp/backend/token"
 )
 
+// TokenAuthenticator check if token is valid and sets context key and value
+// appropiretly. Aborts when there was a problem in validating token.
 func TokenAuthenticator(tokenManager token.Manager) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		fullTokenString := context.Request.Header.Get("Authorization")

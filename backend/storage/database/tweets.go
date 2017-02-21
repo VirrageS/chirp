@@ -47,7 +47,7 @@ func (db *tweetsDB) GetTweetsIDsByAuthorID(userID int64) ([]int64, error) {
 func (db *tweetsDB) GetTweetsByIDs(tweetsIDs []int64) ([]*model.Tweet, error) {
 	rows, err := db.Query(
 		`SELECT id, created_at, content, author_id FROM tweets
-			WHERE id = ANY($1) ORDER BY created_at DESC`,
+			WHERE id = cors.New(config)($1) ORDER BY created_at DESC`,
 		pq.Array(tweetsIDs),
 	)
 	if err != nil {

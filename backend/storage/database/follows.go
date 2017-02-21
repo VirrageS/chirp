@@ -1,7 +1,10 @@
 package database
 
 import (
+	"errors"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/lib/pq"
 )
 
 // FollowsDAO (Follows Data Access Object) is interface that provides operations on Follows database table.
@@ -25,6 +28,13 @@ func NewFollowsDAO(conn *Connection) FollowsDAO {
 }
 
 func (db *followsDB) FollowUser(followeeID, followerID int64) (bool, error) {
+	exists, err := db.exists(followeeID, followerID)
+	if err != nil {
+		return false, err
+	} else if !exists {
+		return false, errors.New("Followee id or follower id does not exists")
+	}
+
 	result, err := db.Exec(
 		`INSERT INTO follows (followee_id, follower_id) VALUES ($1, $2)
 			ON CONFLICT (followee_id, follower_id) DO NOTHING`,
@@ -162,4 +172,16 @@ func (db *followsDB) IsFollowing(followerID, followeeID int64) (bool, error) {
 	}
 
 	return isFollowing, nil
+}
+
+func (db *followsDB) exists(ids ...int64) (bool, error) {
+	var count int64
+
+	err := db.QueryRow(`SELECT COUNT(id) FROM users WHERE id = ANY($1)`, pq.Array(ids)).Scan(&count)
+	if err != nil {
+		log.WithError(err).Error("exists: query error")
+		return false, err
+	}
+
+	return (count == int64(len(ids))), nil
 }

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-gonic/gin"
 )
 
 func (api *API) Search(context *gin.Context) {
