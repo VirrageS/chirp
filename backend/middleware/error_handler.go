@@ -1,7 +1,9 @@
 package middleware
 
-import "gopkg.in/gin-gonic/gin.v1"
+import "github.com/gin-gonic/gin"
 
+// ErrorHandler handles api context errors. If there is any error in
+// request chain, error handler will catch that and return proper JSON message.
 func ErrorHandler() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		context.Next()
