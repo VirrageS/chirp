@@ -1,8 +1,8 @@
 package server
 
 import (
-	"gopkg.in/gin-contrib/cors.v1"
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 
 	"github.com/VirrageS/chirp/backend/api"
 	"github.com/VirrageS/chirp/backend/config"

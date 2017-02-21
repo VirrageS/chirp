@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/gin-gonic/gin.v1"
 	"gopkg.in/square/go-jose.v1/json"
 )
 
@@ -32,7 +32,7 @@ var _ = Describe("ErrorHandler", func() {
 
 	It("should propagate error", func() {
 		router.GET("/test", func(c *gin.Context) {
-			c.AbortWithError(http.StatusBadRequest, errors.New("An error occurred."))
+			c.AbortWithError(http.StatusBadRequest, errors.New("An error occurred"))
 		})
 
 		w := httptest.NewRecorder()
@@ -44,7 +44,7 @@ var _ = Describe("ErrorHandler", func() {
 		json.NewDecoder(w.Body).Decode(&response)
 
 		Expect(w.Code).To(Equal(http.StatusBadRequest))
-		Expect(response).To(Equal(errorResponse{[]string{"An error occurred."}}))
+		Expect(response).To(Equal(errorResponse{[]string{"An error occurred"}}))
 	})
 
 	It("should not fire error when everything is okay", func() {

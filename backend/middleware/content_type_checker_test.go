@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/gin-gonic/gin.v1"
 )
 
 var _ = Describe("ContentTypeChecker", func() {

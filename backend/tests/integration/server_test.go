@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"sort"
 
+	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/model"
 	"github.com/VirrageS/chirp/backend/server"

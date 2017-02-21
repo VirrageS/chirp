@@ -17,7 +17,7 @@ var _ = Describe("Likes", func() {
 
 	AfterEach(func() {
 		// HACK: this is hack since TRUNCATE can execute up to 1s... whereas this ~5ms
-		db.Exec(`DELTE FROM users; DELETE FROM likes;`)
+		db.Exec(`DELETE FROM users; DELETE FROM likes;`)
 	})
 
 	It("should do something", func() {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-gonic/gin"
 
 	"github.com/VirrageS/chirp/backend/model"
 )

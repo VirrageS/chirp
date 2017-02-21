@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-gonic/gin"
 )
 
 func (api *API) GetUser(context *gin.Context) {

@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	. "github.com/onsi/gomega"
-	"gopkg.in/gin-gonic/gin.v1"
 
 	"github.com/VirrageS/chirp/backend/model"
 )
