@@ -2,7 +2,7 @@ import { Component, ViewEncapsulation } from '@angular/core';
 
 @Component({
   selector: 'app',
-  styles: [
+  styles: [ // TODO
     `
       .wrapper {
         max-width: 1000px;
@@ -14,7 +14,7 @@ import { Component, ViewEncapsulation } from '@angular/core';
   encapsulation: ViewEncapsulation.None,
   template: `
     <div>
-      <navigation-bar></navigation-bar>
+      <nav></nav>
       <div class="wrapper">
         <router-outlet></router-outlet>
       </div>

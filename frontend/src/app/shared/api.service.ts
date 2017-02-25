@@ -3,11 +3,12 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/Rx';
 import 'rxjs/add/observable/throw';
+import { environment } from '../../environment';
 
-import { AuthService } from './auth.service';
-import { Store } from '../store';
+import { AuthService } from '../auth/auth.service';
+import { Store } from './store';
 import { StoreHelper } from './store-helper';
-import { User } from './user.model';
+import { User } from '../users';
 
 
 @Injectable()
@@ -18,7 +19,7 @@ export class ApiService {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   });
-  apiUrl: string;
+  apiUrl: string = environment.api_url;
   refreshToken: string;
   user?: User;
 
@@ -28,11 +29,6 @@ export class ApiService {
     private _store: Store,
     private _storeHelper: StoreHelper
   ) {
-    this.apiUrl = 'http://0.0.0.0:8080'
-    if (process.env.ENV === 'production') {
-      this.apiUrl = 'http://backend.show'
-    }
-
     this._store.changes('user')
       .subscribe((user: any) => this.user = user)
 
@@ -76,8 +72,9 @@ export class ApiService {
 
         return Observable.throw(error)
       })
-      .retryWhen(error => error.delay(this.retry))
-      .timeout(this.timeout)
+      // TODO
+      // .retryWhen(error => error.delay(this.retry))
+      // .timeout(this.timeout)
       .map(this._checkForError)
       .catch(err => Observable.throw(err))
       .map(this._getJson)

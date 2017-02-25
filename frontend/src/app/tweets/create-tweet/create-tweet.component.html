@@ -1,0 +1,16 @@
+<div class="create-tweet">
+  <div class="create-tweet__title">
+    Create Tweet
+  </div>
+  <form (ngSubmit)="onSubmit()" #createTweetForm="ngForm">
+    <div class="form-group">
+      <textarea class="form-control" id="content" rows="4"
+        required
+        [(ngModel)]="tweet.content" name="content"
+        #content="ngModel" >
+      </textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="!createTweetForm.form.valid"><i class="fa fa-pencil"></i> Post</button>
+  </form>
+</div>
