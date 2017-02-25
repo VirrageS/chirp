@@ -5,10 +5,10 @@ import { RouterModule }   from '@angular/router';
 
 import { AuthService } from './auth.service';
 
-import { LoginComponent} from './login.component';
-import { LoginGoogleCallbackComponent } from './login-google-callback.component';
-import { LogoutComponent } from './logout.component';
-import { SignupComponent } from './signup.component';
+import { LoginComponent, LoginGoogleCallbackComponent, LoginService } from './login';
+import { LogoutComponent, LogoutService } from './logout';
+import { SignupComponent, SignupService } from './signup';
+
 
 @NgModule({
   imports: [
@@ -31,6 +31,9 @@ import { SignupComponent } from './signup.component';
   exports: [],
   providers: [
     AuthService,
+    LoginService,
+    LogoutService,
+    SignupService,
   ]
 })
 export class AuthModule {}

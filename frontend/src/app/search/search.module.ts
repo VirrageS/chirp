@@ -2,6 +2,9 @@ import { NgModule }       from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { RouterModule } from '@angular/router';
 
+import { TweetsModule } from '../tweets';
+import { UsersModule } from '../users';
+
 import { SearchService } from './search.service';
 import { SearchComponent } from './search.component';
 
@@ -16,7 +19,10 @@ import { AuthService } from '../auth';
         component: SearchComponent,
         canActivate: [AuthService]
       },
-    ])
+    ]),
+
+    TweetsModule,
+    UsersModule,
   ],
   declarations: [
     SearchComponent,
@@ -27,4 +33,4 @@ import { AuthService } from '../auth';
     SearchService,
   ]
 })
-export class TweetsModule {}
+export class SearchModule {}

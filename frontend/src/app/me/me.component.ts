@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 
-import { Tweet, User, UserService } from '../shared';
-import { Store } from '../store';
+import { Tweet } from '../tweets';
+import { User, UserService } from '../users';
+import { Store } from '../shared';
 
 
 @Component({

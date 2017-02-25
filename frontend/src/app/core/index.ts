@@ -1,2 +1,2 @@
 export { NavComponent } from './nav'
-export { PageNotFoundComponent } from './not-found.component.ts'
+export { PageNotFoundComponent } from './not-found.component'

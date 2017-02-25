@@ -4,9 +4,9 @@ import { MockBackend } from '@angular/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 
 import { ApiService } from './api.service';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth';
 import { StoreHelper } from './store-helper';
-import { Store } from '../store';
+import { Store } from './store';
 
 
 describe('ApiSerivce', () => {

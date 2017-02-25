@@ -1,4 +1,4 @@
-FROM node:6.9
+FROM node:7.6
 
 # Fix bug https://github.com/npm/npm/issues/9863
 RUN cd $(npm root -g)/npm \
@@ -7,8 +7,8 @@ RUN cd $(npm root -g)/npm \
 
 # install yarn
 RUN \
-  apt-key adv --keyserver pgp.mit.edu --recv D101F7899D41F3C3 && \
-  echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+  curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
+  echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
   apt-get update && apt-get install yarn
 
 ENV NODE_ENV=development

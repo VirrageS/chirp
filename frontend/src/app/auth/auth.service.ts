@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 
-import { ApiService, StoreHelper } from '../shared';
+import { StoreHelper } from '../shared/store-helper';
 import { User } from '../users';
 
 
@@ -12,9 +12,8 @@ export class AuthService implements CanActivate {
   USER_KEY: string = "USER_TOKEN"
 
   constructor(
-      private _router: Router,
-      private _apiService: ApiService,
-      private _storeHelper: StoreHelper
+    private _router: Router,
+    private _storeHelper: StoreHelper,
   ) {
     this.initializeAuthorization()
   }
@@ -76,28 +75,5 @@ export class AuthService implements CanActivate {
     if (!canActivate) {
       this._router.navigate(['', 'login']);
     }
-  }
-
-  authorizeWithGoogle() {
-    return this._apiService.get("/authorize/google")
-  }
-
-  loginWithGoogle(code, state) {
-    return this._apiService.post("/login/google", {code: code, state: state})
-      .do((res: any) => this.setAuthorization(res.user, res.auth_token, res.refresh_token))
-  }
-
-  signup(body) {
-    return this._apiService.post("/signup", body)
-  }
-
-  login(body) {
-    return this._apiService.post("/login", body)
-      .do((res: any) => this.setAuthorization(res.user, res.auth_token, res.refresh_token))
-  }
-
-  logout() {
-    this.removeAuthorization()
-    this._router.navigate(['', 'home']);
   }
 }

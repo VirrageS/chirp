@@ -2,7 +2,7 @@ import { Component, Input, OnDestroy, OnInit, Output, EventEmitter } from '@angu
 
 import { Tweet, TweetService } from '../shared';
 import { User, UserService } from '../../users/shared';
-import { Store } from '../shared/store';
+import { Store } from '../../shared';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 

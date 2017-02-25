@@ -1,0 +1,9 @@
+<div class="users shadow-2">
+    <user
+    *ngFor="let user of users"
+    [user]="user"
+    class="user"
+    (userChange)="handleUserUpdated($event)"
+    >
+    </user>
+</div>

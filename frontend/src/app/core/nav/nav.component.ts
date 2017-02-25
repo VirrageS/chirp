@@ -6,18 +6,18 @@ import { Store } from '../../shared';
 
 
 @Component({
-  selector: 'navigation-bar',
+  selector: 'nav',
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss'],
 })
 export class NavComponent {
-  user?: User
+  user: User = null
 
   constructor(
     private _authService: AuthService,
     private _store: Store
   ) {
-    this._store.changes('user')
+    this._store.changes("user")
       .subscribe((user: any) => this.user = user)
   }
 

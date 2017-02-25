@@ -24,10 +24,10 @@ export class ApiService {
   user?: User;
 
   constructor(
-    private _http: Http,
     private _authService: AuthService,
+    private _http: Http,
     private _store: Store,
-    private _storeHelper: StoreHelper
+    private _storeHelper: StoreHelper,
   ) {
     this._store.changes('user')
       .subscribe((user: any) => this.user = user)
@@ -72,9 +72,8 @@ export class ApiService {
 
         return Observable.throw(error)
       })
-      // TODO
-      // .retryWhen(error => error.delay(this.retry))
-      // .timeout(this.timeout)
+      .retryWhen(error => error.delay(this.retry))
+      .timeout(this.timeout)
       .map(this._checkForError)
       .catch(err => Observable.throw(err))
       .map(this._getJson)
