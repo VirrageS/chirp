@@ -7,19 +7,14 @@ import { APP_BASE_HREF }    from '@angular/common';
 
 import { AppComponent }   from './app.component';
 
-import {
-  ApiService, AuthService, StoreHelper,
-  TweetService, UserService, SearchService
-} from './shared';
-import { Store } from './store';
+import { ApiService, StoreHelper, Store } from './shared';
+import { AuthService, AuthModule } from './auth';
+import { HomeComponent } from './home';
+import { SearchModule } from './search';
+import { NavComponent, PageNotFoundComponent } from './core';
 
-import { NavigationBarComponent } from './layout';
-import {
-  HomeComponent, SearchComponent,
-  SignupComponent, LoginComponent, LoginGoogleCallbackComponent, LogoutComponent,
-  TweetsModule, UsersModule,
-} from './components';
-
+import { TweetsModule} from './tweets';
+import { UsersModule} from './users';
 import { MeModule } from './me'
 
 
@@ -31,38 +26,27 @@ import { MeModule } from './me'
     RouterModule.forRoot([
       { path: '', redirectTo: '/home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
-      { path: 'search', component: SearchComponent, canActivate: [AuthService] },
-
-      { path: 'signup', component: SignupComponent },
-      { path: 'login', component: LoginComponent },
-      { path: 'login/google/callback', component: LoginGoogleCallbackComponent },
-      { path: 'logout', component: LogoutComponent, canActivate: [AuthService] },
+      
+      { path: '**', component: PageNotFoundComponent },
     ]),
 
+    AuthModule,
     MeModule,
     TweetsModule,
     UsersModule,
+    SearchModule,
   ],
   declarations: [
     AppComponent,
-    NavigationBarComponent,
+    NavComponent,
     HomeComponent,
-    SearchComponent,
-
-    SignupComponent,
-    LoginComponent,
-    LoginGoogleCallbackComponent,
-    LogoutComponent,
   ],
   providers: [
     { provide: APP_BASE_HREF, useValue: '/' },
     ApiService,
-    AuthService,
+    AuthService, // TODO: is this necessary?
     StoreHelper,
     Store,
-    TweetService,
-    UserService,
-    SearchService,
   ],
   bootstrap: [AppComponent]
  })
