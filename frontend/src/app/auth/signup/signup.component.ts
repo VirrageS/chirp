@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { Router }    from '@angular/router';
 
-import { User } from '../users';
-import { AuthService } from './auth.service'
+import { User } from '../../users';
+import { SignupService } from './signup.service'
 
 
 @Component({
@@ -10,25 +10,26 @@ import { AuthService } from './auth.service'
   styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent {
-  user: User
-
-  constructor(private _authService: AuthService, private _router: Router) {
-    this.user = {
-      name: "",
-      username: "",
-      email: "",
-      password: ""
-    }
+  user: User = {
+    name: "",
+    username: "",
+    email: "",
+    password: ""
   }
 
+  constructor(
+    private _signupService: SignupService,
+    private _router: Router
+  ) {}
+
   private onSubmit() {
-    this._authService.signup(this.user)
+    this._signupService.signup(this.user)
       .subscribe(
         result => {
-          // TODO set message that everything is okay
+          // TODO: set message that everything is okay
           this._router.navigate(['', 'login'])
         },
-        error => { 
+        error => {
           // TODO: should show this message
           console.log(error["errors"])
         }

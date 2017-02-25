@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 
-import { UserService, Tweet } from '../shared';
-import { Store } from '../store';
+import { Tweet } from '../tweets';
+import { UserService } from '../users';
+import { Store } from '../shared';
 
 
 @Component({

@@ -17,7 +17,6 @@ import { UsersComponent }      from './users.component';
   ],
   exports: [
     UsersComponent,
-    UserService,
   ],
   providers: [
     UserService,

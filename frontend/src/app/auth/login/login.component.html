@@ -18,8 +18,7 @@
              [(ngModel)]="user.email" name="email"
              #email="ngModel" >
     </div>
-    <div [hidden]="email.valid || email.pristine"
-         class="alert alert-danger">
+    <div [hidden]="email.valid || email.pristine" class="alert alert-danger">
       Email is required
     </div>
 
@@ -30,8 +29,7 @@
              [(ngModel)]="user.password" name="password"
              #password="ngModel" >
     </div>
-    <div [hidden]="password.valid || password.pristine"
-         class="alert alert-danger">
+    <div [hidden]="password.valid || password.pristine" class="alert alert-danger">
       Password is required
     </div>
 
