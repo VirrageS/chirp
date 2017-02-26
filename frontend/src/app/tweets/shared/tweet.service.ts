@@ -9,24 +9,24 @@ export class TweetService {
   private tweet_path: string = "/tweets";
 
   constructor(
-    private _apiService: ApiService,
-    private _storeHelper: StoreHelper
+    private apiService: ApiService,
+    private storeHelper: StoreHelper
   ) {}
 
   createTweet(tweet: Tweet) {
-    return this._apiService.post(this.tweet_path, tweet)
-      .do((tweet: Tweet) => this._storeHelper.add("my_tweets", tweet));
+    return this.apiService.post(this.tweet_path, tweet)
+      .do((tweet: Tweet) => this.storeHelper.add("my_tweets", tweet));
   }
 
   like(tweet_id: number) {
-    return this._apiService.post(this.tweet_path + "/" + tweet_id + "/like", {});
+    return this.apiService.post(this.tweet_path + "/" + tweet_id + "/like", {});
   }
 
   unlike(tweet_id: number) {
-    return this._apiService.post(this.tweet_path + "/" + tweet_id + "/unlike", {});
+    return this.apiService.post(this.tweet_path + "/" + tweet_id + "/unlike", {});
   }
 
   retweet(tweet_id: number) {
-    return this._apiService.post(this.tweet_path + "/" + tweet_id + "/retweet", {});
+    return this.apiService.post(this.tweet_path + "/" + tweet_id + "/retweet", {});
   }
 }

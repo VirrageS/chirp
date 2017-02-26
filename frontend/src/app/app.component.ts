@@ -15,6 +15,7 @@ import { Component, ViewEncapsulation } from '@angular/core';
   template: `
     <div>
       <nav></nav>
+      <alerts></alerts>
       <div class="wrapper">
         <router-outlet></router-outlet>
       </div>

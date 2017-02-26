@@ -10,20 +10,18 @@ import { Store } from '../shared';
   `
 })
 export class FollowingComponent implements OnInit {
-  following: User[] = []
+  private following: Array<User> = [];
 
   constructor(
-    private _userService: UserService,
-    private _store: Store
-  ) {
-
-  }
+    private userService: UserService,
+    private store: Store
+  ) {}
 
   ngOnInit(): void {
-    this._userService.getFollowing()
-      .subscribe((users: any) => this.following = users)
+    this.userService.getFollowing()
+      .subscribe((users: Array<User>) => this.following = users)
 
-    this._store.changes("my_following")
-      .subscribe((users: any) => this.following = users)
+    this.store.changes("my_following")
+      .subscribe((users: Array<User>) => this.following = users)
   }
 }

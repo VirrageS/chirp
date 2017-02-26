@@ -2,8 +2,9 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Injectable } from '@angular/core';
 import 'rxjs/Rx';
 
-import { User } from '../users/shared/user.model';
-import { Tweet } from '../tweets/shared/tweet.model';
+import { Alert } from '../core/alerts/shared';
+import { User } from '../users/shared';
+import { Tweet } from '../tweets/shared';
 
 
 export interface State {
@@ -14,6 +15,7 @@ export interface State {
   my_followers: Array<User>
   auth_token: string
   refresh_token: string
+  alerts: Array<Alert>
 }
 
 const defaultState = {
@@ -22,8 +24,9 @@ const defaultState = {
   my_tweets: [],
   my_following: [],
   my_followers: [],
-  auth_token: '',
-  refresh_token: '',
+  auth_token: "",
+  refresh_token: "",
+  alerts: [],
 }
 
 const _store = new BehaviorSubject<State>(defaultState);

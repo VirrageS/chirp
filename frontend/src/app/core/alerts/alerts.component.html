@@ -1,0 +1,3 @@
+<div class="alerts shadow-2">
+    <alert *ngFor="let alert of alerts" [alert]="alert" (close)="handleClose($event)"></alert>
+</div>

@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
+import { AlertType } from '../../core/alerts';
 import { LoginService } from './login.service';
+import { StoreHelper } from '../../shared';
 
 
 @Component({
@@ -9,25 +11,27 @@ import { LoginService } from './login.service';
 })
 export class LoginGoogleCallbackComponent implements OnInit {
   constructor(
-    private _loginService: LoginService,
-    private _router: Router,
-    private _activedRoute: ActivatedRoute
+    private activedRoute: ActivatedRoute,
+    private loginService: LoginService,
+    private router: Router,
+    private storeHelper: StoreHelper,
   ) {}
 
   ngOnInit() {
     // subscribe to router event
-    this._activedRoute.queryParams.subscribe(
+    this.activedRoute.queryParams.subscribe(
       (param: any) => {
-        let code = param['code'];
-        let state = param['state'];
+        let code = param["code"];
+        let state = param["state"];
         if (code && state) {
-          this._loginService.loginWithGoogle(code, state)
+          this.loginService.loginWithGoogle(code, state)
             .subscribe(
-              result => this._router.navigate(['', 'home']),
-              error => this._router.navigate(['', 'login'])
+              result => this.router.navigate(["", "home"]),
+              error => this.router.navigate(["", "login"])
             )
         } else {
-          this._router.navigate(['', 'login'])
+          this.storeHelper.add("alerts", {message: "Failed to login with Google. Try one more time", type: AlertType.danger});
+          this.router.navigate(["", "login"])
         }
       }
     )
