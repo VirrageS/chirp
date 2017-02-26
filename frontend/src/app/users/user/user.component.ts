@@ -13,13 +13,13 @@ import * as _ from 'lodash';
 export class UserComponent {
   @Input() user: User;
   @Output() userChange = new EventEmitter();
-  loggedUser: User;
+  private loggedUser: User;
 
   constructor(
-    private _userService: UserService,
-    private _store: Store
+    private userService: UserService,
+    private store: Store
   ) {
-    this._store.changes("user")
+    this.store.changes("user")
       .subscribe((user: any) => this.loggedUser = user)
   }
 
@@ -27,9 +27,9 @@ export class UserComponent {
     this.user.following = !this.user.following
 
     // send real request
-    let toggleFunc = this._userService.follow(this.user.id)
+    let toggleFunc = this.userService.follow(this.user.id)
     if (!this.user.following) {
-      toggleFunc = this._userService.unfollow(this.user.id)
+      toggleFunc = this.userService.unfollow(this.user.id)
     }
 
     this.userChange.emit(this.user)
@@ -40,7 +40,7 @@ export class UserComponent {
         // will not update reference in table which will result is detached objects
         _.assign(this.user, user)
         this.userChange.emit(this.user)
-        this._userService.getFollowers()
+        this.userService.getFollowers()
       })
   }
 }

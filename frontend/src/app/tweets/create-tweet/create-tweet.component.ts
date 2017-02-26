@@ -1,5 +1,7 @@
 import { Component, Input } from '@angular/core';
 
+import { AlertType } from '../../core/alerts';
+import { StoreHelper } from '../../shared';
 import { Tweet, TweetService } from '../shared';
 
 
@@ -9,27 +11,24 @@ import { Tweet, TweetService } from '../shared';
   styleUrls: ['./create-tweet.component.scss']
 })
 export class CreateTweetComponent {
-  tweet: Tweet
-
-  constructor(
-    private _tweetService: TweetService
-  ) {
-    this.tweet = {
-      content: ""
-    }
+  private tweet: Tweet = {
+    content: ""
   }
 
+  constructor(
+    private storeHelper: StoreHelper,
+    private tweetService: TweetService,
+  ) {}
+
   onSubmit(): void {
-    this._tweetService.createTweet(this.tweet)
+    this.tweetService.createTweet(this.tweet)
       .subscribe(
         result => {
-          // TODO: message
-          this.tweet = {
-            content: ""
-          }
+          this.storeHelper.add("alerts", {message: "Tweet has been added successfully", type: AlertType.success});
+          this.tweet = {content: ""}
         },
         error => {
-          // TODO: message
+          this.storeHelper.add("alerts", {message: error, type: AlertType.danger});
         }
       )
   }

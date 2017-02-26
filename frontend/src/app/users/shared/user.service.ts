@@ -9,49 +9,49 @@ import { User } from './user.model';
 @Injectable()
 export class UserService {
   private user_path: string = "/users";
-  user?: User;
+  private user: User = null;
 
   constructor(
-    private _apiService: ApiService,
-    private _router: Router,
-    private _store: Store,
-    private _storeHelper: StoreHelper
+    private apiService: ApiService,
+    private router: Router,
+    private store: Store,
+    private storeHelper: StoreHelper
   ) {
-    this._store.changes('user')
+    this.store.changes('user')
       .subscribe((user: any) => this.user = user)
   }
 
   getUser() {
-    return this._apiService.get(this.user_path + "/" + this.user.id)
-      .do(user => this._storeHelper.update("user", user))
+    return this.apiService.get(this.user_path + "/" + this.user.id)
+      .do(user => this.storeHelper.update("user", user))
   }
 
   getTweets() {
-    return this._apiService.get(this.user_path + "/" + this.user.id + "/tweets")
-      .do(tweets => this._storeHelper.update("my_tweets", tweets))
+    return this.apiService.get(this.user_path + "/" + this.user.id + "/tweets")
+      .do(tweets => this.storeHelper.update("my_tweets", tweets))
   }
 
   getFeed() {
-    return this._apiService.get("/feed")
-      .do(tweets => this._storeHelper.update("feed", tweets))
+    return this.apiService.get("/feed")
+      .do(tweets => this.storeHelper.update("feed", tweets))
   }
 
   getFollowing() {
     // NOTE: only here should happen name rewrite from followees => following
-    return this._apiService.get(this.user_path + "/" + this.user.id + "/followees")
-      .do(followees => this._storeHelper.update("my_following", followees))
+    return this.apiService.get(this.user_path + "/" + this.user.id + "/followees")
+      .do(followees => this.storeHelper.update("my_following", followees))
   }
 
   getFollowers() {
-    return this._apiService.get(this.user_path + "/" + this.user.id + "/followers")
-      .do(followers => this._storeHelper.update("my_followers", followers))
+    return this.apiService.get(this.user_path + "/" + this.user.id + "/followers")
+      .do(followers => this.storeHelper.update("my_followers", followers))
   }
 
   follow(user_id: number) {
-    return this._apiService.post(this.user_path + "/" + user_id + "/follow", {})
+    return this.apiService.post(this.user_path + "/" + user_id + "/follow", {})
   }
 
   unfollow(user_id: number) {
-    return this._apiService.post(this.user_path + "/" + user_id + "/unfollow", {})
+    return this.apiService.post(this.user_path + "/" + user_id + "/unfollow", {})
   }
 }

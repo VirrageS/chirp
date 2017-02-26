@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 
+import { AlertType } from '../core/alerts';
 import { User } from '../users';
 import { Tweet } from '../tweets';
 import { SearchService } from './search.service';
+import { StoreHelper } from '../shared';
+
 import * as _ from 'lodash';
 
 
@@ -12,34 +15,36 @@ import * as _ from 'lodash';
   styleUrls: ['./search.component.scss']
 })
 export class SearchComponent implements OnInit {
-  private _searchTerms = new Subject<string>()
-  users: User[]
-  tweets: Tweet[]
+  private searchTerms = new Subject<string>()
+  private users: User[] = [];
+  private tweets: Tweet[] = [];
 
-  constructor(private _searchService: SearchService) {
-    this.users = []
-    this.tweets = []
-  }
+  constructor(
+    private searchService: SearchService,
+    private storeHelper: StoreHelper,
+  ) {}
 
   ngOnInit(): void {
-    this._searchTerms
+    this.searchTerms
       .debounceTime(300)
       .distinctUntilChanged()
       .filter(term => { return term != "" })
       .subscribe(term =>
-        this._searchService.search(term)
+        this.searchService.search(term)
           .subscribe(
             result => {
               this.users = result.users
               this.tweets = result.tweets
             },
-            error => {} // TODO
+            error => {
+              this.storeHelper.add("alerts", {message: error, type: AlertType.danger});
+            }
           )
       )
   }
 
   private search(term: string): void {
-    this._searchTerms.next(term)
+    this.searchTerms.next(term)
   }
 
   private handleUserUpdated(updatedUser: User): void {

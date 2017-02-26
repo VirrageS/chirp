@@ -12,21 +12,21 @@ export class AuthService implements CanActivate {
   USER_KEY: string = "USER_TOKEN"
 
   constructor(
-    private _router: Router,
-    private _storeHelper: StoreHelper,
+    private router: Router,
+    private storeHelper: StoreHelper,
   ) {
     this.initializeAuthorization()
   }
 
   setAuthorization(user: User, authToken: string, refreshToken: string) {
     window.localStorage.setItem(this.USER_KEY, JSON.stringify(user))
-    this._storeHelper.update('user', user)
+    this.storeHelper.update("user", user)
 
     window.localStorage.setItem(this.AUTH_TOKEN_KEY, authToken)
-    this._storeHelper.update('auth_token', authToken)
+    this.storeHelper.update("auth_token", authToken)
 
     window.localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken)
-    this._storeHelper.update('refresh_token', refreshToken)
+    this.storeHelper.update("refresh_token", refreshToken)
   }
 
   initializeAuthorization() {
@@ -43,15 +43,15 @@ export class AuthService implements CanActivate {
 
   removeAuthorization() {
     window.localStorage.removeItem(this.USER_KEY)
-    this._storeHelper.update('user', null)
+    this.storeHelper.update("user", null)
 
     window.localStorage.removeItem(this.AUTH_TOKEN_KEY)
-    this._storeHelper.update('auth_token', '')
+    this.storeHelper.update("auth_token", "")
 
     window.localStorage.removeItem(this.REFRESH_TOKEN_KEY)
-    this._storeHelper.update('refresh_token', '')
+    this.storeHelper.update("refresh_token", "")
 
-    this._router.navigate(['', 'home']);
+    this.router.navigate(['', 'home']);
   }
 
   isAuthenticated(): boolean {
@@ -73,7 +73,7 @@ export class AuthService implements CanActivate {
 
   onCanActivate(canActivate: boolean) {
     if (!canActivate) {
-      this._router.navigate(['', 'login']);
+      this.router.navigate(['', 'login']);
     }
   }
 }

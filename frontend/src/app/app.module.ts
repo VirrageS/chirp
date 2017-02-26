@@ -11,11 +11,11 @@ import { ApiService, StoreHelper, Store } from './shared';
 import { AuthService, AuthModule } from './auth';
 import { HomeComponent } from './home';
 import { SearchModule } from './search';
-import { NavComponent, PageNotFoundComponent } from './core';
+import { AlertsModule, NavComponent, PageNotFoundComponent } from './core';
 
-import { TweetsModule} from './tweets';
-import { UsersModule} from './users';
-import { MeModule } from './me'
+import { MeModule } from './me';
+import { TweetsModule } from './tweets';
+import { UsersModule } from './users';
 
 
 @NgModule({
@@ -30,6 +30,7 @@ import { MeModule } from './me'
       { path: '**', component: PageNotFoundComponent },
     ]),
 
+    AlertsModule,
     AuthModule,
     MeModule,
     TweetsModule,

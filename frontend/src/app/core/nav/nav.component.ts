@@ -14,14 +14,14 @@ export class NavComponent {
   user: User = null
 
   constructor(
-    private _authService: AuthService,
-    private _store: Store
+    private authService: AuthService,
+    private store: Store
   ) {
-    this._store.changes("user")
+    this.store.changes("user")
       .subscribe((user: any) => this.user = user)
   }
 
-  private _authenticated() {
-    return this._authService.isAuthenticated()
+  private authenticated() {
+    return this.authService.isAuthenticated()
   }
 }

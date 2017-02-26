@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Store } from './store';
+import * as _ from 'lodash';
 
 
 @Injectable()
@@ -29,9 +30,9 @@ export class StoreHelper {
     })}))
   }
 
-  findAndDelete(prop, id) {
+  findAndDelete(prop, element) {
     const currentState = this.store.getState();
     const collection = currentState[prop];
-    this.store.setState(Object.assign({}, currentState, {[prop]: collection.filter(item => item.id !== id)}));
+    this.store.setState(Object.assign({}, currentState, {[prop]: collection.filter(item => !_.eq(item, element))}));
   }
 }

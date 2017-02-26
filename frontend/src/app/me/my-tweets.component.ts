@@ -12,20 +12,17 @@ import { Store } from '../shared';
   `
 })
 export class MyTweetsComponent implements OnInit {
-  tweets: Tweet[] = []
+  private tweets: Array<Tweet> = []
 
   constructor(
-    private _userService: UserService,
-    private _store: Store
-  ) {
-
-  }
+    private userService: UserService,
+    private store: Store
+  ) {}
 
   ngOnInit(): void {
-    this._userService.getTweets()
-      .subscribe((tweets: any) => this.tweets = tweets)
-
-    this._store.changes("my_tweets")
-      .subscribe((tweets: any) => this.tweets = tweets)
+    this.userService.getTweets()
+      .subscribe((tweets: Array<Tweet>) => this.tweets = tweets)
+    this.store.changes("my_tweets")
+      .subscribe((tweets: Array<Tweet>) => this.tweets = tweets)
   }
 }

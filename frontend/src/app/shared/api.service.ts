@@ -13,8 +13,8 @@ import { User } from '../users';
 
 @Injectable()
 export class ApiService {
-  retry: number = 2000;
-  timeout: number = 5000;
+  retry: number = 200;
+  timeout: number = 1000;
   headers: Headers = new Headers({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -93,7 +93,7 @@ export class ApiService {
       .map(this._checkForError)
       .catch(err => Observable.throw(err))
       .map(this._getJson)
-      .do(res => this._storeHelper.update('auth_token', res.auth_token))
+      .do(res => this._storeHelper.update("auth_token", res.auth_token))
   }
 
   private _setHeaders(headers) {
@@ -112,7 +112,7 @@ export class ApiService {
       return response;
     } else {
       var error = new Error(response.statusText);
-      error['response'] = response;
+      error["response"] = response;
       throw error;
     }
   }
