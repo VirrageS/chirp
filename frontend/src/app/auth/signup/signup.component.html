@@ -1,57 +1,46 @@
 <div class="form">
   <div class="form__title">Sign Up</div>
 
-  <form (ngSubmit)="onSubmit()" #singupForm="ngForm">
-    <div class="form-group">
+  <form [formGroup]="signupForm"  (ngSubmit)="onSubmit()">
+    <div class="form-group"  [class.has-danger]="formErrors.name.length > 0"  [class.has-success]="signupForm.get('name').valid">
       <label for="name">Name</label>
-      <input type="name" class="form-control" id="name"
-             optional
-             [(ngModel)]="user.name" name="name"
-             #name="ngModel"
-             pattern="[a-zA-Z ]*" >
-    </div>
-    <div [hidden]="name.valid || name.pristine"
-         class="alert alert-danger">
-      Name is required
+      <input type="text" id="name"
+             class="form-control" [class.form-control-success]="signupForm.get('name').valid"
+             formControlName="name" >
+
+      <div class="form-control-feedback" *ngFor="let error of formErrors.name" >{{ error }}</div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group"  [class.has-danger]="formErrors.username.length > 0"  [class.has-success]="signupForm.get('username').valid">
       <label for="username">Username</label>
-      <input type="username" class="form-control" id="username"
-             required
-             [(ngModel)]="user.username" name="username"
-             #username="ngModel"
-             pattern="[a-zA-Z0-9]*" >
-    </div>
-    <div [hidden]="username.valid || username.pristine"
-         class="alert alert-danger">
-      Username is required
+      <input type="text" id="username"
+             class="form-control" [class.form-control-success]="signupForm.get('username').valid"
+             formControlName="username" >
+
+      <div class="form-control-feedback" *ngFor="let error of formErrors.username" >{{ error }}</div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group"  [class.has-danger]="formErrors.email.length > 0"  [class.has-success]="signupForm.get('email').valid">
       <label for="email">Email</label>
-      <input type="email" class="form-control" id="email"
-             required
-             [(ngModel)]="user.email" name="email"
-             #email="ngModel" >
-    </div>
-    <div [hidden]="email.valid || email.pristine"
-         class="alert alert-danger">
-      Email is required
+      <input type="text" id="email"
+             class="form-control" [class.form-control-success]="signupForm.get('email').valid"
+             formControlName="email" >
+
+      <div class="form-control-feedback" *ngFor="let error of formErrors.email" >{{ error }}</div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group"  [class.has-danger]="formErrors.password.length > 0"  [class.has-success]="signupForm.get('password').valid">
       <label for="password">Password</label>
-      <input type="password" class="form-control" id="password"
-             required
-             [(ngModel)]="user.password" name="password"
-             #password="ngModel" >
-    </div>
-    <div [hidden]="password.valid || password.pristine"
-         class="alert alert-danger">
-      Password is required
+      <input type="password" id="password" aria-describedby="passwordHelpBlock"
+             class="form-control" [class.form-control-success]="signupForm.get('password').valid"
+             formControlName="password" >
+
+      <div class="form-control-feedback" *ngFor="let error of formErrors.password" >{{ error }}</div>
+      <small id="passwordHelpBlock" class="form-text text-muted">
+        Your password must be 8-40 characters long.
+      </small>
     </div>
 
-    <button type="submit" class="btn btn-success" [disabled]="!singupForm.form.valid">Submit</button>
+    <button type="submit" class="btn btn-success" [disabled]="!signupForm.valid">Submit</button>
   </form>
 </div>

@@ -1,6 +1,6 @@
 import { NgModule }       from '@angular/core';
 import { CommonModule }   from '@angular/common';
-import { FormsModule }    from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { TweetService } from './shared';
 import { TweetComponent }       from './tweet/tweet.component';
@@ -12,6 +12,7 @@ import { CreateTweetComponent } from './create-tweet/create-tweet.component';
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
   ],
   declarations: [
     TweetComponent,
