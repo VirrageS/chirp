@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { AlertType } from '../../core/alerts';
 import { User } from '../../users';
 import { LoginService } from './login.service';
-import { StoreHelper, CustomValidators } from '../../shared';
+import { StoreHelper } from '../../shared';
 
 
 @Component({
@@ -26,13 +26,10 @@ export class LoginComponent implements OnInit {
 
   private validationMessages = {
     'email': {
-      'required':  'Email is required.',
-      'email':     'Email is invalid.',
+      'required': 'Email is required.',
     },
     'password': {
-      'required':      'Password is required.',
-      'minlength':     'Password must be at least 8 characters long.',
-      'maxlength':     'Password cannot be more than 20 characters long.',
+      'required': 'Password is required.',
     }
   };
 
@@ -74,14 +71,10 @@ export class LoginComponent implements OnInit {
     this.loginForm = this.fb.group({
       'email': [null, [
           Validators.required,
-          CustomValidators.email,
         ]
       ],
       'password': [null, [
           Validators.required,
-          Validators.minLength(8),
-          Validators.maxLength(20),
-          // CustomValidators.forbiddenCharactersValidator(/bob/i),
         ]
       ],
     });

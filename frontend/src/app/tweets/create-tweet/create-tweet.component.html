@@ -2,15 +2,15 @@
   <div class="create-tweet__title">
     Create Tweet
   </div>
-  <form (ngSubmit)="onSubmit()" #createTweetForm="ngForm">
-    <div class="form-group">
-      <textarea class="form-control" id="content" rows="4"
-        required
-        [(ngModel)]="tweet.content" name="content"
-        #content="ngModel" >
+
+  <form [formGroup]="tweetForm"  (ngSubmit)="onSubmit()">
+    <div class="form-group"  [class.has-danger]="formErrors.content.length > 0"  [class.has-success]="tweetForm.get('content').valid">
+      <textarea id="content" rows="4"
+                class="form-control"
+                formControlName="content" >
       </textarea>
     </div>
 
-    <button type="submit" class="btn btn-primary" [disabled]="!createTweetForm.form.valid"><i class="fa fa-pencil"></i> Post</button>
+    <button type="submit" class="btn btn-primary" [disabled]="!tweetForm.valid"><i class="fa fa-pencil"></i> Post</button>
   </form>
 </div>
