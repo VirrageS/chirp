@@ -18,10 +18,12 @@ module.exports = {
     rules: [
       {
         test: /\.ts$/,
-        use: [{
-          loader: 'awesome-typescript-loader',
-          options: { configFileName: helpers.root('src', 'tsconfig.json') }
-        } , 'angular2-template-loader']
+        use: [
+          {
+            loader: 'awesome-typescript-loader',
+            options: { configFileName: helpers.root('src', 'tsconfig.json') }
+          } , 'angular2-template-loader'
+        ]
       },
       {
         test: /\.html$/,
@@ -34,7 +36,7 @@ module.exports = {
       {
         test: /\.css$/,
         exclude: helpers.root('src', 'app'),
-        use: ExtractTextPlugin.extract({ fallback: 'style-loader', loader: 'css-loader?sourceMap' })
+        use: ExtractTextPlugin.extract({ fallback: 'style-loader', use: 'css-loader?sourceMap' })
       },
       {
         test: /\.css$/,
@@ -45,7 +47,7 @@ module.exports = {
         test: /\.scss$/,
         use: [
           'raw-loader',
-          'sass-loader'
+          'sass-loader',
         ]
       },
     ]
@@ -55,7 +57,7 @@ module.exports = {
     // Workaround for angular/angular#11580
     new webpack.ContextReplacementPlugin(
       // The (\\|\/) piece accounts for path separators in *nix and Windows
-      /angular(\\|\/)core(\\|\/)(esm(\\|\/)src|src)(\\|\/)linker/,
+      /angular(\\|\/)core(\\|\/)@angular/,
       helpers.root('./src'), // location of your src
       {} // a map of your routes
     ),
